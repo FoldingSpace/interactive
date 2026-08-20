@@ -10,6 +10,7 @@
   --cell-on: #16181d;
   --cell-off: #ffffff;
   --cell-line: #8a8a8a;
+  --rule: 2px;
   --kernel-line: #2b2b2b;
   --local-line: #ffffff;
   --ink: #16181d;
@@ -98,7 +99,11 @@ body[data-present="1"] .intro { display: none; }
   body[data-present="1"] .localwrap { width: min(25vw, 54vh); }
   body[data-present="1"] #kernel { width: calc(8.5rem * var(--ui)); }
   body[data-present="1"] .patterns { flex-direction: row; flex-wrap: wrap; align-items: flex-end; }
-  body[data-present="1"] .patterns .presets { flex: 1 1 auto; }
+  /* flex-basis auto uses the content width, and ten pattern buttons is wider than the
+     row, so the extent control got pushed onto its own line. Basis 0 lets the presets
+     wrap inside their own box instead. */
+  body[data-present="1"] .patterns > fieldset { min-width: 0; }
+  body[data-present="1"] .patterns .presets { flex: 1 1 0; }
 
   body[data-present="1"] .wrap {
     height: 100vh;
@@ -135,7 +140,7 @@ body[data-present="1"] .intro { display: none; }
 .spacer { display: none; }
 #local {
   display: grid;
-  grid-template-columns: repeat(15, 1fr);
+  gap: var(--rule);
   width: min(97vw, 58vh, 34rem);
   aspect-ratio: 1 / 1;
   background: var(--cell-line);
@@ -143,8 +148,9 @@ body[data-present="1"] .intro { display: none; }
 }
 /* White rules on the cluster map, which is how cluster maps are normally drawn: a grey
    rule is nearly invisible against saturated red, 1.16 to 1, so regions blurred into
-   blocks. White separates the strong colours cleanly. The outer border stays grey to
-   match the pattern grid beside it. */
+   blocks. White separates the strong colours cleanly. The rules are the grid's own
+   background showing through the gaps, so they stay exactly one rule wide whatever the
+   extent. The outer border stays grey, matching the pattern grid beside it. */
 .lcell { border: 1px solid var(--local-line); min-width: 0; min-height: 0; }
 .localwrap .pairs { align-self: stretch; }
 .key {
@@ -184,12 +190,11 @@ body[data-present="1"] .key { font-size: calc(0.72rem * var(--ui)); }
   display: grid;
   user-select: none;
   -webkit-user-select: none;
-  grid-template-columns: repeat(15, 1fr);
-  gap: 0;
+  gap: var(--rule);
   width: min(97vw, 58vh, 34rem);
   aspect-ratio: 1 / 1;
   background: var(--cell-line);
-  border: calc(2px * var(--ui)) solid var(--cell-line);
+  border: var(--rule) solid var(--cell-line);
   touch-action: manipulation;
 }
 @media (max-width: 55.99rem) {
@@ -200,7 +205,7 @@ body[data-present="1"] .key { font-size: calc(0.72rem * var(--ui)); }
 }
 .cell {
   appearance: none;
-  border: 1px solid var(--cell-line);
+  border: 0;
   margin: 0;
   padding: 0;
   background: var(--cell-off);
@@ -480,14 +485,21 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
            something the data tells you. The small grid sets it. The dot in the middle is
            the square being measured; the numbers around it say how much each nearby
            square counts. Only the ratios matter: doubling every number changes nothing.</p>
-        <p><strong>Testing against chance.</strong> Each square is compared with 999
-           shuffles of the grid in which it keeps its own colour and its neighbours are
-           drawn at random. <em>Uncorrected</em> judges each square on its own.
-           <em>Corrected</em> allows for the fact that all 225 are tested at once, using
-           a false discovery rate. Load <strong>Random 2</strong> with a wide kernel and
-           switch between them: uncorrected finds a scatter of &ldquo;significant&rdquo;
-           squares in a pattern with no structure at all, and correction removes every
-           one.</p>
+        <p><strong>Testing against chance.</strong> Could a square&rsquo;s neighbourhood
+           have come out this way by luck? To find out, the grid is shuffled 999 times.
+           Each square keeps its own colour while the squares around it are dealt again at
+           random, and we count how often luck alone produces something as striking as
+           what is really there. If that almost never happens, the square is worth
+           noticing.</p>
+        <p><strong>Why the two buttons differ.</strong> <em>Uncorrected</em> judges each
+           square as if it were the only one you asked about. But you are asking about
+           every square at once, and rare things stop being rare when you look often
+           enough &mdash; roll a die enough times and a six is not surprising.
+           <em>Corrected</em> takes that into account: it keeps the share of mistakes
+           among the squares it marks down to about one in twenty.</p>
+        <p>See it happen. Load <strong>Random 2</strong>, choose a wide kernel, and switch
+           between the two. Uncorrected marks a scatter of squares in a pattern with no
+           structure whatsoever. Corrected removes every one of them.</p>
         <p><strong>Why nothing is ever significant with Rook.</strong> The strongest
            result four neighbours can give is all four matching, and that happens by luck
            about 6 times in 100 &mdash; just above the usual 5 in 100 mark. So no square
@@ -540,6 +552,11 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     </div>
 
     <div class="patterns">
+
+      <fieldset>
+        <legend>Zoom / extent <span class="term">reloads the pattern</span></legend>
+        <div class="btnrow" id="extents"></div>
+      </fieldset>
 
       <fieldset class="presets">
         <legend>Load a pattern</legend>
@@ -657,8 +674,16 @@ self.onmessage = function (e) {
 (function () {
   "use strict";
 
+  // The extent is a setting, not a constant. 15 is the default because 15 columns is
+  // what fits a phone at the 24px minimum target size; 30 is offered because more cells
+  // means more tests and shows what that costs a corrected significance test.
+  var EXTENTS = [15, 30];
   var SIDE = 15;
   var N = SIDE * SIDE;
+  // Everything that is measured in cells scales with the extent, so a pattern means the
+  // same shape at either size rather than the same number of cells.
+  function scaled(v) { return Math.max(1, Math.round(v * SIDE / 15)); }
+  function halfish() { return Math.round(N * 113 / 225); }
 
   // ---------------------------------------------------------------- patterns
   // Fixed seeds so that every device shows the same "random" pattern. A phone
@@ -719,8 +744,8 @@ self.onmessage = function (e) {
     { id: "stripes",     label: "Stripes",        make: function () { return build(function (r, c) { return c % 2 === 0; }); } },
     { id: "stripes3",    label: "Stripes every 3", make: function () { return build(function (r, c) { return c % 3 === 0; }); } },
     { id: "half",        label: "Half and half",  make: function () { return build(function (r, c) { return c < SIDE / 2; }); } },
-    { id: "patches",     label: "Patches",        make: function () { return patchGrid(3141, 2, 1, 113); } },
-    { id: "bigpatches",  label: "Big patches",    make: function () { return patchGrid(8080, 3, 2, 113); } },
+    { id: "patches",     label: "Patches",        make: function () { return patchGrid(3141, scaled(2), 1, halfish()); } },
+    { id: "bigpatches",  label: "Big patches",    make: function () { return patchGrid(8080, scaled(3), 2, halfish()); } },
     { id: "random1",     label: "Random 1",       make: function () { return randomGrid(20260819); } },
     { id: "random2",     label: "Random 2",       make: function () { return randomGrid(77123); } }
   ];
@@ -957,6 +982,11 @@ self.onmessage = function (e) {
 
   // ---------------------------------------------------------------- state
   var params = new URLSearchParams(location.search);
+  // The extent has to be settled before anything measured in cells is made.
+  (function () {
+    var n = parseInt(params.get("n"), 10);
+    if (EXTENTS.indexOf(n) >= 0) { SIDE = n; N = SIDE * SIDE; }
+  })();
   // k wins if present. Otherwise w=rook|queen is honoured as shorthand, so links
   // already written on slides keep working.
   var sigParam = params.get("sig");
@@ -972,7 +1002,7 @@ self.onmessage = function (e) {
 
   // ---------------------------------------------------------------- dom
   var gridEl = document.getElementById("grid");
-  var cells = new Array(N);
+  var cells = [];
   var moranEl = document.getElementById("moran");
   var markerEl = document.getElementById("marker");
   var verdictEl = document.getElementById("verdict");
@@ -989,33 +1019,45 @@ self.onmessage = function (e) {
     return "Row " + r + ", column " + c;
   }
 
-  for (var i = 0; i < N; i++) {
-    var b = document.createElement("button");
-    b.className = "cell";
-    b.type = "button";
-    b.setAttribute("role", "gridcell");
-    b.setAttribute("aria-label", cellLabel(i));
-    b.setAttribute("aria-pressed", "false");
-    b.tabIndex = -1;
-    b.dataset.i = i;
-    gridEl.appendChild(b);
-    cells[i] = b;
-  }
-  cells[0].tabIndex = 0;
+  function buildGrids() {
+    var i, b, d;
+    gridEl.textContent = ""; localEl.textContent = "";
+    cells = new Array(N); lcells = new Array(N);
+    gridEl.style.gridTemplateColumns = "repeat(" + SIDE + ", 1fr)";
+    localEl.style.gridTemplateColumns = "repeat(" + SIDE + ", 1fr)";
+    gridEl.setAttribute("aria-label", SIDE + " by " + SIDE +
+      " grid of squares. Each square is black or white.");
+    localEl.setAttribute("aria-label", SIDE + " by " + SIDE +
+      " grid showing each square's own Moran's I.");
+    // One rule width at 15, half of it at 30, so the larger grid does not drown in lines.
+    document.documentElement.style.setProperty("--rule", SIDE > 20 ? "1px" : "2px");
+    for (i = 0; i < N; i++) {
+      b = document.createElement("button");
+      b.className = "cell";
+      b.type = "button";
+      b.setAttribute("role", "gridcell");
+      b.setAttribute("aria-label", cellLabel(i));
+      b.setAttribute("aria-pressed", "false");
+      b.tabIndex = -1;
+      b.dataset.i = i;
+      gridEl.appendChild(b);
+      cells[i] = b;
 
-  var localEl = document.getElementById("local");
-  var sigLineEl = document.getElementById("sigline");
-  var localNoteEl = document.getElementById("local-note");
-  var lcells = new Array(N);
-  (function buildLocalGrid() {
-    for (var i = 0; i < N; i++) {
-      var d = document.createElement("div");
+      d = document.createElement("div");
       d.className = "lcell";
       d.setAttribute("role", "gridcell");
       localEl.appendChild(d);
       lcells[i] = d;
     }
-  })();
+    cells[0].tabIndex = 0;
+    focusIndex = 0; kFocus = kFocus || 0;
+  }
+
+  var localEl = document.getElementById("local");
+  var sigLineEl = document.getElementById("sigline");
+  var localNoteEl = document.getElementById("local-note");
+  var lcells = [];
+
 
   // The usual cluster-map palette: strong red and blue where a square sits with its own
   // kind, pale versions where it is the odd one out, light grey for anything that does
@@ -1229,25 +1271,25 @@ self.onmessage = function (e) {
       sigLineEl.textContent = passing === 0
         ? "No square reaches p of 0.05, judged on its own. With this few neighbours the " +
           "best result they can give happens by luck more often than that."
-        : passing + " of 225 squares reach p of 0.05, each judged on its own. Some of " +
-          "those are luck: test 225 squares and a few pass by chance. Try Random 2.";
+        : passing + " of " + N + " squares reach p of 0.05, each judged on its own. Some " +
+          "of those are luck: test " + N + " squares and a few pass by chance. Try Random 2.";
     } else if (sigMode === "fdr" && sigCache) {
       // Two very different reasons for an empty map, and they must not be conflated.
       sigLineEl.textContent = passing > 0
-        ? passing + " of 225 squares survive correction for testing all 225 at once."
+        ? passing + " of " + N + " squares survive correction for testing all " + N + " at once."
         : minP > RAW_ALPHA
           ? "No square even reaches p of 0.05 on its own. With this few neighbours the " +
             "best result they can give happens by luck more often than that, so nothing " +
             "here can be significant. Count more neighbours."
-          : "No square survives correction for testing all 225 at once. Some do reach " +
-            "p of 0.05 judged on their own \u2014 switch to Uncorrected to see them \u2014 " +
-            "but not enough to stand out from 225 tries.";
+          : "No square survives correction for testing all " + N + " at once. Some do " +
+            "reach p of 0.05 judged on their own \u2014 switch to Uncorrected to see " +
+            "them \u2014 but not enough to stand out from " + N + " tries.";
     } else if (clusters) {
       sigLineEl.textContent = counts[0] + " black among black, " + counts[1] +
         " white among white, " + counts[2] + " black among white, " + counts[3] +
         " white among black.";
     } else {
-      sigLineEl.textContent = "The average of these 225 values is the number above.";
+      sigLineEl.textContent = "The average of these " + N + " values is the number above.";
     }
   }
 
@@ -1300,6 +1342,7 @@ self.onmessage = function (e) {
     p.set("g", encode(grid));
     if (!sameKernel(kernel, KERNELS[0].make())) p.set("k", encodeKernel(kernel));
     if (sigMode !== "off") p.set("sig", sigMode);
+    if (SIDE !== 15) p.set("n", String(SIDE));
     if (localView === "values") p.set("view", "values");
     if (present) p.set("present", "1");
     history.replaceState(null, "", location.pathname + "?" + p.toString());
@@ -1487,6 +1530,34 @@ self.onmessage = function (e) {
     sigBtns[m].addEventListener("click", function () { setSig(m); });
   });
 
+  var extentsEl = document.getElementById("extents"), extentBtns = {};
+  EXTENTS.forEach(function (n) {
+    var b = document.createElement("button");
+    b.className = "opt";
+    b.type = "button";
+    b.textContent = n + " \u00d7 " + n;
+    b.addEventListener("click", function () { setExtent(n); });
+    extentsEl.appendChild(b);
+    extentBtns[n] = b;
+  });
+
+  // Changing the extent rebuilds both grids and reloads the opening pattern. Carrying a
+  // drawing across would mean inventing what the extra squares contain, so it starts
+  // clean and the legend says so. The kernel is measured in squares and is left alone,
+  // which is the point: the same kernel is a finer neighbourhood on the larger grid.
+  function setExtent(n) {
+    if (n === SIDE) return;
+    SIDE = n; N = SIDE * SIDE;
+    buildGrids();
+    grid = PRESETS[6].make();
+    sigCache = null; sigPendingFor = null;
+    EXTENTS.forEach(function (m) {
+      extentBtns[m].setAttribute("aria-pressed", m === n ? "true" : "false");
+    });
+    render();
+    liveEl.textContent = "Grid is now " + n + " by " + n + " squares, pattern reloaded.";
+  }
+
   document.getElementById("reset").addEventListener("click", function () {
     grid = PRESETS[6].make();
     kernel = KERNELS[0].make();
@@ -1516,6 +1587,10 @@ self.onmessage = function (e) {
   });
 
   // ---------------------------------------------------------------- go
+  buildGrids();
+  EXTENTS.forEach(function (m) {
+    extentBtns[m].setAttribute("aria-pressed", m === SIDE ? "true" : "false");
+  });
   setPresent(present);
   setView(localView);
   setSig(sigMode);

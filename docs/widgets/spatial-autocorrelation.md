@@ -380,6 +380,35 @@ buttons on that pattern is the whole multiple-comparison lesson in one click.
 Masks are derived on the main thread from the p-values the worker returns, so switching
 between uncorrected and corrected is instant rather than another 999 permutations.
 
+### Grid extent is a control
+
+A **Zoom / extent** toggle offers 15 × 15 (default) and 30 × 30. The grid containers keep
+the same physical size and the squares halve, so the layout, the controls and the sense of
+holding the same thing all survive the change. Rules drop from 2 px to 1 px at the larger
+extent so the picture does not drown in lines; they are the grid's own background showing
+through a `gap`, which keeps them exactly one rule wide however many cells there are.
+
+**Everything measured in cells scales with the extent**, so a pattern means the same shape
+rather than the same number of cells. The smoothing radius behind Patches goes from 2 to 4
+and Big patches from 3 to 6; the number of black squares stays at the same share. The
+geometric patterns are rules rather than pictures and scale by themselves, and the two
+exact results survive: **checkerboard is −1.0000 and stripes is 0.0000 under rook at both
+extents**.
+
+The kernel is deliberately *not* scaled. It is measured in squares, so the same kernel is
+a finer neighbourhood on the larger grid — which is the honest thing for it to be, and a
+point worth making out loud.
+
+Changing extent reloads the opening pattern. Carrying a drawing across would mean
+inventing what the extra squares contain, so it starts clean and the legend says so.
+
+**15 × 15 stays the default because of the phone.** At 30 × 30 squares fall to about 12 px,
+half the 24 px minimum target size. The larger extent is for exploring on a desktop, not
+for following along in a lecture theatre on a handset.
+
+Cost at 900 cells: a paint frame goes from 14 ms to about 35 ms, and the permutation test
+roughly quadruples. Both stay usable; neither blocks the interface.
+
 ### Would a bigger grid help?
 
 Asked and tested, because more cells means more tests but also more true signal. Keeping
@@ -396,9 +425,34 @@ Power after correction rises modestly and then plateaus, because BH's threshold 
 with rank and so gains as the number of true signals grows. Rook stays at exactly zero at
 every size, for the reason above.
 
-**The grid stays at 15×15 anyway, and the reason is the phone**: at 21×21 cells fall to
-17.2 px on a 375 px viewport, below the 24 px minimum target size. 15×15 gives 24.1 px,
-which is the floor. The grid size is set by the hand holding it, not by the statistics.
+**15×15 stays the default, and the reason is the phone**: at 21×21 cells fall to 17.2 px on
+a 375 px viewport, below the 24 px minimum target size. 15×15 gives 24.1 px, which is the
+floor. The default grid size is set by the hand holding it, not by the statistics — but
+30 × 30 is available as a toggle so the gain can be seen. Measured in the widget with
+Patches under 1/d²: **58 per cent of squares survive correction at 15 × 15, 71 per cent at
+30 × 30**.
+
+### Corrections that were tried and rejected
+
+**Bonferroni.** Returns zero on Big patches under queen, a pattern with a global I of
++0.67. Genuinely over-conservative, and why Anselin and GeoDa recommend FDR instead.
+
+**Westfall-Young minP**, a permutation method controlling family-wise error that uses the
+data's own dependence structure rather than assuming independence — which is the right
+objection to raise, since neighbouring local Morans share data and 225 tests are nowhere
+near 225 independent ones. Tested, and it returns **zero on every pattern**, including
+Big patches with 160 squares passing uncorrected. The reason is resolution: with 999
+permutations the smallest per-cell p is 1/1000, and the minimum across 225 cells is
+essentially always 1/1000, so no observed value can beat it. minP needs permutations far
+in excess of the number of tests, of the order of 10⁶ here, which is seconds of compute
+rather than the 60–150 ms available. It also controls family-wise error, which is stricter
+than false discovery rate and the wrong target for exploratory mapping.
+
+**Bootstrap resampling.** Does not fit the null. Drawing neighbours with replacement makes
+extreme neighbourhoods *more* likely by chance, inflating p rather than sharpening it, and
+it does nothing about the discreteness that caps rook at 0.0608. Block bootstrap preserves
+dependence for estimating a global statistic's variance, which is not the question being
+asked here.
 
 ### Rook cannot detect anything, and the reason is exact
 
