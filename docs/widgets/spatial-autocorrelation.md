@@ -342,8 +342,10 @@ structure.
 ### What the test does
 
 Each square keeps its own value while its neighbours are replaced by a random draw from
-the rest of the grid, 999 times, and the two-sided p-value is the share of draws at least
-as extreme as the observed value. **The seed is fixed**, for the reason in
+the rest of the grid, 999 times. The pseudo p-value is **one-sided, in the direction the
+square actually leans**, which is the LISA convention and what GeoDa reports. A two-sided
+test roughly doubles p; after correction it made no difference at all under queen and cost
+about twenty squares under 1/d². **The seed is fixed**, for the reason in
 `principles.md` section 5: a phone at the back and the projector at the front must agree
 about which squares are significant, or the discussion falls apart.
 
@@ -354,29 +356,69 @@ probability of roughly its neighbour count over 224 — under 2 per cent for roo
 for the widest kernel. This was a performance decision: per-square drawing needs about
 4,800 random numbers per permutation against 225, and the generator was the entire cost.
 
-### Verified counts
+### Two thresholds, and why both are offered
 
-Squares passing at q = 0.05, checked against an independent numpy implementation:
+The control has three states: off, **uncorrected**, and **corrected** by Benjamini-Hochberg
+at q = 0.05. Uncorrected exists because that is where the lesson is: it is what a student
+meets in software with the defaults left alone, and the gap between the two columns is the
+cost of testing 225 things at once.
 
-| Pattern | Rook | Queen | Even | 1/d² |
+Squares passing, one-sided, 999 permutations, checked against an independent numpy
+implementation:
+
+| Pattern | Rook raw / FDR | Queen raw / FDR | 1/d² raw / FDR |
+|---|---|---|---|
+| Patches | 9 / **0** | 116 / **50** | 141 / 127 |
+| Big patches | 13 / **0** | 138 / **83** | 158 / 150 |
+| Random 1 | 1 / **0** | 13 / **0** | 7 / **0** |
+| Random 2 | 9 / **0** | 7 / **0** | 22 / **0** |
+
+**Random 2 under 1/d² is the demonstration**: 22 squares reach p ≤ 0.05 in a pattern with
+no structure whatsoever, and correction removes every one. Switching between the two
+buttons on that pattern is the whole multiple-comparison lesson in one click.
+
+Masks are derived on the main thread from the p-values the worker returns, so switching
+between uncorrected and corrected is instant rather than another 999 permutations.
+
+### Would a bigger grid help?
+
+Asked and tested, because more cells means more tests but also more true signal. Keeping
+patch size proportional to the grid:
+
+| Grid | cells | Rook | Queen | 1/d² |
 |---|---|---|---|---|
-| Patches | 0 | 50 | ~117 | 110 |
-| Big patches | 0 | **83** | ~142 | 142 |
-| Random 1 | 0 | **0** | 0 | 0 |
-| Random 2 | 0 | **0** | 0 | 0 |
-| Checkerboard | 0 | 0 | 0 | 0 |
+| 15×15 | 225 | 0% | 71% | 78% |
+| 21×21 | 441 | 0% | 75% | 83% |
+| 27×27 | 729 | 0% | 81% | 84% |
+| 33×33 | 1089 | 0% | 78% | 83% |
 
-Counts move by a few between runs of the two permutation schemes; Big patches under queen
-reproduces numpy's 83 exactly. **Both random patterns give zero**, which is the correction
-doing its job: uncorrected they show 3 to 15 squares, and a student can see that by
-reading the smallest p-value in the message.
+Power after correction rises modestly and then plateaus, because BH's threshold scales
+with rank and so gains as the number of true signals grows. Rook stays at exactly zero at
+every size, for the reason above.
 
-### Rook cannot detect anything, and says so
+**The grid stays at 15×15 anyway, and the reason is the phone**: at 21×21 cells fall to
+17.2 px on a 375 px viewport, below the 24 px minimum target size. 15×15 gives 24.1 px,
+which is the floor. The grid size is set by the hand holding it, not by the statistics.
 
-Four binary neighbours give five possible outcomes, so the smallest attainable p-value is
-about 0.042. Correcting for 225 tests needs smaller than that, so **under rook nothing
-ever passes, whatever the pattern.** Patches has a global I of +0.59 and zero significant
-squares.
+### Rook cannot detect anything, and the reason is exact
+
+The strongest evidence four neighbours can offer is that all four match. Under the null
+those four are drawn from the other 224 squares, so with the colours near balanced:
+
+| Neighbours | P(all match) on 15×15 | on 33×33 |
+|---|---|---|
+| Rook, 4 | **0.0608** | 0.0622 |
+| Queen, 8 | 0.0034 | 0.0038 |
+| 5×5, 24 | ~0 | ~0 |
+
+**0.0608 is above 0.05.** So under rook no square can reach significance even uncorrected,
+whatever the pattern and however large the grid — Patches has a global I of +0.59 and
+zero significant squares. The handful that do slip through an uncorrected test are noise
+in the permutation, which is itself the point.
+
+This is not the correction being harsh. Four binary neighbours cannot carry enough
+information to be surprising. How many neighbours you count decides what is detectable at
+all, which ties the significance test straight back to the kernel editor.
 
 Rather than show a silent blank, the widget reports the smallest p-value any square
 reached and says a kernel with more neighbours gives finer p-values. This ties the

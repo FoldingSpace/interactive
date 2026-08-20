@@ -480,6 +480,20 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
            something the data tells you. The small grid sets it. The dot in the middle is
            the square being measured; the numbers around it say how much each nearby
            square counts. Only the ratios matter: doubling every number changes nothing.</p>
+        <p><strong>Testing against chance.</strong> Each square is compared with 999
+           shuffles of the grid in which it keeps its own colour and its neighbours are
+           drawn at random. <em>Uncorrected</em> judges each square on its own.
+           <em>Corrected</em> allows for the fact that all 225 are tested at once, using
+           a false discovery rate. Load <strong>Random 2</strong> with a wide kernel and
+           switch between them: uncorrected finds a scatter of &ldquo;significant&rdquo;
+           squares in a pattern with no structure at all, and correction removes every
+           one.</p>
+        <p><strong>Why nothing is ever significant with Rook.</strong> The strongest
+           result four neighbours can give is all four matching, and that happens by luck
+           about 6 times in 100 &mdash; just above the usual 5 in 100 mark. So no square
+           can pass, whatever the pattern and however big the grid. Sides and corners
+           gives 3 in 1,000, and a wider kernel far less. How many neighbours you count
+           decides what you are able to detect at all.</p>
         <p>One limit worth knowing: Moran&rsquo;s I cannot see direction. Load
            <strong>Half queen</strong>, which keeps only the four neighbours on one side,
            and compare it with <strong>Queen</strong>. The number does not move at all.
@@ -518,7 +532,8 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
         <legend>Test each square against chance</legend>
         <div class="btnrow">
           <button class="opt" id="sig-off" aria-pressed="true">Off</button>
-          <button class="opt" id="sig-on" aria-pressed="false">Significant only</button>
+          <button class="opt" id="sig-raw" aria-pressed="false">Uncorrected</button>
+          <button class="opt" id="sig-fdr" aria-pressed="false">Corrected <span class="term">FDR</span></button>
         </div>
       </fieldset>
 
@@ -606,12 +621,12 @@ self.onmessage = function (e) {
   // constant) and S is the total weight of its black neighbours. So the permutation
   // only has to add up integer weights over black neighbours -- no floating point in the
   // loop at all.
-  var rnd = mulberry32(d.seed), bits = new Int32Array(N), order = new Int32Array(N),
-      total_w = new Int32Array(N), ge = new Int32Array(N), absObs = new Float64Array(N),
-      p = new Float64Array(N), rIter, pick, t, S, zi, tw;
+  var rnd = mulberry32(d.seed), bits = new Int32Array(N),
+      total_w = new Int32Array(N), ge = new Int32Array(N), pos = new Uint8Array(N),
+      p = new Float64Array(N), rIter, pick, t, S, sim, tw;
   for (i = 0; i < N; i++) {
     bits[i] = x[i] ? 1 : 0;
-    absObs[i] = Math.abs(obs[i]);
+    pos[i] = obs[i] >= 0 ? 1 : 0;
     tw = 0;
     for (k = start[i]; k < start[i + 1]; k++) tw += nbW[k];
     total_w[i] = tw;
@@ -626,22 +641,15 @@ self.onmessage = function (e) {
       S = 0;
       for (k = start[i]; k < start[i + 1]; k++) S += nbW[k] * bits[nbIdx[k]];
       // lag = S * blackZ + (T - S) * whiteZ
-      zi = z[i] * (S * blackZ + (total_w[i] - S) * whiteZ) / m2;
-      if (zi < 0) zi = -zi;
-      if (zi >= absObs[i]) ge[i]++;
+      sim = z[i] * (S * blackZ + (total_w[i] - S) * whiteZ) / m2;
+      // One-sided, in the direction the square actually leans, which is the convention
+      // for a LISA pseudo p-value. A two-sided test roughly doubles p for no gain here.
+      if (pos[i] ? (sim >= obs[i]) : (sim <= obs[i])) ge[i]++;
     }
   }
   for (i = 0; i < N; i++) p[i] = (ge[i] + 1) / (PERMS + 1);
 
-  // Benjamini and Hochberg
-  var order = new Int32Array(N);
-  for (i = 0; i < N; i++) order[i] = i;
-  var ord = Array.prototype.slice.call(order).sort(function (a, b) { return p[a] - p[b]; });
-  var kmax = -1, mask = new Uint8Array(N);
-  for (i = 0; i < N; i++) if (p[ord[i]] <= ((i + 1) / N) * d.q) kmax = i;
-  for (i = 0; i <= kmax; i++) mask[ord[i]] = 1;
-
-  self.postMessage({ token: d.token, p: p, mask: mask });
+  self.postMessage({ token: d.token, p: p });
 };
 </script>
 
@@ -866,7 +874,24 @@ self.onmessage = function (e) {
   // Significance runs on a worker so a paint stroke never waits for it. The worker's
   // source is the script tag above; when Workers are unavailable the same source is
   // compiled on the main thread instead, so there is only ever one implementation.
-  var PERMS = 999, PERM_SEED = 424242, FDR_Q = 0.05;
+  var PERMS = 999, PERM_SEED = 424242, FDR_Q = 0.05, RAW_ALPHA = 0.05;
+
+  // Reject the k smallest p-values, k being the largest index whose p is at or below
+  // (index / m) * q. Kept on this side so that switching between corrected and
+  // uncorrected is instant rather than another 999 permutations.
+  function bhReject(p, q) {
+    var m = p.length, order = [], i, kmax = -1, out = new Uint8Array(m);
+    for (i = 0; i < m; i++) order.push(i);
+    order.sort(function (a, b) { return p[a] - p[b]; });
+    for (i = 0; i < m; i++) if (p[order[i]] <= ((i + 1) / m) * q) kmax = i;
+    for (i = 0; i <= kmax; i++) out[order[i]] = 1;
+    return out;
+  }
+  function rawReject(p, alpha) {
+    var out = new Uint8Array(p.length), i;
+    for (i = 0; i < p.length; i++) out[i] = p[i] <= alpha ? 1 : 0;
+    return out;
+  }
 
   var sigWorker = null, sigInline = null, sigToken = 0;
   (function setupWorker() {
@@ -888,7 +913,7 @@ self.onmessage = function (e) {
   function requestSignificance(x, kern, done) {
     var msg = {
       token: ++sigToken, x: Float64Array.from(x), kern: Int32Array.from(kern),
-      side: SIDE, krad: KRAD, perms: PERMS, seed: PERM_SEED, q: FDR_Q
+      side: SIDE, krad: KRAD, perms: PERMS, seed: PERM_SEED
     };
     if (sigWorker) {
       sigWorker.onmessage = function (e) {
@@ -934,7 +959,9 @@ self.onmessage = function (e) {
   var params = new URLSearchParams(location.search);
   // k wins if present. Otherwise w=rook|queen is honoured as shorthand, so links
   // already written on slides keep working.
-  var showSig = params.get("sig") === "1";
+  var sigParam = params.get("sig");
+  var sigMode = (sigParam === "raw") ? "raw"
+              : (sigParam === "fdr" || sigParam === "1") ? "fdr" : "off";
   var localView = params.get("view") === "values" ? "values" : "clusters";
   var kernel = decodeKernel(params.get("k")) ||
                (params.get("w") === "queen" ? KERNELS[1].make() : KERNELS[0].make());
@@ -1154,21 +1181,22 @@ self.onmessage = function (e) {
       return;
     }
 
-    if (showSig && !sigCache && !painting) {
+    if (sigMode !== "off" && !sigCache && !painting) {
       var want = encode(grid) + "|" + encodeKernel(kernel);
       if (sigPendingFor !== want) {
         sigPendingFor = want;
         requestSignificance(grid, kernel, function (out) {
           if (sigPendingFor !== want) return;      // state moved on while we waited
           sigPendingFor = null;
-          sigCache = out.p ? { p: out.p, mask: out.mask } : null;
+          sigCache = out.p ? { p: out.p } : null;
           renderLocal();
         });
       }
     }
 
-    if (showSig && sigCache) {
-      mask = sigCache.mask;
+    if (sigMode !== "off" && sigCache) {
+      mask = sigMode === "fdr" ? bhReject(sigCache.p, FDR_Q)
+                               : rawReject(sigCache.p, RAW_ALPHA);
       for (i = 0; i < N; i++) {
         if (mask[i]) passing++;
         if (sigCache.p[i] < minP) minP = sigCache.p[i];
@@ -1192,17 +1220,28 @@ self.onmessage = function (e) {
       if (lcells[i]._lab !== lab) { lcells[i].setAttribute("aria-label", lab); lcells[i]._lab = lab; }
     }
 
-    localNoteEl.textContent = showSig ? "(significant only)" : "";
+    localNoteEl.textContent = sigMode === "off" ? ""
+      : sigMode === "raw" ? "(uncorrected)" : "(corrected)";
 
-    if (showSig && sigCache && passing === 0) {
-      sigLineEl.textContent = "No square stands out from chance. The smallest p-value any " +
-        "square reached is " + minP.toFixed(3) + ", and correcting for 225 tests at once " +
-        "needs smaller than that. A kernel with more neighbours gives finer p-values.";
-    } else if (showSig && sigCache) {
-      sigLineEl.textContent = passing + " of 225 squares stand out from chance, after " +
-        "allowing for testing all 225 at once.";
-    } else if (showSig && !sigCache) {
+    if (sigMode !== "off" && !sigCache) {
       sigLineEl.textContent = sigPendingFor ? "Testing each square\u2026" : "";
+    } else if (sigMode === "raw" && sigCache) {
+      sigLineEl.textContent = passing === 0
+        ? "No square reaches p of 0.05, judged on its own. With this few neighbours the " +
+          "best result they can give happens by luck more often than that."
+        : passing + " of 225 squares reach p of 0.05, each judged on its own. Some of " +
+          "those are luck: test 225 squares and a few pass by chance. Try Random 2.";
+    } else if (sigMode === "fdr" && sigCache) {
+      // Two very different reasons for an empty map, and they must not be conflated.
+      sigLineEl.textContent = passing > 0
+        ? passing + " of 225 squares survive correction for testing all 225 at once."
+        : minP > RAW_ALPHA
+          ? "No square even reaches p of 0.05 on its own. With this few neighbours the " +
+            "best result they can give happens by luck more often than that, so nothing " +
+            "here can be significant. Count more neighbours."
+          : "No square survives correction for testing all 225 at once. Some do reach " +
+            "p of 0.05 judged on their own \u2014 switch to Uncorrected to see them \u2014 " +
+            "but not enough to stand out from 225 tries.";
     } else if (clusters) {
       sigLineEl.textContent = counts[0] + " black among black, " + counts[1] +
         " white among white, " + counts[2] + " black among white, " + counts[3] +
@@ -1260,7 +1299,7 @@ self.onmessage = function (e) {
     var p = new URLSearchParams();
     p.set("g", encode(grid));
     if (!sameKernel(kernel, KERNELS[0].make())) p.set("k", encodeKernel(kernel));
-    if (showSig) p.set("sig", "1");
+    if (sigMode !== "off") p.set("sig", sigMode);
     if (localView === "values") p.set("view", "values");
     if (present) p.set("present", "1");
     history.replaceState(null, "", location.pathname + "?" + p.toString());
@@ -1326,7 +1365,7 @@ self.onmessage = function (e) {
     if (!painting) return;
     painting = false;
     lastPainted = -1;
-    if (showSig) { sigCache = null; render(); }
+    if (sigMode !== "off") { sigCache = null; sigPendingFor = null; render(); }
     try { gridEl.releasePointerCapture(e.pointerId); } catch (err) {}
   }
   gridEl.addEventListener("pointerup", stopPainting);
@@ -1436,15 +1475,17 @@ self.onmessage = function (e) {
   viewClustersBtn.addEventListener("click", function () { setView("clusters"); });
   viewValuesBtn.addEventListener("click", function () { setView("values"); });
 
-  var sigOffBtn = document.getElementById("sig-off"), sigOnBtn = document.getElementById("sig-on");
-  function setSig(on) {
-    showSig = on;
-    sigOffBtn.setAttribute("aria-pressed", on ? "false" : "true");
-    sigOnBtn.setAttribute("aria-pressed", on ? "true" : "false");
+  var sigBtns = { off: document.getElementById("sig-off"),
+                  raw: document.getElementById("sig-raw"),
+                  fdr: document.getElementById("sig-fdr") };
+  function setSig(mode) {
+    sigMode = mode;
+    for (var m in sigBtns) sigBtns[m].setAttribute("aria-pressed", m === mode ? "true" : "false");
     render();
   }
-  sigOffBtn.addEventListener("click", function () { setSig(false); });
-  sigOnBtn.addEventListener("click", function () { setSig(true); });
+  Object.keys(sigBtns).forEach(function (m) {
+    sigBtns[m].addEventListener("click", function () { setSig(m); });
+  });
 
   document.getElementById("reset").addEventListener("click", function () {
     grid = PRESETS[6].make();
@@ -1477,7 +1518,7 @@ self.onmessage = function (e) {
   // ---------------------------------------------------------------- go
   setPresent(present);
   setView(localView);
-  setSig(showSig);
+  setSig(sigMode);
 })();
 </script>
 </body>
