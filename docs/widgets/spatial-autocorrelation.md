@@ -17,9 +17,12 @@ control rather than a fixed choice.
 
 ## What it is
 
-A 15 by 15 grid of squares, each either grey (1) or white (0). Tapping a square flips it.
-Every change recalculates Moran's I and a plain-language count of matching neighbours.
-A row of buttons loads eight fixed patterns.
+A 15 by 15 grid of squares, each either grey (1) or white (0). Pressing a square flips it,
+and with a mouse you can drag to keep painting. Every change recalculates Moran's I and a
+count of matching neighbours. A row of buttons loads ten fixed patterns.
+
+The face of the widget carries very little text: the number, its scale, a one or two word
+verdict, one short line, and the controls. Everything else sits behind the "?" button.
 
 ## The statistic
 
@@ -62,8 +65,22 @@ Computed independently in Python and matched against the widget:
 | Stripes | **0.0000** | −0.4828 |
 | Stripes every 3 | +0.2679 | −0.0856 |
 | Half and half | +0.9279 | +0.8931 |
+| Patches | +0.5907 | +0.5348 |
+| Big patches | +0.7240 | +0.6653 |
+| Random 1 | +0.0382 | +0.0177 |
+| Random 2 | −0.0471 | +0.0114 |
 
 If a rebuild does not reproduce these numbers, the implementation is wrong.
+
+These were checked three ways: the neighbour-list loop the widget uses, the same
+calculation in Python, and a full weight-matrix formulation `(n/S0)·(z'Wz)/(z'z)` in
+numpy. Stripes-every-3 was also derived by hand. With 75 grey cells the mean is 1/3, so
+grey deviations are 2/3 and white −1/3. All 210 vertical pairs match (70 grey-grey, 140
+white-white) and of the 210 horizontal pairs 135 differ and 75 are white-white, giving a
+numerator of 70(4/9) + 140(1/9) + 135(−2/9) + 75(1/9) = 25 and a denominator of
+75(4/9) + 150(1/9) = 50. So I = (225/840)(50/50) = **225/840 = 0.267857**, which is what
+the widget shows. It is *not* near zero; the near-zero value for that pattern is the queen
+one, −0.086.
 
 ## Presets
 
@@ -77,15 +94,36 @@ Row `r` and column `c` both count from 0.
 | Stripes | `c % 2 === 0` |
 | Stripes every 3 | `c % 3 === 0` |
 | Half and half | `c < 7.5` |
+| Patches | smoothed field, seed 3141, radius 2, 1 pass, 113 grey |
+| Big patches | smoothed field, seed 8080, radius 3, 2 passes, 113 grey |
 | Random 1 | mulberry32, seed 20260819, threshold 0.5 |
 | Random 2 | mulberry32, seed 77123, threshold 0.5 |
+
+### The patchy patterns
+
+Fill the grid with `mulberry32` values, then smooth: replace each cell with the mean of
+the square window of the given radius around it, clipped at the edges, repeated for the
+given number of passes. Rank all 225 cells by smoothed value, descending, ties broken by
+ascending index, and make the top 113 grey.
+
+Ranking rather than thresholding fixes the number of grey squares at 113, the same as the
+checkerboard and near enough the random patterns. **This is the point**: moving between
+Random 1 and Patches changes the arrangement while holding the amount of grey almost
+constant, so a student can see that autocorrelation is about arrangement, not about how
+much of each colour there is.
+
+Both the sort and the smoothing must match exactly or the pattern differs. The comparator
+is `f[b] - f[a] || a - b`, and the mean is a plain running sum divided by the count — not
+a pairwise or compensated sum, which would differ in the last bits and could reorder cells
+near the cut.
 
 **The random patterns use fixed seeds on purpose.** A student's phone and the projector at
 the front must show the same grid, or the discussion falls apart. Never replace these
 with `Math.random()`.
 
-The opening state is "Half and half" with rook neighbours: a large positive value that
-makes the headline number meaningful in the first second. "Start over" returns to it.
+The opening state is "Patches" with rook neighbours. It shows clear positive
+autocorrelation in the first second, and unlike the geometric patterns it looks like
+something a student might actually map. "Start over" returns to it.
 
 ## Teaching notes
 
@@ -107,7 +145,28 @@ four diagonal neighbours match while the four side neighbours differ, and they c
 **All one colour is undefined**, which is worth dwelling on: a perfectly uniform map has
 no spatial pattern to measure, because it has no pattern at all.
 
-## Layout
+**Patches against Random 1** holds the amount of grey almost fixed (113 against 110) and
+changes only the arrangement: +0.59 against +0.04. Spatial autocorrelation is about where
+things are, not how many there are.
+
+## Painting
+
+Pressing a square sets it to the opposite of what it was, and that colour becomes the
+brush: dragging then paints every square crossed with the same colour rather than toggling
+each one. Press on grey to erase a swathe, on white to draw one.
+
+Pointer positions arrive in jumps, so a quick drag reports a position several squares on
+from the last. The path between consecutive positions is filled by stepping along the
+straight line between them, `max(|Δrow|, |Δcol|)` steps with rounding. Without it a fast
+stroke comes out as a dotted trail — which is exactly what the first test showed.
+
+**Dragging is for mouse and pen only.** On a touch screen the grid fills the display, and
+capturing drags there would take away the ability to scroll the page. Touch keeps
+tap-to-toggle. `pointerdown` checks `e.pointerType !== "touch"` before arming the brush.
+
+Keyboard activation still works because a click generated by space or enter has
+`e.detail === 0`, and the click handler acts only on those; pointer input is handled
+entirely by the pointer events.
 
 Two layouts, split at 56rem, following `docs/principles.md` section 3.
 
@@ -161,6 +220,9 @@ Measured, not assumed.
 - The grid is a `role="grid"` of buttons with roving tabindex. Arrow keys move, Home and
   End jump along a row, space toggles. Each cell announces "Row 3, column 5, grey".
 - A visually hidden `aria-live="polite"` region announces the new value after each change.
+- The explanation panel is a button with `aria-expanded` and `aria-controls`, not a
+  tooltip, so it is reachable by touch and by keyboard. `title` tooltips carry nothing a
+  reader needs.
 - `prefers-reduced-motion` removes the marker transition.
 - Light and dark themes both defined; the grey and white cells never invert, because
   "grey means 1" must not flip.
@@ -185,6 +247,17 @@ technical terms now appear in smaller type beside them.
 mode, with no horizontal overflow at either size. Presentation mode initially clipped the
 pattern buttons at 1280×800; fixed before release.
 
+**Revised 2026-08-19, second pass.** Three changes on instruction. On-screen text was cut
+hard — the intro paragraph, the sentence-long verdicts, and the footer all moved behind a
+"?" disclosure, leaving the number, the scale, a one or two word verdict, and one short
+line. The rule behind this is now in `principles.md` section 6. Drag-to-paint was added.
+Two patchy presets were added, which give the widget its first patterns that look like
+real data rather than geometry, and which isolate arrangement from density.
+
+Testing the drag found a real defect: pointer events arrive too sparsely for a fast
+stroke, and the first implementation painted a dotted trail. Fixed by interpolating along
+the line between positions.
+
 **Not yet done:** a real projector in a lit room, and a compressed recording. Those need
 the lecture machine.
 
@@ -195,4 +268,6 @@ the lecture machine.
 - No option to change grid size.
 - Weights are binary, not row standardised. Row standardisation changes the numbers and is
   worth a future control.
-- Drag-to-paint is not implemented; each square takes a separate tap.
+- Dragging to paint works with a mouse or pen but not by touch, for the scrolling reason
+  above. A press-and-hold to arm the brush would be one way round it if it turns out to
+  matter.

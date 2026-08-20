@@ -81,6 +81,8 @@ body[data-present="1"] .intro { display: none; }
 .gridwrap { display: flex; justify-content: center; }
 #grid {
   display: grid;
+  user-select: none;
+  -webkit-user-select: none;
   grid-template-columns: repeat(15, 1fr);
   gap: 0;
   width: min(97vw, 58vh, 34rem);
@@ -135,8 +137,41 @@ body[data-present="1"] #grid { width: min(43vw, 74vh); }
   font-variant-numeric: tabular-nums;
   margin: 0;
 }
-.plain { margin: calc(0.35rem * var(--ui)) 0 0; }
-.undefined-note { font-size: calc(0.95rem * var(--ui)); color: var(--ink-soft); }
+.verdict {
+  margin: calc(0.4rem * var(--ui)) 0 0;
+  font-size: calc(1.15rem * var(--ui));
+  font-weight: 600;
+}
+.pairs { margin: calc(0.15rem * var(--ui)) 0 0; color: var(--ink-soft); }
+.undefined-note { font-size: calc(1rem * var(--ui)); font-weight: 400; color: var(--ink-soft); }
+.help {
+  font: inherit;
+  font-size: calc(0.8rem * var(--ui));
+  line-height: 1;
+  width: calc(1.55rem * var(--ui));
+  height: calc(1.55rem * var(--ui));
+  margin-left: calc(0.3rem * var(--ui));
+  vertical-align: middle;
+  border: calc(2px * var(--ui)) solid var(--edge);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.help[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.help:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
+.help-panel {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.9rem * var(--ui)) calc(0.7rem * var(--ui));
+  font-size: calc(0.95rem * var(--ui));
+}
+.help-panel p { margin: calc(0.6rem * var(--ui)) 0 0; }
+kbd {
+  font: inherit; font-size: 0.9em; padding: 0 0.3em;
+  border: 1px solid var(--edge); border-radius: 0.2em;
+}
 
 /* scale bar */
 .scale { margin-top: calc(0.7rem * var(--ui)); }
@@ -208,7 +243,7 @@ footer {
   border-top: 1px solid var(--edge);
   padding-top: calc(0.6rem * var(--ui));
 }
-body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
+body[data-present="1"] .help-panel[hidden] { display: none; }
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
@@ -220,8 +255,6 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
 
   <header>
     <h1>Spatial autocorrelation on a grid</h1>
-    <p class="intro">Tap any square to change its colour. The number below measures
-       how much each square is like its neighbours.</p>
   </header>
 
   <div class="main">
@@ -234,7 +267,10 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
     <div class="readout">
 
       <div class="stat">
-        <h2>Moran&rsquo;s I</h2>
+        <h2>Moran&rsquo;s I
+          <button class="help" id="helpbtn" aria-expanded="false"
+                  aria-controls="help" title="What does this number mean?">?</button>
+        </h2>
         <p class="big" id="moran">&mdash;</p>
         <div class="scale" aria-hidden="true">
           <div class="track">
@@ -243,13 +279,26 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
           </div>
           <div class="ticks"><span>&minus;1 scattered</span><span>0</span><span>+1 clustered</span></div>
         </div>
-        <p class="plain" id="verdict"></p>
+        <p class="verdict" id="verdict"></p>
+        <p class="pairs" id="pairs" title="Two squares that touch, counted once each"></p>
       </div>
 
-      <div class="stat">
-        <h2>Neighbouring pairs</h2>
-        <p class="plain" id="pairs"></p>
-        <p class="plain" id="counts"></p>
+      <div class="help-panel" id="help" hidden>
+        <p>Moran&rsquo;s I compares each square with the squares around it.
+           Near <strong>+1</strong>, like sits beside like. Near <strong>&minus;1</strong>,
+           each square sits beside its opposite. Near <strong>0</strong>, neighbours are
+           no more alike than unlike.</p>
+        <p>Zero does not mean there is no pattern. Load <strong>Stripes</strong> and look:
+           the score is exactly zero because the matching neighbours above and below
+           cancel the differing ones left and right.</p>
+        <p>When every square is one colour the number cannot be worked out. There is no
+           variation to compare.</p>
+        <p id="counts"></p>
+        <p>Click a square to change it, and drag to keep painting the same colour. With a
+           keyboard, move with the arrow keys and press space. Press <kbd>p</kbd> for the
+           big screen version.</p>
+        <p>Made by Luke Bergmann. Code MIT, text CC BY 4.0.
+           <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
       </div>
 
       <p class="visually-hidden" aria-live="polite" id="live"></p>
@@ -271,13 +320,6 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
         <button class="act" id="reset">Start over</button>
         <button class="act" id="present">Big screen</button>
       </div>
-
-      <footer>
-        <p class="howto">Click or tap a square to switch it between grey and white.
-           With a keyboard, move with the arrow keys and press space.</p>
-        <p>Made by Luke Bergmann. Code MIT, text CC BY 4.0.
-           <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
-      </footer>
 
     </div>
   </div>
@@ -306,6 +348,35 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
     for (var i = 0; i < N; i++) g[i] = rnd() < 0.5 ? 1 : 0;
     return g;
   }
+  // Patchy patterns: a random field, smoothed with a square mean filter, then cut
+  // at a rank so the number of grey squares is fixed. Same density as the random
+  // patterns, so what changes between them is arrangement alone, not how much grey
+  // there is.
+  function patchGrid(seed, radius, passes, nGrey) {
+    var rnd = mulberry32(seed), f = new Float64Array(N), i, p, r, c, rr, cc;
+    for (i = 0; i < N; i++) f[i] = rnd();
+    for (p = 0; p < passes; p++) {
+      var out = new Float64Array(N);
+      for (r = 0; r < SIDE; r++) {
+        for (c = 0; c < SIDE; c++) {
+          var r0 = Math.max(0, r - radius), r1 = Math.min(SIDE - 1, r + radius);
+          var c0 = Math.max(0, c - radius), c1 = Math.min(SIDE - 1, c + radius);
+          var sum = 0, cnt = 0;
+          for (rr = r0; rr <= r1; rr++)
+            for (cc = c0; cc <= c1; cc++) { sum += f[rr * SIDE + cc]; cnt++; }
+          out[r * SIDE + c] = sum / cnt;
+        }
+      }
+      f = out;
+    }
+    var order = [];
+    for (i = 0; i < N; i++) order.push(i);
+    order.sort(function (a, b) { return f[b] - f[a] || a - b; });
+    var g = new Uint8Array(N);
+    for (i = 0; i < nGrey; i++) g[order[i]] = 1;
+    return g;
+  }
+
   function build(fn) {
     var g = new Uint8Array(N);
     for (var r = 0; r < SIDE; r++)
@@ -320,6 +391,8 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
     { id: "stripes",     label: "Stripes",        make: function () { return build(function (r, c) { return c % 2 === 0; }); } },
     { id: "stripes3",    label: "Stripes every 3", make: function () { return build(function (r, c) { return c % 3 === 0; }); } },
     { id: "half",        label: "Half and half",  make: function () { return build(function (r, c) { return c < SIDE / 2; }); } },
+    { id: "patches",     label: "Patches",        make: function () { return patchGrid(3141, 2, 1, 113); } },
+    { id: "bigpatches",  label: "Big patches",    make: function () { return patchGrid(8080, 3, 2, 113); } },
     { id: "random1",     label: "Random 1",       make: function () { return randomGrid(20260819); } },
     { id: "random2",     label: "Random 2",       make: function () { return randomGrid(77123); } }
   ];
@@ -402,7 +475,7 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
   var params = new URLSearchParams(location.search);
   var weights = params.get("w") === "queen" ? "queen" : "rook";
   var present = params.get("present") === "1";
-  var opening = PRESETS[5].make();              // half and half: a clear positive case
+  var opening = PRESETS[6].make();              // patches: clustered, and looks like real data
   var grid = decode(params.get("g") || "") || opening;
   var focusIndex = 0;
 
@@ -460,11 +533,11 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
   }
 
   function describe(I) {
-    if (I > 0.3) return "Grey squares sit next to grey, white next to white. The pattern is clustered.";
-    if (I > 0.05) return "Neighbouring squares are a little more alike than unlike.";
-    if (I >= -0.05) return "Neighbouring squares are no more alike than unlike. Look at the grid: a clear pattern can still score zero.";
-    if (I >= -0.3) return "Neighbouring squares are a little more unlike than alike.";
-    return "Grey squares sit next to white ones. The pattern alternates.";
+    if (I > 0.3) return "Clustered";
+    if (I > 0.05) return "Slightly clustered";
+    if (I >= -0.05) return "No clustering";
+    if (I >= -0.3) return "Slightly alternating";
+    return "Alternating";
   }
 
   function render() {
@@ -482,7 +555,7 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
     if (I === null) {
       moranEl.textContent = "—";
       verdictEl.innerHTML = '<span class="undefined-note">Every square is the same colour, ' +
-        'so there is nothing to compare. Moran&rsquo;s I cannot be worked out.</span>';
+        'so there is nothing to compare.</span>';
       markerEl.style.left = "50%";
     } else {
       moranEl.textContent = fmt(I);
@@ -493,9 +566,9 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
 
     var ps = pairStats(grid, nb);
     var pct = ps.total ? Math.round(100 * ps.same / ps.total) : 0;
-    pairsEl.textContent = pct + " out of every 100 touching pairs are the same colour " +
-      "(" + ps.same + " of " + ps.total + ").";
-    countsEl.textContent = greys + " squares are grey, " + (N - greys) + " are white.";
+    pairsEl.textContent = pct + " of every 100 touching pairs match";
+    countsEl.textContent = "Right now: " + greys + " squares are grey and " + (N - greys) +
+      " are white, and " + ps.same + " of the " + ps.total + " touching pairs match.";
 
     liveEl.textContent = (I === null
       ? "Every square is the same colour. Moran's I is undefined."
@@ -514,7 +587,66 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
     render();
   }
 
+  // Press on a square to set it to the opposite of what it was, then drag to paint
+  // every square you cross with that same colour. Dragging is for mouse and pen only:
+  // on a touch screen the grid fills the display, and capturing drags there would take
+  // away the ability to scroll the page.
+  var painting = false, paintValue = 0, lastPainted = -1;
+
+  // Pointer events arrive in jumps, so a quick drag reports a position several
+  // squares on from the last one. Fill the straight line between them, or the
+  // stroke comes out as a dotted trail.
+  function paintLine(from, to) {
+    var r0 = Math.floor(from / SIDE), c0 = from % SIDE,
+        r1 = Math.floor(to / SIDE), c1 = to % SIDE,
+        steps = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0)), k, r, c, i;
+    if (steps === 0) steps = 1;
+    for (k = 0; k <= steps; k++) {
+      r = Math.round(r0 + (r1 - r0) * k / steps);
+      c = Math.round(c0 + (c1 - c0) * k / steps);
+      i = r * SIDE + c;
+      if (grid[i] !== paintValue) grid[i] = paintValue;
+    }
+  }
+
+  gridEl.addEventListener("pointerdown", function (e) {
+    var t = e.target.closest(".cell");
+    if (!t) return;
+    var i = +t.dataset.i;
+    paintValue = grid[i] ? 0 : 1;
+    grid[i] = paintValue;
+    lastPainted = i;
+    render();
+    if (e.pointerType !== "touch") {
+      painting = true;
+      try { gridEl.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+  });
+
+  gridEl.addEventListener("pointermove", function (e) {
+    if (!painting) return;
+    var el = document.elementFromPoint(e.clientX, e.clientY);
+    var t = el && el.closest ? el.closest(".cell") : null;
+    if (!t) return;
+    var i = +t.dataset.i;
+    if (i === lastPainted) return;
+    paintLine(lastPainted < 0 ? i : lastPainted, i);
+    lastPainted = i;
+    render();
+  });
+
+  function stopPainting(e) {
+    if (!painting) return;
+    painting = false;
+    lastPainted = -1;
+    try { gridEl.releasePointerCapture(e.pointerId); } catch (err) {}
+  }
+  gridEl.addEventListener("pointerup", stopPainting);
+  gridEl.addEventListener("pointercancel", stopPainting);
+
+  // A click with detail 0 came from the keyboard, so space and enter still work.
   gridEl.addEventListener("click", function (e) {
+    if (e.detail !== 0) return;
     var t = e.target.closest(".cell");
     if (t) toggle(+t.dataset.i);
   });
@@ -559,7 +691,7 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
   queenBtn.addEventListener("click", function () { setWeights("queen"); });
 
   document.getElementById("reset").addEventListener("click", function () {
-    grid = PRESETS[5].make();
+    grid = PRESETS[6].make();
     setWeights("rook");
     liveEl.textContent = "Reset to the starting pattern.";
   });
@@ -572,6 +704,13 @@ body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
     render();
   }
   presentBtn.addEventListener("click", function () { setPresent(!present); });
+
+  var helpBtn = document.getElementById("helpbtn"), helpPanel = document.getElementById("help");
+  helpBtn.addEventListener("click", function () {
+    var open = helpBtn.getAttribute("aria-expanded") === "true";
+    helpBtn.setAttribute("aria-expanded", open ? "false" : "true");
+    helpPanel.hidden = open;
+  });
   document.addEventListener("keydown", function (e) {
     if (e.key === "p" && !e.metaKey && !e.ctrlKey && !e.altKey &&
         document.activeElement.tagName !== "INPUT") setPresent(!present);

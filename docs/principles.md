@@ -126,6 +126,32 @@ lecture in 2029 still runs.
 
 ## 6. Text
 
+### How much
+
+**The commonest fault is too much of it.** Words on screen compete with the thing the
+widget exists to show, and a paragraph beside a graphic is a paragraph nobody reads while
+the graphic is moving. Prose belongs in the lecture, in the reading, and in the
+instructor's mouth. What stays on screen is the minimum that makes the display legible on
+its own.
+
+The working rule: everything on screen at rest should be readable in about five seconds.
+A number, its scale, a two-word verdict, one short line of context, and the controls. If
+a sentence is explaining rather than labelling, it does not belong on the face of the
+widget.
+
+Everything else goes one layer down, reachable and never in the way:
+
+- A **disclosure** — a "?" button opening a short panel — for the explanation a student
+  might want on their own time. This is the main mechanism, because it works by touch, by
+  mouse, and by keyboard, and screen readers announce it properly.
+- **`title` tooltips** as a small extra for mouse users. Never put anything there that a
+  reader must have: tooltips do not appear on touch and are unreliable for screen readers.
+
+Presentation mode strips further. At the back of a room nobody reads a sentence, so
+explanatory text hides and only the number, the verdict, and the controls remain.
+
+### How it reads
+
 Student-facing text is short and plain.
 
 - Concrete words over abstract ones. Short sentences. One idea per sentence.
