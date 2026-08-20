@@ -850,35 +850,62 @@ self.onmessage = function (e) {
       return ((t ^ t >>> 14) >>> 0) / 4294967296;
     };
   }
+  // Drawn once on the 30 by 30 lattice and sampled, rather than redrawn, so the coarse
+   // pattern is the fine one seen through wider units. Sampling rather than averaging,
+   // because averaging noise would manufacture clustering that is not there.
   function randomGrid(seed) {
-    var rnd = mulberry32(seed), g = new Uint8Array(N);
-    for (var i = 0; i < N; i++) g[i] = rnd() < 0.5 ? 1 : 0;
+    var rnd = mulberry32(seed), NB = BASE * BASE, f = new Uint8Array(NB), i, r, c, k;
+    for (i = 0; i < NB; i++) f[i] = rnd() < 0.5 ? 1 : 0;
+    k = BASE / SIDE;
+    var g = new Uint8Array(N);
+    for (r = 0; r < SIDE; r++)
+      for (c = 0; c < SIDE; c++) g[r * SIDE + c] = f[(r * k) * BASE + (c * k)];
     return g;
   }
-  // Patchy patterns: a random field, smoothed with a square mean filter, then cut
-  // at a rank so the number of black squares is fixed. Same density as the random
-  // patterns, so what changes between them is arrangement alone, not how much black
-  // there is.
-  function patchGrid(seed, radius, passes, nGrey) {
-    var rnd = mulberry32(seed), f = new Float64Array(N), i, p, r, c, rr, cc;
-    for (i = 0; i < N; i++) f[i] = rnd();
+  // Patchy patterns: one underlying surface, observed at whichever extent is in use.
+  //
+  // The random field and its smoothing happen once, always on the 30 by 30 lattice, so
+  // the surface does not depend on the extent at all. For the coarser extent each 2 by 2
+  // block is averaged into a single square. The 15 by 15 pattern is therefore literally
+  // the 30 by 30 one aggregated, not a second draw that happens to look similar -- which
+  // is the honest way to offer two extents, and is the modifiable areal unit problem
+  // made concrete: one surface, two sets of units.
+  var BASE = 30;
+
+  function patchGrid(seed, baseRadius, passes, nGrey) {
+    var rnd = mulberry32(seed), NB = BASE * BASE, f = new Float64Array(NB),
+        i, p, r, c, rr, cc, r0, r1, c0, c1, sum, cnt, out, k, br, bc;
+    for (i = 0; i < NB; i++) f[i] = rnd();
     for (p = 0; p < passes; p++) {
-      var out = new Float64Array(N);
-      for (r = 0; r < SIDE; r++) {
-        for (c = 0; c < SIDE; c++) {
-          var r0 = Math.max(0, r - radius), r1 = Math.min(SIDE - 1, r + radius);
-          var c0 = Math.max(0, c - radius), c1 = Math.min(SIDE - 1, c + radius);
-          var sum = 0, cnt = 0;
+      out = new Float64Array(NB);
+      for (r = 0; r < BASE; r++) {
+        for (c = 0; c < BASE; c++) {
+          r0 = Math.max(0, r - baseRadius); r1 = Math.min(BASE - 1, r + baseRadius);
+          c0 = Math.max(0, c - baseRadius); c1 = Math.min(BASE - 1, c + baseRadius);
+          sum = 0; cnt = 0;
           for (rr = r0; rr <= r1; rr++)
-            for (cc = c0; cc <= c1; cc++) { sum += f[rr * SIDE + cc]; cnt++; }
-          out[r * SIDE + c] = sum / cnt;
+            for (cc = c0; cc <= c1; cc++) { sum += f[rr * BASE + cc]; cnt++; }
+          out[r * BASE + c] = sum / cnt;
         }
       }
       f = out;
     }
+
+    // Aggregate the surface down to the extent in use.
+    k = BASE / SIDE;
+    var field = new Float64Array(N);
+    for (r = 0; r < SIDE; r++) {
+      for (c = 0; c < SIDE; c++) {
+        sum = 0;
+        for (br = 0; br < k; br++)
+          for (bc = 0; bc < k; bc++) sum += f[(r * k + br) * BASE + (c * k + bc)];
+        field[r * SIDE + c] = sum / (k * k);
+      }
+    }
+
     var order = [];
     for (i = 0; i < N; i++) order.push(i);
-    order.sort(function (a, b) { return f[b] - f[a] || a - b; });
+    order.sort(function (a, b) { return field[b] - field[a] || a - b; });
     var g = new Uint8Array(N);
     for (i = 0; i < nGrey; i++) g[order[i]] = 1;
     return g;
@@ -898,8 +925,8 @@ self.onmessage = function (e) {
     { id: "stripes",     label: "Stripes",        make: function () { return build(function (r, c) { return c % 2 === 0; }); } },
     { id: "stripes3",    label: "Stripes every 3", make: function () { return build(function (r, c) { return c % 3 === 0; }); } },
     { id: "half",        label: "Half and half",  make: function () { return build(function (r, c) { return c < SIDE / 2; }); } },
-    { id: "patches",     label: "Patches",        make: function () { return patchGrid(3141, scaled(2), 1, halfish()); } },
-    { id: "bigpatches",  label: "Big patches",    make: function () { return patchGrid(8080, scaled(3), 2, halfish()); } },
+    { id: "patches",     label: "Patches",        make: function () { return patchGrid(3141, 4, 1, halfish()); } },
+    { id: "bigpatches",  label: "Big patches",    make: function () { return patchGrid(8080, 6, 2, halfish()); } },
     { id: "random1",     label: "Random 1",       make: function () { return randomGrid(20260819); } },
     { id: "random2",     label: "Random 2",       make: function () { return randomGrid(77123); } }
   ];

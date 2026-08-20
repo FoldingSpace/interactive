@@ -407,12 +407,30 @@ holding the same thing all survive the change. Rules drop from 2 px to 1 px at t
 extent so the picture does not drown in lines; they are the grid's own background showing
 through a `gap`, which keeps them exactly one rule wide however many cells there are.
 
-**Everything measured in cells scales with the extent**, so a pattern means the same shape
-rather than the same number of cells. The smoothing radius behind Patches goes from 2 to 4
-and Big patches from 3 to 6; the number of black squares stays at the same share. The
-geometric patterns are rules rather than pictures and scale by themselves, and the two
-exact results survive: **checkerboard is −1.0000 and stripes is 0.0000 under rook at both
-extents**.
+### One surface, two sets of units
+
+The two extents show **the same pattern**, not two draws that happen to resemble each
+other. The random field and its smoothing happen once, always on the 30 × 30 lattice, so
+the surface does not depend on the extent at all; for the coarse extent each 2 × 2 block is
+averaged into one square. The 15 × 15 pattern is literally the 30 × 30 one aggregated.
+
+Verified: the coarse square agrees with the majority of its own 2 × 2 block in 224 of 225
+cases, the exception being a genuine 2–2 tie at the threshold. Black density holds at 50.2
+per cent either way — 113 of 225 and 452 of 900.
+
+The random patterns are **sampled** from the same lattice rather than redrawn, taking one
+square per block. Sampling and not averaging, because averaging noise would manufacture
+clustering that is not in it.
+
+The geometric patterns stay rules rather than pictures. A cell-level checkerboard at 30 × 30
+is finer in absolute terms than at 15 × 15, but making it a 2 × 2 block checkerboard to
+preserve apparent size would destroy the exact −1.0000, which is worth more. Both exact
+results hold at both extents: **checkerboard −1.0000 and stripes 0.0000 under rook**.
+
+**This construction is the point, not a convenience.** One surface observed through two
+sets of units is the modifiable areal unit problem itself, and the widget now demonstrates
+the scale effect in a click: the same Patches surface reads **+0.58 at 15 × 15 and +0.67 at
+30 × 30** under queen weights. Nothing about the world changed; only the units did.
 
 The kernel is deliberately *not* scaled. It is measured in squares, so the same kernel is
 a finer neighbourhood on the larger grid — which is the honest thing for it to be, and a
