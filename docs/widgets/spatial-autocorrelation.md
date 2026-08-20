@@ -343,6 +343,52 @@ q = 0.05 applied by default. Squares that do not pass fade out on the same ramp 
 than switching to a different encoding, so turning it on drains the noise and leaves the
 structure.
 
+### Exact where possible, simulated only where necessary
+
+**When every non-zero weight is the same — rook, queen, half queen, even — the p-value has
+a closed form and is computed rather than simulated.** The neighbours are k squares drawn
+without replacement from the other n−1, so the count of black ones is hypergeometric.
+Exact, and it costs 3–10 ms.
+
+This was prompted by the claim that Monte Carlo is used for p-values "because closed-form
+solutions for that kind of thing are hard". True for the decay kernels, where the null is a
+weighted sum over a random subset and has no tidy form; those still go to the worker. Not
+true for the equal-weight case, where the closed form is elementary.
+
+**And simulating it was doing active harm.** Compared against the exact answer on the same
+grid, 999 permutations correlated at 0.998 (rook) and 0.982 (queen) — but reported a
+smallest p of 0.040 under rook when the true smallest attainable is 0.0587. Nothing can be
+that extreme. The handful of squares that "reached significance" under rook uncorrected
+were the simulation inventing extremes that cannot occur. **With exact p-values, rook now
+returns exactly zero**, and the widget's claim about it is exactly rather than
+approximately true.
+
+Two things worth separating, because they are constantly conflated:
+
+- **Monte Carlo error** — noise from a finite number of shuffles. Shrinks as you run more,
+  bounded below by 1/(R+1).
+- **Discreteness of the null** — with k binary neighbours there are only k+1 possible
+  outcomes, so the null has k+1 rungs. Under rook that is 15 distinct p-values, and it is
+  15 whether you run 999 shuffles or ten million.
+
+More simulation fixes the first and does nothing for the second. Simulation cannot
+manufacture resolution that is not in the data, and if pushed it will manufacture the
+appearance of it instead.
+
+### Verified against the exact answer
+
+Computed independently in Python from the hypergeometric, on the widget's own default grid:
+
+| Kernel | uncorrected | FDR | smallest attainable p |
+|---|---|---|---|
+| Rook | **0** | **0** | 0.05865 |
+| Queen | 148 | 148 | 0.00319 |
+| Even | 166 | 166 | ~0 |
+
+All three match the widget exactly, the uncorrected-equals-FDR coincidence included —
+exact p-values on a strongly clustered pattern come out sharply bimodal, so the step-up
+procedure rejects the same set as the flat threshold.
+
 ### What the test does
 
 Each square keeps its own value while its neighbours are replaced by a random draw from

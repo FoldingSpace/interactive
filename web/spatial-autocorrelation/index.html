@@ -651,11 +651,21 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
 
       <div class="help-panel" id="info-sig" hidden>
         <p>The question is whether a square&rsquo;s neighbourhood could have come out this
-           way by luck. To answer it, the grid is dealt again: this square keeps its own
-           colour, every other square is shuffled at random, and we look at the
-           neighbourhood luck produced. Do that 999 times and count how often chance did
-           as well as reality. If that almost never happens, the square is worth noticing.
-           That fraction is the p-value.</p>
+           way by luck. Picture dealing the grid again: this square keeps its own colour,
+           every other square is shuffled at random, and you look at the neighbourhood luck
+           produced. How often does chance do as well as reality? If almost never, the
+           square is worth noticing. That fraction is the p-value.</p>
+        <p><strong>Sometimes we can work it out, and sometimes we have to try it.</strong>
+           When every neighbour counts the same &mdash; Rook, Queen, Half queen, Even
+           &mdash; the answer has an exact formula, because the neighbours are just so many
+           squares drawn at random from the rest of the grid. No shuffling needed. When
+           neighbours count for different amounts, as in the decay kernels, there is no
+           such formula, so the widget really does shuffle, 999 times.</p>
+        <p>Shuffling is an estimate, and estimates have their own error. Under
+           <strong>Rook</strong>, 999 shuffles will report a smallest p-value of about
+           0.04, when the smallest that is genuinely possible is 0.059 &mdash; the
+           simulation inventing extremes that cannot occur. That is why the exact answer is
+           used wherever it exists.</p>
         <p><strong>Uncorrected</strong> judges each square as though it were the only one
            you asked about. But you are asking about every square at once, and rare things
            stop being rare when you look often enough &mdash; roll a die twice and a six
@@ -1080,6 +1090,73 @@ self.onmessage = function (e) {
     return { val: val, quad: quad };
   }
 
+  // When every non-zero weight is the same, the p-value has a closed form and there is no
+  // reason to simulate it. The neighbours are k values drawn without replacement from the
+  // other n-1 squares, so the number of black ones is hypergeometric. Exact, instant, and
+  // free of the artefact simulation introduces: 999 shuffles reported a smallest p of
+  // 0.040 under rook when the true smallest is 0.0587, so the squares that "reached"
+  // significance there were the simulation inventing extremes that cannot occur.
+  //
+  // The decay kernels have unequal weights, where the null is a weighted sum over a random
+  // subset and has no tidy form. Those still go to the worker, which is where Monte Carlo
+  // genuinely earns its place.
+  function equalWeight(kern) {
+    var v = 0, i;
+    for (i = 0; i < 25; i++) {
+      if (i === KMID || kern[i] === 0) continue;
+      if (v === 0) v = kern[i];
+      else if (kern[i] !== v) return 0;
+    }
+    return v;
+  }
+
+  function exactP(x, kern) {
+    var n = x.length, G = 0, i, r, c, dr, dc, rr, cc, k, b, t, sum;
+    for (i = 0; i < n; i++) G += x[i];
+    if (G === 0 || G === n) return null;
+    var mean = G / n, n1 = n - 1, cache = {};
+
+    // Hypergeometric pmf by recurrence, so nothing overflows:
+    //   P(0) = prod (W-t)/(n1-t),   P(t+1)/P(t) = (ob-t)(k-t) / ((t+1)(W-k+t+1))
+    function pmfFor(ob, k) {
+      var key = ob + "|" + k;
+      if (cache[key]) return cache[key];
+      var W = n1 - ob, arr = new Float64Array(k + 1), p0 = 1, j, denom;
+      for (j = 0; j < k; j++) p0 *= (W - j) / (n1 - j);
+      arr[0] = p0 > 0 ? p0 : 0;
+      for (j = 0; j < k; j++) {
+        denom = (j + 1) * (W - k + j + 1);
+        arr[j + 1] = denom > 0 ? arr[j] * ((ob - j) * (k - j)) / denom : 0;
+      }
+      cache[key] = arr;
+      return arr;
+    }
+
+    var p = new Float64Array(n);
+    for (r = 0; r < SIDE; r++) {
+      for (c = 0; c < SIDE; c++) {
+        i = r * SIDE + c; k = 0; b = 0;
+        for (dr = -KRAD; dr <= KRAD; dr++) {
+          for (dc = -KRAD; dc <= KRAD; dc++) {
+            if (kern[(dr + KRAD) * KSIDE + (dc + KRAD)] === 0) continue;
+            rr = r + dr; cc = c + dc;
+            if (rr < 0 || rr >= SIDE || cc < 0 || cc >= SIDE) continue;
+            k++; b += x[rr * SIDE + cc];
+          }
+        }
+        if (k === 0) { p[i] = 1; continue; }
+        var arr = pmfFor(G - x[i], k);
+        var z = x[i] - mean, I = z * (b - k * mean);
+        var upper = (z > 0) === (I >= 0);
+        sum = 0;
+        if (upper) { for (t = b; t <= k; t++) sum += arr[t]; }
+        else { for (t = 0; t <= b; t++) sum += arr[t]; }
+        p[i] = Math.min(1, sum);
+      }
+    }
+    return p;
+  }
+
   // Significance runs on a worker so a paint stroke never waits for it. The worker's
   // source is the script tag above; when Workers are unavailable the same source is
   // compiled on the main thread instead, so there is only ever one implementation.
@@ -1416,6 +1493,12 @@ self.onmessage = function (e) {
       sigLineEl.textContent = "";
       localNoteEl.textContent = "";
       return;
+    }
+
+    if (sigMode !== "off" && !sigCache && !painting && equalWeight(kernel)) {
+      var ep = exactP(grid, kernel);
+      sigCache = ep ? { p: ep, exact: true } : null;
+      sigPendingFor = null;
     }
 
     if (sigMode !== "off" && !sigCache && !painting) {
