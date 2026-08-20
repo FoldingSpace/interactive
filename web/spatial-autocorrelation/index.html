@@ -134,10 +134,18 @@ body[data-present="1"] .intro { display: none; }
 .lcell { border: 1px solid var(--cell-line); min-width: 0; min-height: 0; }
 .localwrap .pairs { align-self: stretch; }
 .key {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: calc(0.1rem * var(--ui)) calc(0.6rem * var(--ui));
+  align-self: stretch; min-width: 0;
+  font-size: calc(0.78rem * var(--ui)); color: var(--ink-soft);
+}
+.keyitem { display: flex; align-items: center; gap: calc(0.3rem * var(--ui)); }
+.rampkey {
   display: flex; align-items: center; gap: calc(0.4rem * var(--ui));
   align-self: stretch; min-width: 0;
   font-size: calc(0.78rem * var(--ui)); color: var(--ink-soft);
 }
+.rampkey[hidden] { display: none; }
 .keybar {
   flex: 1 1 auto; height: calc(0.7rem * var(--ui));
   border: 1px solid var(--edge);
@@ -145,6 +153,15 @@ body[data-present="1"] .intro { display: none; }
     rgb(84,39,136), rgb(153,142,195), rgb(216,218,235),
     rgb(247,247,247),
     rgb(254,224,182), rgb(241,163,64), rgb(179,88,6));
+}
+/* At the back of a room nobody reads "high-high" in six-point type, and the wrapped
+   labels were making the legend 90px tall and pushing the pattern row off screen. */
+body[data-present="1"] .keyitem .term { display: none; }
+body[data-present="1"] .key { font-size: calc(0.72rem * var(--ui)); }
+.keyitem i {
+  flex: 0 0 auto;
+  width: calc(0.8rem * var(--ui)); height: calc(0.8rem * var(--ui));
+  border: 1px solid var(--cell-line);
 }
 #grid {
   display: grid;
@@ -387,8 +404,9 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
       <p class="gridlabel">Local Moran&rsquo;s I <span class="term" id="local-note"></span></p>
       <div id="local" role="grid"
            aria-label="15 by 15 grid showing each square's own Moran's I."></div>
-      <div class="key" aria-hidden="true">
-        <span>opposite</span><div class="keybar" id="keybar"></div><span>clustered</span>
+      <div class="key" id="quadkey" aria-hidden="true"></div>
+      <div class="rampkey" id="rampkey" aria-hidden="true" hidden>
+        <span>opposite</span><div class="keybar"></div><span>clustered</span>
       </div>
       <p class="pairs" id="sigline"></p>
     </div>
@@ -422,6 +440,13 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
            cancel the differing ones left and right.</p>
         <p>When every square is one colour the number cannot be worked out. There is no
            variation to compare. The same is true if no square counts as a neighbour.</p>
+        <p><strong>The second grid</strong> gives every square its own score. In the
+           cluster view each square is sorted into one of four kinds: grey sitting among
+           grey (<em>high&ndash;high</em>, red), white among white (<em>low&ndash;low</em>,
+           blue), and the two odd ones out, grey among white
+           (<em>high&ndash;low</em>) and white among grey (<em>low&ndash;high</em>), in
+           paler shades. Switch to <strong>Local I</strong> to see the underlying numbers
+           instead: their average is exactly the single number above.</p>
         <p><strong>Which squares count as neighbours is a choice you make</strong>, not
            something the data tells you. The small grid sets it. The dot in the middle is
            the square being measured; the numbers around it say how much each nearby
@@ -437,6 +462,14 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
         <p>Made by Luke Bergmann. Code MIT, text CC BY 4.0.
            <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
       </div>
+
+      <fieldset>
+        <legend>Show on the second grid</legend>
+        <div class="btnrow">
+          <button class="opt" id="view-clusters" aria-pressed="true">Clusters</button>
+          <button class="opt" id="view-values" aria-pressed="false">Local I</button>
+        </div>
+      </fieldset>
 
       <fieldset>
         <legend>Test each square against chance</legend>
@@ -766,7 +799,8 @@ self.onmessage = function (e) {
   function localI(x, kern) {
     var n = x.length, r, c, dr, dc, rr, cc, i, w,
         sum = 0, mean, den = 0, s0 = 0, m2,
-        lag = new Float64Array(n), out = new Float64Array(n), z = new Float64Array(n);
+        lag = new Float64Array(n), val = new Float64Array(n),
+        quad = new Int8Array(n), z = new Float64Array(n);
     for (i = 0; i < n; i++) sum += x[i];
     mean = sum / n;
     for (i = 0; i < n; i++) { z[i] = x[i] - mean; den += z[i] * z[i]; }
@@ -788,8 +822,16 @@ self.onmessage = function (e) {
     }
     if (s0 === 0) return null;
     m2 = den / n;
-    for (i = 0; i < n; i++) out[i] = (n / s0) * z[i] * lag[i] / m2;
-    return out;
+    for (i = 0; i < n; i++) {
+      val[i] = (n / s0) * z[i] * lag[i] / m2;
+      // The data is binary, so z is above the mean for grey and below it for white.
+      // High therefore means grey and low means white, which is what makes the four
+      // quadrants concrete here rather than abstract.
+      quad[i] = lag[i] === 0 ? -1
+              : z[i] > 0 ? (lag[i] > 0 ? 0 : 2)      // grey among grey / grey among white
+              : (lag[i] > 0 ? 3 : 1);                // white among grey / white among white
+    }
+    return { val: val, quad: quad };
   }
 
   // Significance runs on a worker so a paint stroke never waits for it. The worker's
@@ -864,6 +906,7 @@ self.onmessage = function (e) {
   // k wins if present. Otherwise w=rook|queen is honoured as shorthand, so links
   // already written on slides keep working.
   var showSig = params.get("sig") === "1";
+  var localView = params.get("view") === "values" ? "values" : "clusters";
   var kernel = decodeKernel(params.get("k")) ||
                (params.get("w") === "queen" ? KERNELS[1].make() : KERNELS[0].make());
   var present = params.get("present") === "1";
@@ -918,12 +961,22 @@ self.onmessage = function (e) {
     }
   })();
 
-  // ColorBrewer PuOr, purple for the opposite of clustering, orange for clustering.
-  // The ramp is symmetric about zero so equal magnitudes read equally either side.
+  // The usual cluster-map palette: strong red and blue where a square sits with its own
+  // kind, pale versions where it is the odd one out, light grey for anything that does
+  // not pass the test.
+  var QUAD = [
+    { key: "Grey cluster",  term: "high\u2013high", col: "#ff0000" },
+    { key: "White cluster", term: "low\u2013low",   col: "#0000ff" },
+    { key: "Grey outlier",  term: "high\u2013low",  col: "#f4ada8" },
+    { key: "White outlier", term: "low\u2013high",  col: "#a7adf9" }
+  ];
+  var NEUTRAL = "#eeeeee";
+
+  // The other view: local I as a continuous diverging ramp, ColorBrewer PuOr, symmetric
+  // and centred at zero. Kept because it is what shows the global number as an average.
   var RAMP = [[84,39,136],[153,142,195],[216,218,235],[247,247,247],
               [254,224,182],[241,163,64],[179,88,6]];
-  var RAMP_MAX = 1.5;   // covers the observed range of about -1.1 to +1.4
-
+  var RAMP_MAX = 1.5;
   function rampColour(v, fade) {
     var t = Math.max(-1, Math.min(1, v / RAMP_MAX));
     var f = (t + 1) / 2 * (RAMP.length - 1);
@@ -932,6 +985,17 @@ self.onmessage = function (e) {
     if (fade) for (k = 0; k < 3; k++) c[k] = Math.round(c[k] + 0.88 * (255 - c[k]));
     return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
   }
+
+  (function buildKey() {
+    var el = document.getElementById("quadkey"), i, d;
+    for (i = 0; i < QUAD.length; i++) {
+      d = document.createElement("span");
+      d.className = "keyitem";
+      d.innerHTML = '<i style="background:' + QUAD[i].col + '"></i>' +
+        QUAD[i].key + ' <span class="term">' + QUAD[i].term + '</span>';
+      el.appendChild(d);
+    }
+  })();
 
   // Direction wording for screen readers: "two east, one north".
   function offsetWords(dr, dc) {
@@ -1045,12 +1109,16 @@ self.onmessage = function (e) {
   var sigCache = null, sigPendingFor = null;
 
   function renderLocal() {
-    var li = localI(grid, kernel), i, mask = null, passing = 0, minP = 1;
+    var res = localI(grid, kernel), i, mask = null, passing = 0, minP = 1,
+        counts = [0, 0, 0, 0], clusters = localView === "clusters", col, lab, q;
 
-    if (li === null) {
+    document.getElementById("quadkey").hidden = !clusters;
+    document.getElementById("rampkey").hidden = clusters;
+
+    if (res === null) {
       for (i = 0; i < N; i++) {
-        lcells[i].style.background = "";
-        lcells[i].removeAttribute("aria-label");
+        if (lcells[i]._col !== "") { lcells[i].style.background = ""; lcells[i]._col = ""; }
+        lcells[i].removeAttribute("aria-label"); lcells[i]._lab = null;
       }
       sigLineEl.textContent = "";
       localNoteEl.textContent = "";
@@ -1079,26 +1147,39 @@ self.onmessage = function (e) {
     }
 
     for (i = 0; i < N; i++) {
-      var col = rampColour(li[i], mask ? !mask[i] : false);
+      q = res.quad[i];
+      if (q >= 0) counts[q]++;
+      if (clusters) {
+        col = (q < 0 || (mask && !mask[i])) ? NEUTRAL : QUAD[q].col;
+      } else {
+        col = rampColour(res.val[i], mask ? !mask[i] : false);
+      }
       if (lcells[i]._col !== col) { lcells[i].style.background = col; lcells[i]._col = col; }
-      var lab = cellLabel(i) + ", local Moran's I " + li[i].toFixed(2) +
+
+      lab = cellLabel(i) + ", " +
+        (q < 0 ? "neither" : QUAD[q].key.toLowerCase() + " (" + QUAD[q].term + ")") +
+        ", local Moran's I " + res.val[i].toFixed(2) +
         (mask ? (mask[i] ? ", stands out from chance" : ", does not stand out") : "");
       if (lcells[i]._lab !== lab) { lcells[i].setAttribute("aria-label", lab); lcells[i]._lab = lab; }
     }
 
     localNoteEl.textContent = showSig ? "(significant only)" : "";
 
-    if (!showSig) {
-      sigLineEl.textContent = "The average of these 225 values is the number above.";
-    } else if (!sigCache) {
-      sigLineEl.textContent = sigPendingFor ? "Testing each square\u2026" : "";
-    } else if (passing > 0) {
-      sigLineEl.textContent = passing + " of 225 squares stand out from chance, after " +
-        "allowing for testing all 225 at once.";
-    } else {
+    if (showSig && sigCache && passing === 0) {
       sigLineEl.textContent = "No square stands out from chance. The smallest p-value any " +
         "square reached is " + minP.toFixed(3) + ", and correcting for 225 tests at once " +
         "needs smaller than that. A kernel with more neighbours gives finer p-values.";
+    } else if (showSig && sigCache) {
+      sigLineEl.textContent = passing + " of 225 squares stand out from chance, after " +
+        "allowing for testing all 225 at once.";
+    } else if (showSig && !sigCache) {
+      sigLineEl.textContent = sigPendingFor ? "Testing each square\u2026" : "";
+    } else if (clusters) {
+      sigLineEl.textContent = counts[0] + " grey among grey, " + counts[1] +
+        " white among white, " + counts[2] + " grey among white, " + counts[3] +
+        " white among grey.";
+    } else {
+      sigLineEl.textContent = "The average of these 225 values is the number above.";
     }
   }
 
@@ -1151,6 +1232,7 @@ self.onmessage = function (e) {
     p.set("g", encode(grid));
     if (!sameKernel(kernel, KERNELS[0].make())) p.set("k", encodeKernel(kernel));
     if (showSig) p.set("sig", "1");
+    if (localView === "values") p.set("view", "values");
     if (present) p.set("present", "1");
     history.replaceState(null, "", location.pathname + "?" + p.toString());
   }
@@ -1314,6 +1396,17 @@ self.onmessage = function (e) {
     t.tabIndex = 0;
   });
 
+  var viewClustersBtn = document.getElementById("view-clusters"),
+      viewValuesBtn = document.getElementById("view-values");
+  function setView(v) {
+    localView = v;
+    viewClustersBtn.setAttribute("aria-pressed", v === "clusters" ? "true" : "false");
+    viewValuesBtn.setAttribute("aria-pressed", v === "values" ? "true" : "false");
+    render();
+  }
+  viewClustersBtn.addEventListener("click", function () { setView("clusters"); });
+  viewValuesBtn.addEventListener("click", function () { setView("values"); });
+
   var sigOffBtn = document.getElementById("sig-off"), sigOnBtn = document.getElementById("sig-on");
   function setSig(on) {
     showSig = on;
@@ -1354,6 +1447,7 @@ self.onmessage = function (e) {
 
   // ---------------------------------------------------------------- go
   setPresent(present);
+  setView(localView);
   setSig(showSig);
 })();
 </script>

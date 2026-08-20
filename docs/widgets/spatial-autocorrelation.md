@@ -260,16 +260,45 @@ show both. Rescaled, every kernel lands in about −1.1 to +1.4.
 Undefined in the same two cases as the global number — one colour everywhere, or an empty
 kernel — and the grid blanks.
 
-### Colour
+### Two views
 
-ColorBrewer PuOr, purple for the opposite of clustering, orange for clustering, symmetric
-and **centred at zero** so equal magnitudes read equally either side. Clamped at ±1.5.
+**Clusters is the default.** Every square is sorted into one of the four usual LISA
+quadrants, with the conventional palette:
 
-**There is no second cue for the sign.** This is a deliberate exception to
-`principles.md` section 8, taken knowingly: the difference between a cluster and an
-outlier is invisible in greyscale, on a projector, and to a reader with colour vision
-deficiency. The value is in each cell's `aria-label`, which is the only non-visual route.
-If this proves a problem in a real lecture room, a dot on negative cells is the fix.
+| Quadrant | Meaning here | Colour |
+|---|---|---|
+| High–high | grey square among grey | red `#ff0000` |
+| Low–low | white among white | blue `#0000ff` |
+| High–low | grey among white | pale red `#f4ada8` |
+| Low–high | white among grey | pale blue `#a7adf9` |
+| not significant | — | light grey `#eeeeee` |
+
+Binary data makes the quadrants unusually concrete: `z` is above the mean exactly when the
+square is grey, so **high means grey and low means white**, and the four categories read as
+plain descriptions rather than jargon. A square whose lag is exactly zero is neither, and
+is drawn neutral; this is possible but rare.
+
+Verified counts, matched against numpy:
+
+| Pattern / kernel | grey in grey | white in white | grey in white | white in grey |
+|---|---|---|---|---|
+| Patches / rook | 87 | 103 | 26 | 9 |
+| Patches / queen | 89 | 101 | 24 | 11 |
+| Checkerboard / rook | **0** | **0** | 113 | 112 |
+| Checkerboard / queen | 0 | 84 | 113 | 28 |
+
+Checkerboard under rook is the case worth showing: **every square is an outlier and none
+is a cluster**, so the map is entirely pale. Nothing sits with its own kind.
+
+**Local I** is the other view, kept because it is what makes the global number an average
+you can see. ColorBrewer PuOr, symmetric and **centred at zero**, clamped at ±1.5.
+
+**Neither view carries a second cue beyond colour.** This is a deliberate exception to
+`principles.md` section 8. In the cluster view, red against blue survives the common forms
+of colour vision deficiency reasonably well, but strong against pale — cluster against
+outlier — does not survive greyscale or a compressed recording. Every cell's `aria-label`
+names its quadrant and its value, which is the non-visual route. If it proves a problem in
+a real room, marking the two outlier categories with a dot is the fix.
 
 ## Significance
 
@@ -425,6 +454,7 @@ slide or handed out.
 - `w` — `rook` or `queen`, honoured as shorthand when `k` is absent, so links already
   written on slides before the kernel editor existed still work. `k` wins if both appear.
 - `sig` — `1` turns the significance test on; absent means off.
+- `view` — `values` shows local I as a continuous ramp; absent means the cluster map.
 - `present` — `1`; absent means normal size.
 
 The URL is rewritten with `history.replaceState` on every change, so the back button is
@@ -531,6 +561,16 @@ Recorded above as a deliberate exception.
 the weights are a design choice, that the global number decomposes into local ones, and
 that testing 225 things at once has a cost. `principles.md` says to split when the one
 thing takes more than a sentence. Not split yet, but this is the point to watch.
+
+**Revised 2026-08-19, fifth pass: the cluster map.** The second grid now defaults to the
+four LISA quadrants in the conventional red and blue, with the continuous local I ramp
+kept as the alternative view. Binary data makes the quadrants concrete — high is grey, low
+is white — so red means a grey square among grey and the pale colours mean the odd one
+out. Checkerboard under rook becomes an entirely pale map: 225 outliers, no clusters.
+
+The legend's technical terms are hidden in presentation mode, because the wrapped labels
+made it 90 px tall and pushed the pattern buttons off screen, and nobody reads
+"high-high" in small type from the back of a room.
 
 **Not yet done:** a real projector in a lit room, and a compressed recording. Those need
 the lecture machine.
