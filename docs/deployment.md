@@ -122,6 +122,13 @@ tokens, not to SSH deploy keys.
 **`git` 2.16 has no `git init -b`.** Use `git init` then
 `git symbolic-ref HEAD refs/heads/main`.
 
+**Test resources can look exactly like a bug.** Several probes created Web Workers and did
+not terminate them; the leftovers saturated the worker pool and the widget's own
+significance test appeared to hang for thirty seconds. It was diagnosed as a hung
+computation and very nearly "fixed". Reload the page between measurements, terminate
+anything a probe starts, and when something that worked starts hanging, suspect the
+measuring apparatus before the thing being measured.
+
 **`[hidden]` loses to any author `display` rule.** An element styled
 `display: grid` or `display: flex` ignores the `hidden` attribute, because the browser's
 `[hidden] { display: none }` is a user-agent style and author styles outrank it. Add an

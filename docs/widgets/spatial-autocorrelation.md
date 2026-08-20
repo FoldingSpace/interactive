@@ -501,10 +501,15 @@ every size, for the reason above.
 
 **15×15 stays the default, and the reason is the phone**: at 21×21 cells fall to 17.2 px on
 a 375 px viewport, below the 24 px minimum target size. 15×15 gives 24.1 px, which is the
-floor. The default grid size is set by the hand holding it, not by the statistics — but
-30 × 30 is available as a toggle so the gain can be seen. Measured in the widget with
-Patches under 1/d²: **58 per cent of squares survive correction at 15 × 15, 71 per cent at
-30 × 30**.
+floor. The default grid size is set by the hand holding it, not by the statistics.
+
+**Note that the figures in the table above no longer describe the shipped control.** They
+come from an experiment that held the area fixed and varied resolution. The extent toggle
+as built clips a window instead, so it varies the study area at fixed resolution, and the
+comparison it actually produces runs the other way — 73 per cent surviving on the window
+against 67 on the whole. See "One lattice, clipped" above. The table is kept because the
+question it answers, whether more cells buys power, is a real one and the answer is yes;
+it simply is not what this control demonstrates.
 
 ### Corrections that were tried and rejected
 
@@ -748,7 +753,8 @@ Design questions that turned on evidence rather than taste: row standardisation 
 rejected because it destroys stripes = exactly 0; the range is 0–9 but 1/d² peaks at 8
 because it rounds better; the kernel is 5 by 5 because 3 by 3 has nothing to add beyond
 queen and cannot express decay; edges stay clipped because wrapping loses every exact
-value; presentation mode went to three columns because the kernel does not fit vertically.
+value; presentation mode went to three columns because the kernel does not fit vertically
+(it has since gone to four, as more was added).
 
 Verification found no errors this pass. The one mismatch during testing was in the
 checking script, not the widget — a hand-typed kernel string.

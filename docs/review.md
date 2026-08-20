@@ -45,6 +45,15 @@ course has already taught or a word in ordinary use.
 nonsensical configuration, does the widget show them that it is nonsense, or does it
 draw it as though it were fine?
 
+**Does the control demonstrate what you think it demonstrates? Measure it.** Do not write
+the explanation from the design intent. The extent toggle in the autocorrelation grid was
+built to show that more observations buy statistical power; measured, it showed the
+opposite, because the smaller extent is a window that happens to sit over a more clustered
+part of the surface. The boundary effect beat the power effect outright. That turned out to
+be the better lesson, but only because it was measured before the panel was written rather
+than after. **An explanation written from intention rather than evidence will be wrong
+about a third of the time, and confidently.**
+
 **Where does the method fail, and does the widget say so?** Find the inputs that make the
 result empty, undefined, zero, or unmoved. Then check what appears on screen at that
 moment. Silence is a failure: a blank result reads as a statement about the data when it is
@@ -83,11 +92,26 @@ three distinct values is a stronger test than any one of them being right.
 another route — a matrix formulation against a loop. Agreement to several decimals across
 every combination, not one.
 
+**But when the thing being checked is generated data, run the real code.** A
+reimplementation is right for checking a *formula*, where a second route is the whole
+point. It is wrong for checking a *generator*, where any drift makes the two disagree about
+the input rather than the answer. A hand-port of the widget's random number generator
+silently diverged and cost a round of confusion; the later seed search ran in Node against
+a copy of the widget's own source and matched exactly. Rule of thumb: verify formulas by
+reimplementing, verify generated inputs by executing.
+
 **Derive one case by hand.** Slow, and worth it once per statistic. It is the only check
 that tests your understanding rather than your code.
 
 Record the resulting values in the widget's file in `docs/widgets/`, so a future rebuild
 has something to fail against.
+
+**And audit what the documentation itself claims.** Documentation makes factual assertions
+that go stale exactly like code, and nothing tests them. This file once said every control
+was at least 44 px, which was never true of the ? button; the widget's own file carried
+power figures from an experiment the shipped control no longer performs. When a feature
+changes, grep the docs for numbers and superlatives — "every", "always", "all" — and check
+each one still holds.
 
 ## 3. Text
 

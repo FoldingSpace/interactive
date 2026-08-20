@@ -130,6 +130,18 @@ was the random number generator, not the multiply-adds, and the biggest single w
 whole widget came from not writing to DOM nodes whose value had not changed. Profile
 before reaching for anything.
 
+## Tools used to build, not to ship
+
+Neither of these is a dependency — nothing they touch reaches the browser.
+
+**Node** for offline verification: syntax-checking the widget's scripts after every edit,
+and running searches against a copy of the widget's own generator. Copying the real source
+rather than reimplementing it matters; see the correctness pass in `review.md`.
+
+**Python with numpy** for independent recomputation of every statistic, by a different
+route from the widget's own — matrix algebra against its loops. This is what has caught
+things, and it is worth the small cost of writing the check twice.
+
 ## Things to test early
 
 1. PMTiles served from GitHub Pages, with MapLibre, on a phone over campus wifi. This

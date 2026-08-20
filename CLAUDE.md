@@ -38,7 +38,8 @@ short: they become the URL, and the URL goes on slides and into QR codes.
    type rather than width. The desktop layout serves both a laptop at reading distance
    and a projector seen from the back, so every widget has a presentation mode reached
    by `?present=1`.
-3. It opens showing something. No blank canvas, no "click here to begin".
+3. It opens showing something, and the opening state is not a dead end — every control a
+   student might reach for must lead somewhere from the default.
 4. Every widget is embeddable in an `<iframe>` and reachable by a plain URL that can be
    pasted into a PowerPoint slide.
 5. Student-facing text obeys `~/claude scratch/anti-ai-writing-style.md`, is written for
@@ -47,8 +48,9 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 6. Try it with no dependency first. So far nothing has needed one.
 7. Where the method fails, say so on screen. A blank result reads as a fact about the
    data when it is a fact about the method.
-8. Every control that embodies a choice carries an (i) explanation, ending in
-   `For more, see:` with real sources.
+8. Every control that embodies a choice carries an (i) explanation. Where it cites, it
+   ends in `For more, see:` with real sources; where there is nothing verified worth
+   citing, it cites nothing. The claim decides the citation, never the reverse.
 9. **No citation ships unchecked.** A separate adversarial agent must confirm each source
    exists, that its details are exact, and that it supports the claim attached to it.
    Unconfirmable citations are removed, not hedged.
@@ -66,5 +68,8 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 - Record verified numbers in the widget's file in `docs/widgets/`, so a rebuild has
   something to fail against. Reproducing a known case is necessary and never sufficient:
   ask what bug would pass the test you just ran.
-- Measure rather than eyeball, for both layout and speed. Most of the real defects found
-  so far were invisible until something was measured.
+- Measure rather than eyeball, for layout, for speed, and for what a control actually
+  demonstrates. Most of the real defects found so far were invisible until something was
+  measured, and one control turned out to teach the opposite of its design intent.
+- Documentation makes claims that go stale exactly like code. When a feature changes,
+  grep the docs for the numbers and the words "every", "always" and "all".

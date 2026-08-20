@@ -44,6 +44,14 @@ the finished case first and then takes it apart. No empty state, no wizard, no "
 variable to begin". If a computation is slow, show the default result computed ahead of
 time and let interaction replace it.
 
+**And the default must not be a dead end.** It is not enough for the opening state to show
+something; it has to be a state in which the widget's own lesson is reachable. The
+autocorrelation grid opened on rook weights, under which no square can ever be significant
+— so a student who found the significance control and switched it on met "nothing here"
+before they met the idea. Queen is the default now and rook is one click away, which is
+where a limit belongs: something you arrive at, not something you start inside. Check every
+default by asking what happens when a student turns on each control in turn.
+
 ## 3. Three viewing contexts, two layouts
 
 Every widget has to work in three situations, and they are not variations of one problem.
@@ -334,6 +342,21 @@ teaching material is worse than no citation.
 
 This applies to every explanation, caption, and document in the repository, not only to
 things labelled as a bibliography.
+
+### The claim drives the citation, never the reverse
+
+When what a widget does changes, the sources attached to it have to be re-examined, and the
+temptation is to keep a verified citation by adjusting the claim until it fits. Don't.
+
+The extent control was built to change resolution, and cited the modifiable areal unit
+problem, correctly. When it became a clipped window it stopped changing the units at all,
+and MAUP no longer applied. Both sources were real, verified, and about something else, so
+they were removed and that panel now carries no citation. **Raising a neighbouring idea
+because you happen to have a source for it is its own kind of dishonesty**, and no citation
+is better than a nearby one.
+
+Keep such entries in `attributions.md` under "verified, then dropped". That they were
+checked and found irrelevant is worth more to a future reader than a silent deletion.
 
 ## 12. Review before shipping
 
