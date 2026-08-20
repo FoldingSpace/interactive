@@ -101,7 +101,6 @@ a particular configuration restores that configuration.
 
 ```
 Widget:
-Course:
 Reviewed: YYYY-MM-DD
 
 Pedagogical critique: pass / changes requested — summary

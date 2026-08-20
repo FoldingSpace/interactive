@@ -9,7 +9,8 @@ the licence, the required attribution text, and which widgets use it.
 
 ## Our own materials
 
-Licence not yet decided. See the open question in `docs/principles.md`.
+Code is MIT. Text, figures, and other non-code materials are CC BY 4.0.
+See `LICENSE` and `LICENSE-CC-BY-4.0`.
 
 ## Data
 
@@ -41,7 +42,7 @@ in `vendor/LICENSES/` alongside the code.
 - Source: URL
 - Licence: name and URL
 - Attribution required on screen: "exact text"
-- Used in: 370/widget-name, 472/widget-name
+- Used in: web/widget-name
 - Added: YYYY-MM-DD
 - Notes: modifications made, if any
 ```

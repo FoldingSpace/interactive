@@ -1,19 +1,25 @@
-# teaching-interactive
+# interactive
 
-Interactive visualizations for teaching cartography and GIS at UBC.
+Interactive widgets for cartography and geographic information science. They are
+built to explain things — in lectures, in talks, in writing, and to anyone who
+follows a link — so teaching is the main use but not the only one.
 
 This repository is the `github/` subfolder of a larger local working folder;
 anything outside it is local-only and never pushed.
 
 ```
 CLAUDE.md      this file
-docs/          principles, libraries, attributions, review — project documentation
+docs/          principles, libraries, attributions, review — documentation for us
 web/           the published site
-  370/         course widgets
-  472/         course widgets
+  shared/      stylesheets and scripts common to several widgets
+  <widget>/    one folder per widget, named for what it shows
 ```
 
-`docs/` is documentation for us, not published pages. `web/` is what students see.
+Widgets are named for their subject, not for a course. A widget only carries a
+course label when it is genuinely specific to one course. Keep the folder names
+short: they become the URL, and the URL goes on slides and into QR codes.
+
+`docs/` is documentation for us and is not published. `web/` is the site.
 
 ## Read first
 
@@ -21,6 +27,7 @@ web/           the published site
 - `docs/libraries.md` — what we use, what we have rejected, what we want to try.
 - `docs/attributions.md` — register of every borrowed dataset, basemap, image, and library.
 - `docs/review.md` — the passes a widget must survive before it goes in front of students.
+- `docs/deployment.md` — how the repository is published, and the credential setup.
 
 ## Non-negotiables
 

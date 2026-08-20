@@ -1,6 +1,9 @@
 # Principles
 
-Standing rules for the interactive teaching materials in this repository.
+Standing rules for the interactive widgets in this repository. They are made to
+explain ideas in cartography and GIS: mostly in teaching, also in talks and
+alongside writing. Where these rules say "student", read "whoever is looking at
+it" — the lecture case is the demanding one, so it sets the standard.
 This file is edited as we learn. Date and initial substantive changes.
 
 Started 2026-08-19.
@@ -8,6 +11,9 @@ Started 2026-08-19.
 ---
 
 ## 1. Delivery
+
+How this is actually wired up — the deploy key, the Pages workflow, the folder layout —
+is recorded in `deployment.md`.
 
 **Static hosting, no exceptions.** Everything must run from GitHub Pages: plain HTML,
 CSS, JavaScript, and WebAssembly served as files. No server-side code, no database, no
@@ -177,13 +183,14 @@ opens in the version that projects well.
 Everything we ship is open, and everything borrowed is credited.
 
 - Only use data, basemaps, imagery, fonts, icons, and code whose licence permits
-  educational reuse and redistribution. Record the licence, not just the name.
+  reuse and redistribution, including in teaching. Record the licence, not just the
+  name.
 - Attribution is visible in the widget itself, not only in the source, and it stays
   legible at classroom distance. Basemap and data credits go in a persistent line or a
   clearly marked info control.
 - Every external thing gets an entry in `docs/attributions.md` when it is added.
-- Our own materials carry an explicit licence so other instructors can reuse them. Decide
-  the licence before the first public push.
+- Our own code is MIT and our own text and figures are CC BY 4.0, so anyone can pick a
+  widget up and adapt it. Anything we add must be compatible with that.
 
 ## 9. Review before shipping
 
@@ -195,11 +202,10 @@ for polish.
 
 ## Open questions
 
-- Licence for our own materials. CC BY 4.0 for text and figures, MIT for code, is the
-  usual pairing for teaching repositories. Needs a decision.
-- Whether the two courses share a common stylesheet and component set, or stay
-  independent. Sharing is cheaper to maintain; independence lets a course evolve without
-  breaking the other.
+- How much lives in `web/shared/`. A common stylesheet and a common set of controls
+  is cheaper to maintain and makes the widgets feel like one family, but it couples
+  them, so a change to shared code means rechecking everything. Decide after the
+  second widget, not before the first.
 - Whether widgets should record anything (a student's answers, a saved configuration).
   Anything stored raises privacy questions and a FIPPA question at UBC. Default for now:
   store nothing, keep state in the URL only.
