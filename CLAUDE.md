@@ -1,7 +1,19 @@
 # teaching-interactive
 
 Interactive visualizations for teaching cartography and GIS at UBC.
-Course folders: `370/`, `472/`.
+
+This repository is the `github/` subfolder of a larger local working folder;
+anything outside it is local-only and never pushed.
+
+```
+CLAUDE.md      this file
+docs/          principles, libraries, attributions, review — project documentation
+web/           the published site
+  370/         course widgets
+  472/         course widgets
+```
+
+`docs/` is documentation for us, not published pages. `web/` is what students see.
 
 ## Read first
 
