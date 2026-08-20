@@ -60,9 +60,9 @@ short: they become the URL, and the URL goes on slides and into QR codes.
   write down which and why. That file is the point of not relearning this each term.
 - Every external thing gets a line in `docs/attributions.md` at the moment it is added,
   not later.
-- Wherever a page credits Luke, it credits Claude too: "Made by Luke Bergmann with Claude
-  (Anthropic)". The copyright lines in `LICENSE` and `LICENSE-CC-BY-4.0` stay in Luke's
-  name alone — see `docs/attributions.md` for why.
+- Credit reads "Made by Luke Bergmann with Claude" wherever a page carries a credit.
+  Copyright notices read "Copyright (c) 2026 Luke Bergmann, where applicable" and stay
+  that way — credit and copyright are not the same thing. See `docs/attributions.md`.
 - Record verified numbers in the widget's file in `docs/widgets/`, so a rebuild has
   something to fail against. Reproducing a known case is necessary and never sufficient:
   ask what bug would pass the test you just ran.

@@ -39,14 +39,15 @@ and nothing goes out without the checks in [docs/review.md](docs/review.md).
 
 ## Who made it
 
-Luke Bergmann, with Claude (Anthropic). The widgets were built in conversation: the
+Luke Bergmann with Claude. The widgets were built in conversation: the
 teaching judgement, the decisions and the direction are Luke's; Claude wrote the code,
 ran the checks and argued back.
 
 ## Licence
 
 Code is [MIT](LICENSE). Text, figures, and other non-code materials are
-[CC BY 4.0](LICENSE-CC-BY-4.0). Borrowed material keeps its own licence, recorded in
+[CC BY 4.0](LICENSE-CC-BY-4.0). Copyright (c) 2026 Luke Bergmann, where applicable.
+Borrowed material keeps its own licence, recorded in
 [docs/attributions.md](docs/attributions.md).
 
 Reuse and adapt these freely. If you teach with them, a credit is enough.
