@@ -64,8 +64,6 @@ Checked 2026-08-20.
 | Anselin, L. (1995) "Local Indicators of Spatial Association — LISA." *Geographical Analysis* 27(2): 93–115. | Local Moran's I; that the local values sum to a multiple of the global one; the conditional permutation approach. | Verified, all three |
 | Benjamini, Y. & Hochberg, Y. (1995) "Controlling the False Discovery Rate." *JRSS B* 57(1): 289–300. | The false discovery rate and the step-up procedure. | Verified |
 | Caldas de Castro, M. & Singer, B.H. (2006) "Controlling the False Discovery Rate…" *Geographical Analysis* 38(2): 180–208. | FDR applied to local spatial statistics, and preferred to Bonferroni. | Verified |
-| Openshaw, S. (1984) *The Modifiable Areal Unit Problem*. CATMOG 38. Norwich: Geo Books. | The scale effect: results changing with the size of the units. | Verified from the document itself. Some catalogues date it 1983. |
-| Fotheringham, A.S. & Wong, D.W.S. (1991) "The Modifiable Areal Unit Problem in Multivariate Statistical Analysis." *Environment and Planning A* 23(7): 1025–1044. | Results varying with scale and zoning. | Verified. Some databases corrupt the second author to "Wong, M.S."; D.W.S. is correct. |
 | Cliff, A.D. & Ord, J.K. (1981) *Spatial Processes: Models and Applications*. London: Pion. | The standard treatment of spatial weights, rook's-case and queen's-case contiguity among them, and of the distribution theory behind Moran's I. | Verified after two rounds. Not cited as the origin of the terminology — see below. |
 
 ### What the check caught
@@ -102,6 +100,20 @@ it, derives its first two moments and argues asymptotic normality. What Cliff an
 was the general weights matrix for irregular lattices.
 
 An adversarial checker that will not correct itself is only half a check.
+
+### Verified, then dropped
+
+Both were cited on the extent control while it changed resolution. Once the control became
+a clipped window, holding the square size fixed, they stopped being relevant: the
+modifiable areal unit problem is about the size and drawing of the units, and clipping
+changes neither. Rather than stretch them to fit, they were removed, and the extent panel
+now carries no citation at all — which is the right answer when there is nothing verified
+to point at.
+
+| Work | Was cited for | Status |
+|---|---|---|
+| Openshaw, S. (1984) *The Modifiable Areal Unit Problem*. CATMOG 38. Norwich: Geo Books. | The scale effect. | Verified from the document itself; no longer cited. Some catalogues date it 1983. |
+| Fotheringham, A.S. & Wong, D.W.S. (1991) *Environment and Planning A* 23(7): 1025–1044. | Results varying with scale and zoning. | Verified; no longer cited. Some databases corrupt the second author to "Wong, M.S."; D.W.S. is correct. |
 
 ### Cited in the documentation only
 

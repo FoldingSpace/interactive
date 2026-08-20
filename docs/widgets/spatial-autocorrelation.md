@@ -457,13 +457,13 @@ buys uniform treatment of every pattern, including the checkerboard that aggrega
 destroys, and pays for it by confounding the power comparison with the choice of window.
 That trade is worth knowing if the control is ever revisited.
 
-**The citations were re-pointed rather than left in place.** The extent panel previously
-invoked the modifiable areal unit problem, which under clipping would be wrong: MAUP is
-about the size and drawing of the units, and clipping changes neither. The panel now says
-plainly what the control does not change, and cites Openshaw and Fotheringham & Wong for
-that neighbouring problem — a claim they do support. Attaching a real source to a claim it
-does not support is the failure `principles.md` section 11 exists to catch, and it would
-have been embarrassing to commit it in the same session as the rule.
+**The extent panel carries no citation, and that is the right answer.** It once invoked the
+modifiable areal unit problem, which was apt while the control changed resolution. Under
+clipping it is not: MAUP concerns the size and drawing of the units, and clipping changes
+neither. Both sources were verified and are perfectly good; they were simply about
+something else, so they were removed rather than stretched to fit. Raising a related idea
+because you happen to have a citation for it is its own kind of dishonesty, and no citation
+beats a nearby one.
 
 The kernel is deliberately *not* scaled. It is measured in squares, so the same kernel is
 a finer neighbourhood on the larger grid — which is the honest thing for it to be, and a
