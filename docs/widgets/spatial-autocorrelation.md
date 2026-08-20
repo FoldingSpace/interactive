@@ -9,24 +9,27 @@ Written so the widget could be rebuilt from this description alone.
 
 ## The one thing
 
-**Spatial autocorrelation measures whether nearby places resemble each other — and the
-answer depends on what you decide "nearby" means.**
+**Spatial autocorrelation measures whether nearby places resemble each other — and
+"nearby" is a weighting you design, not a fact the data hands you.**
 
-The second half is the part students usually miss, so the neighbour definition is a
-control rather than a fixed choice.
+The second half is the part students usually miss, so the weights are an editable picture
+rather than a fixed choice between two options.
 
 ## What it is
 
 A 15 by 15 grid of squares, each either grey (1) or white (0). Pressing a square flips it,
-and with a mouse you can drag to keep painting. Every change recalculates Moran's I and a
-count of matching neighbours. A row of buttons loads ten fixed patterns.
+and with a mouse you can drag to keep painting. Beside it is a second, smaller grid: the
+**weights kernel**, 5 by 5, showing what counts as a neighbour of the square at its centre
+and by how much. Both are editable and everything recalculates on every change. Ten
+patterns and six kernels load from buttons.
 
 The face of the widget carries very little text: the number, its scale, a one or two word
 verdict, one short line, and the controls. Everything else sits behind the "?" button.
 
 ## The statistic
 
-Moran's I with binary contiguity weights:
+Moran's I, with the kernel supplying the weights as a moving window clipped at the grid
+edges:
 
 ```
         n      Σi Σj w_ij (x_i − x̄)(x_j − x̄)
@@ -34,53 +37,80 @@ Moran's I with binary contiguity weights:
        S0            Σi (x_i − x̄)²
 ```
 
-where `n` = 225, `w_ij` = 1 if i and j are neighbours and 0 otherwise, and
-`S0 = Σi Σj w_ij` is the number of ordered neighbour pairs. Weights are not row
-standardised; they are plain binary contiguity.
+`n` = 225, `w_ij` is the kernel entry for the offset from i to j, and
+`S0 = Σi Σj w_ij` is the total weight actually applied after edge clipping.
 
-**When every square is the same colour the denominator is zero and I is undefined.**
-There is no variation to correlate. This is a real property of the statistic, not a
-failure, and the two presets "All grey" and "All white" exist so that students meet it.
-The interface says so in words instead of printing `NaN`.
+**Weights are used raw, never row standardised.** This matters: row standardisation gives
+edge cells' neighbours larger shares than interior ones, which breaks the cancellation
+that makes stripes score exactly zero (it becomes −0.0028) and shifts every other value.
+The shading in the kernel shows each cell's *share* of the total, but that share is a
+display, not the arithmetic.
 
-I is not strictly bounded by ±1 — the achievable range depends on the weights — so the
-scale bar clamps the marker to [−1, +1] and the number itself is printed unclamped.
+**Only ratios matter.** Multiplying the whole kernel by a constant leaves I unchanged,
+because S0 scales with the numerator. Verified: the rook kernel at weight 7 gives values
+identical to weight 1 at every decimal place.
+
+### When it is undefined
+
+Two cases, both real results rather than failures, and both reachable from the preset
+buttons on purpose:
+
+- **Every square the same colour.** The denominator is zero; there is no variation to
+  correlate.
+- **No square counts as a neighbour.** S0 is zero. A kernel of all zeros is a legal thing
+  to draw and the honest answer is that nothing has been asked.
 
 ### Neighbours
 
-Two definitions, both binary contiguity on the lattice:
+The kernel is a 5 by 5 block of whole numbers 0–9, indexed `(dr+2)*5 + (dc+2)`, read as
+offsets from the square being measured. The centre, index 12, is permanently zero and not
+editable: a place is not its own neighbour. A non-zero self-weight would add a term
+proportional to the total variance and inflate I for reasons that have nothing to do with
+space.
 
-- **Sides only (rook)** — up, down, left, right. Interior cells have 4 neighbours,
-  420 unordered pairs in total.
-- **Sides and corners (queen)** — the eight surrounding cells. 812 unordered pairs.
+Edges are **clipped** — weights falling outside the grid are dropped, so edge cells simply
+have less kernel. With a 5 by 5 kernel this affects 104 of 225 cells, 46 per cent of the
+grid, against 25 per cent for a 3 by 3. Wrapping instead would make every cell's kernel
+complete but would make the left edge neighbour to the right edge, which is false of any
+real map, and it destroys the exact values: checkerboard becomes −0.8667 rather than −1.
 
 ### Verified values
 
-Computed independently in Python and matched against the widget:
+Every kernel against every pattern, computed independently in numpy with a full
+weight-matrix formulation and matched against the widget to two decimal places:
 
-| Pattern | Rook | Queen |
-|---|---|---|
-| All grey / All white | undefined | undefined |
-| Checkerboard | **−1.0000** | −0.0345 |
-| Stripes | **0.0000** | −0.4828 |
-| Stripes every 3 | +0.2679 | −0.0856 |
-| Half and half | +0.9279 | +0.8931 |
-| Patches | +0.5907 | +0.5348 |
-| Big patches | +0.7240 | +0.6653 |
-| Random 1 | +0.0382 | +0.0177 |
-| Random 2 | −0.0471 | +0.0114 |
+| Pattern | Rook | Queen | Half queen | Even | 1/d | 1/d² |
+|---|---|---|---|---|---|---|
+| Checkerboard | **−1.0000** | −0.0345 | −0.0345 | −0.0123 | −0.1146 | −0.2839 |
+| Stripes | **0.0000** | −0.4828 | −0.4828 | +0.1476 | +0.0506 | −0.0603 |
+| Stripes every 3 | +0.2679 | −0.0856 | −0.0856 | −0.2321 | −0.1362 | −0.0746 |
+| Half and half | +0.9279 | +0.8931 | +0.8931 | +0.8158 | +0.8425 | +0.8634 |
+| Patches | +0.5907 | +0.5348 | +0.5348 | +0.3859 | +0.4328 | +0.4730 |
+| Random 1 | +0.0382 | +0.0177 | +0.0177 | −0.0129 | −0.0068 | +0.0011 |
+| All grey / All white | undefined | undefined | undefined | undefined | undefined | undefined |
 
-If a rebuild does not reproduce these numbers, the implementation is wrong.
+If a rebuild does not reproduce these, the implementation is wrong.
 
-These were checked three ways: the neighbour-list loop the widget uses, the same
-calculation in Python, and a full weight-matrix formulation `(n/S0)·(z'Wz)/(z'z)` in
-numpy. Stripes-every-3 was also derived by hand. With 75 grey cells the mean is 1/3, so
-grey deviations are 2/3 and white −1/3. All 210 vertical pairs match (70 grey-grey, 140
-white-white) and of the 210 horizontal pairs 135 differ and 75 are white-white, giving a
-numerator of 70(4/9) + 140(1/9) + 135(−2/9) + 75(1/9) = 25 and a denominator of
-75(4/9) + 150(1/9) = 50. So I = (225/840)(50/50) = **225/840 = 0.267857**, which is what
-the widget shows. It is *not* near zero; the near-zero value for that pattern is the queen
-one, −0.086.
+### Checks a rook-and-queen test cannot make
+
+Reproducing rook and queen is a good first check but a weak one: both are symmetric,
+binary and 3 by 3. A boolean coercion anywhere in the accumulation — treating any non-zero
+weight as 1 — reproduces both *exactly* while computing every decay kernel as though it
+were uniform. Four further checks catch what it misses:
+
+1. **Scale invariance.** Kernel × 3 gives an identical result.
+2. **A weight of 2 equals two contributions of 1.** Catches the boolean bug directly.
+3. **Even, 1/d and 1/d² give three distinct values** on the same pattern. If any two
+   coincide, weights are being ignored.
+4. **Half queen equals queen exactly.** See below — this also confirms `S0` is summing
+   weights rather than counting cells.
+
+Stripes-every-3 was also derived by hand. With 75 grey cells the mean is 1/3, so grey
+deviations are 2/3 and white −1/3. All 210 vertical pairs match (70 grey-grey, 140
+white-white); of the 210 horizontal pairs 135 differ and 75 are white-white. Numerator
+70(4/9) + 140(1/9) + 135(−2/9) + 75(1/9) = 25, denominator 75(4/9) + 150(1/9) = 50, so
+I = (225/840)(50/50) = **225/840 = 0.267857**. Not near zero; the near-zero figure for that
+pattern is the queen one at −0.086.
 
 ## Presets
 
@@ -98,6 +128,55 @@ Row `r` and column `c` both count from 0.
 | Big patches | smoothed field, seed 8080, radius 3, 2 passes, 113 grey |
 | Random 1 | mulberry32, seed 20260819, threshold 0.5 |
 | Random 2 | mulberry32, seed 77123, threshold 0.5 |
+
+### Kernel presets
+
+Digit strings are the URL encoding: 24 digits, row by row, centre omitted.
+
+| Label | Kernel | Digits |
+|---|---|---|
+| Rook | 1 at N, S, E, W | `000000010001100010000000` |
+| Queen | 1 at all eight surrounding | `000000111001100111000000` |
+| Half queen | 1 at N, NE, E, SE | `000000011000100001000000` |
+| Even | 1 at all 24 | `111111111111111111111111` |
+| 1/d | rings 9, 6, 5, 4, 3 | `345434696459954696434543` |
+| 1/d² | rings 8, 4, 2, 2, 1 | `122212484228822484212221` |
+
+Ring order is by distance from the centre: 1, √2, 2, √5, 2√2.
+
+**The decay ramps are rounded, and the rounding was chosen by measurement.** Scaling each
+curve to K levels and comparing the resulting I against exact fractional weights:
+
+| Levels | 1/d | worst error | 1/d² | worst error |
+|---|---|---|---|---|
+| 0–3 | 3,2,2,1,1 | 0.093 | 3,1,1,1,**0** | 0.180 |
+| 0–4 | 4,3,2,2,1 | 0.040 | 4,2,1,1,**0** | 0.090 |
+| 0–8 | 8,6,4,4,3 | 0.016 | **8,4,2,2,1** | **0.029** |
+| 0–9 | **9,6,5,4,3** | **0.023** | 9,4,2,2,1 | 0.067 |
+
+Three levels cannot represent 1/d² at all: the corners round to zero and three of the five
+rings flatten to the same value. The cells accept 0–9, but **1/d² peaks at 8 rather than
+9** — it need not use the top of the range, and halving cleanly (8, 4, 2, 2, 1) is both
+more accurate and easier to read as an idea.
+
+### Half queen, and why it matters
+
+Half queen keeps north, north-east, east and south-east: four ones and four zeros, one
+cell from each opposite pair. Because it is exactly half the queen ring, it returns
+**exactly the same Moran's I as the full queen on every pattern**, to twelve decimal
+places.
+
+That is the point of it. The kernel plainly points one way, and the number does not move.
+Since `z'Wz = z'((W+W')/2)z`, only the symmetric part of the weight matrix reaches the
+numerator: **Moran's I cannot see direction.** A student who builds an eastward kernel to
+detect an eastward process gets an answer that looks meaningful and says nothing about
+direction.
+
+Note that a non-antipodal choice of four — say N, NE, E, SW — coincides with queen on the
+symmetric patterns but *not* on Patches (+0.5668 against +0.5348), so the exact identity
+depends on picking one from each opposite pair.
+
+This is stated in the "?" panel and nowhere on the face of the widget.
 
 ### The patchy patterns
 
@@ -149,6 +228,28 @@ no spatial pattern to measure, because it has no pattern at all.
 changes only the arrangement: +0.59 against +0.04. Spatial autocorrelation is about where
 things are, not how many there are.
 
+**The same pattern under six kernels** gives six different answers. Checkerboard runs from
+−1.00 under rook to −0.01 under even weights. The pattern did not change; the question did.
+
+**Half queen against Queen** does not move the number at all. See above.
+
+## The kernel editor
+
+Click a cell to step its weight up, wrapping from 9 back to 0; shift-click or right-click
+steps down. On a keyboard, arrow keys move around the kernel and alt-up, alt-down, `+` or
+`−` change the weight under the cursor.
+
+Each cell shows **its number, shaded by its share of the total**. The numeral carries the
+meaning and the shading reinforces it, because nine levels of grey will not survive a
+projector, a compressed recording, or a colour-blind reader. Shading runs from white at
+zero to 52 per cent lightness at the largest weight — the floor is set by contrast, since
+the numeral must keep 4.5:1 against its own cell. Measured worst case is 4.81:1, a 9 on
+`rgb(133,133,133)`. Zero cells are left blank rather than showing `0`, so the shape of the
+kernel reads at a glance.
+
+A preset button lights up when the kernel matches it exactly, and goes dark the moment a
+cell is edited.
+
 ## Painting
 
 Pressing a square sets it to the opposite of what it was, and that colour becomes the
@@ -170,8 +271,12 @@ entirely by the pointer events.
 
 Two layouts, split at 56rem, following `docs/principles.md` section 3.
 
-- **Narrow**: single column — heading, grid, readout, controls, presets.
-- **Wide**: grid on the left, readout and controls in a sticky right column.
+- **Narrow**: single column — heading, grid, readout, kernel, patterns.
+- **Wide**: grid on the left; readout, kernel and patterns stacked in a right column.
+- **Wide and presenting**: three columns. Grid on the left, readout with the pattern
+  buttons beneath it in the middle, kernel and its presets on the right. There is not
+  enough vertical room for everything once the kernel is on screen, and a projector has
+  width to spare, so presentation mode spreads sideways rather than down.
 
 ### Presentation mode
 
@@ -197,7 +302,9 @@ slide or handed out.
 
 - `g` — the 225 cells packed into 29 bytes, little-endian bit order within each byte,
   then base64url with padding stripped. Roughly 39 characters.
-- `w` — `queen`; absent means rook.
+- `k` — the kernel as 24 digits, row by row, centre omitted. Absent means rook.
+- `w` — `rook` or `queen`, honoured as shorthand when `k` is absent, so links already
+  written on slides before the kernel editor existed still work. `k` wins if both appear.
 - `present` — `1`; absent means normal size.
 
 The URL is rewritten with `history.replaceState` on every change, so the back button is
@@ -207,6 +314,8 @@ not filled with every click.
 
 Measured, not assumed.
 
+- Kernel cells are 36 px on a 375 px viewport, and the numeral holds at least 4.81:1
+  against its own shading.
 - Grid cells are 23.98 px on a 375 px viewport. **This is the one place we cannot reach
   the 44 px target size**: fifteen columns across a phone leaves 24 px, and the spatial
   arrangement is the content. It meets the 24 px WCAG 2.2 AA minimum and no more. Keyboard
@@ -258,6 +367,26 @@ Testing the drag found a real defect: pointer events arrive too sparsely for a f
 stroke, and the first implementation painted a dotted trail. Fixed by interpolating along
 the line between positions.
 
+**Revised 2026-08-19, third pass: the weights kernel.** The rook and queen buttons are
+replaced by an editable 5 by 5 kernel with six presets, so "what counts as a neighbour"
+becomes a picture a student designs rather than a word they are told. Decided in a
+grilling session; the reasoning is recorded above where it bears on the numbers.
+
+Design questions that turned on evidence rather than taste: row standardisation was
+rejected because it destroys stripes = exactly 0; the range is 0–9 but 1/d² peaks at 8
+because it rounds better; the kernel is 5 by 5 because 3 by 3 has nothing to add beyond
+queen and cannot express decay; edges stay clipped because wrapping loses every exact
+value; presentation mode went to three columns because the kernel does not fit vertically.
+
+Verification found no errors this pass. The one mismatch during testing was in the
+checking script, not the widget — a hand-typed kernel string.
+
+**Known and accepted:** the direction-blindness demonstrated by Half queen is documented
+in the "?" panel only, with no on-screen warning when a kernel is asymmetric. A student
+who builds a directional kernel without opening the panel has no signal that the statistic
+is ignoring what they drew. This was a deliberate call against putting a warning on the
+face of the widget.
+
 **Not yet done:** a real projector in a lit room, and a compressed recording. Those need
 the lecture machine.
 
@@ -268,6 +397,9 @@ the lecture machine.
 - No option to change grid size.
 - Weights are binary, not row standardised. Row standardisation changes the numbers and is
   worth a future control.
+- Weights are not row standardised, and there is no control to switch. That choice is
+  itself a teachable one and could become a further preset or toggle.
+- The kernel is fixed at 5 by 5, so decay beyond two cells cannot be expressed.
 - Dragging to paint works with a mouse or pen but not by touch, for the scrolling reason
   above. A press-and-hold to arm the brush would be one way round it if it turns out to
   matter.
