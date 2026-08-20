@@ -12,7 +12,6 @@
   --cell-line: #8a8a8a;
   --rule: 2px;
   --kernel-line: #2b2b2b;
-  --local-line: #ffffff;
   --ink: #16181d;
   --ink-soft: #545a63;
   --page: #ffffff;
@@ -90,7 +89,10 @@ body[data-present="1"] .intro { display: none; }
      share the right-hand column, and the pattern buttons run as one wide row beneath
      everything. Stacking the grids made the column taller than any projector. */
   body[data-present="1"] .main {
-    grid-template-columns: auto auto minmax(0, 1fr) minmax(0, 1fr);
+    /* The kernel column carries the most: a two-line legend, the kernel itself, six
+       presets and the significance controls. Give it the wider share so the presets fit
+       two rows instead of three. */
+    grid-template-columns: auto auto minmax(0, 0.85fr) minmax(0, 1.15fr);
     grid-template-areas: "grid     local    readout  controls"
                          "patterns patterns patterns patterns";
     align-content: start;
@@ -98,6 +100,7 @@ body[data-present="1"] .intro { display: none; }
   body[data-present="1"] .gridwrap,
   body[data-present="1"] .localwrap { width: min(25vw, 54vh); }
   body[data-present="1"] #kernel { width: calc(8.5rem * var(--ui)); }
+  body[data-present="1"] .alpharow { margin-top: calc(0.3rem * var(--ui)); }
   body[data-present="1"] .patterns { flex-direction: row; flex-wrap: wrap; align-items: flex-end; }
   /* flex-basis auto uses the content width, and ten pattern buttons is wider than the
      row, so the extent control got pushed onto its own line. Basis 0 lets the presets
@@ -144,14 +147,12 @@ body[data-present="1"] .intro { display: none; }
   width: min(97vw, 58vh, 34rem);
   aspect-ratio: 1 / 1;
   background: var(--cell-line);
-  border: calc(2px * var(--ui)) solid var(--cell-line);
+  border: var(--rule) solid var(--cell-line);
 }
-/* White rules on the cluster map, which is how cluster maps are normally drawn: a grey
-   rule is nearly invisible against saturated red, 1.16 to 1, so regions blurred into
-   blocks. White separates the strong colours cleanly. The rules are the grid's own
-   background showing through the gaps, so they stay exactly one rule wide whatever the
-   extent. The outer border stays grey, matching the pattern grid beside it. */
-.lcell { border: 1px solid var(--local-line); min-width: 0; min-height: 0; }
+/* The cluster map is ruled in the same grey as the pattern grid beside it, so the pair
+   reads as one instrument. The rules are the grid's own background showing through the
+   gaps, which keeps them exactly one rule wide whatever the extent. */
+.lcell { border: 0; min-width: 0; min-height: 0; }
 .localwrap .pairs { align-self: stretch; }
 .key {
   display: grid; grid-template-columns: 1fr 1fr;
@@ -307,6 +308,8 @@ body[data-present="1"] .key { font-size: calc(0.72rem * var(--ui)); }
   line-height: 1;
   width: calc(1.55rem * var(--ui));
   height: calc(1.55rem * var(--ui));
+  min-width: 24px;
+  min-height: 24px;
   margin-left: calc(0.3rem * var(--ui));
   vertical-align: middle;
   border: calc(2px * var(--ui)) solid var(--edge);
@@ -317,6 +320,36 @@ body[data-present="1"] .key { font-size: calc(0.72rem * var(--ui)); }
 }
 .help[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
 .help:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
+.info {
+  font: inherit;
+  font-size: calc(0.72rem * var(--ui));
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  /* 24px is the smallest a target may be. The primary controls are 44; these sit
+     inline in a legend, where 44 would overlap the row beneath. */
+  width: calc(1.5rem * var(--ui));
+  height: calc(1.5rem * var(--ui));
+  min-width: 24px;
+  min-height: 24px;
+  margin-left: calc(0.3rem * var(--ui));
+  vertical-align: middle;
+  border: calc(1.5px * var(--ui)) solid var(--edge);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.info[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.info:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
+.refs {
+  margin-top: calc(0.7rem * var(--ui)) !important;
+  padding-top: calc(0.5rem * var(--ui));
+  border-top: 1px solid var(--edge);
+  font-size: 0.92em;
+  color: var(--ink-soft);
+}
+.refs b { color: var(--ink); font-weight: 600; }
 .help-panel {
   background: var(--panel);
   border: 1px solid var(--edge);
@@ -391,6 +424,13 @@ button.opt:focus-visible, button.act:focus-visible {
   outline: calc(3px * var(--ui)) solid var(--focus);
   outline-offset: 2px;
 }
+.alpharow { margin-top: calc(0.45rem * var(--ui)); align-items: center; }
+.alpharow[hidden] { display: none; }
+.alphalabel { font-size: calc(0.8rem * var(--ui)); color: var(--ink-soft); }
+.alpharow .opt {
+  font-variant-numeric: tabular-nums;
+  padding-left: calc(0.6rem * var(--ui)); padding-right: calc(0.6rem * var(--ui));
+}
 .presets { margin-top: calc(0.2rem * var(--ui)); }
 .term { opacity: 0.72; font-size: 0.9em; }
 button.opt[aria-pressed="true"] .term { opacity: 0.85; }
@@ -440,7 +480,7 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
 
       <div class="stat">
         <h2>Global Moran&rsquo;s I
-          <button class="help" id="helpbtn" aria-expanded="false"
+          <button class="help" data-info="help" aria-expanded="false"
                   aria-controls="help" title="What does this number mean?">?</button>
         </h2>
         <p class="big" id="moran">&mdash;</p>
@@ -514,17 +554,41 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
         <p>Click a square to change it, and drag to keep painting the same colour. With a
            keyboard, move with the arrow keys and press space. Press <kbd>p</kbd> for the
            big screen version.</p>
+        <p class="refs"><b>For more, see:</b>
+           Moran, P.A.P. (1950) &ldquo;Notes on Continuous Stochastic Phenomena.&rdquo;
+           <i>Biometrika</i> 37(1&ndash;2): 17&ndash;23, where the measure comes from
+           &middot; Tobler, W.R. (1970) &ldquo;A Computer Movie Simulating Urban Growth in
+           the Detroit Region.&rdquo; <i>Economic Geography</i> 46(sup1): 234&ndash;240,
+           for the idea that near things are more alike than distant ones.</p>
         <p>Made by Luke Bergmann. Code MIT, text CC BY 4.0.
            <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
       </div>
 
       <fieldset>
-        <legend>Show on the second grid</legend>
+        <legend>Show on the second grid <button class="info" data-info="info-view" aria-expanded="false" aria-controls="info-view" title="What is on the second grid?">i</button></legend>
         <div class="btnrow">
           <button class="opt" id="view-clusters" aria-pressed="true">Clusters</button>
           <button class="opt" id="view-values" aria-pressed="false">Local I</button>
         </div>
       </fieldset>
+
+      <div class="help-panel" id="info-view" hidden>
+        <p>The number above is one figure for the whole map. The second grid gives
+           <strong>every square its own</strong>. A square scores high when it and the
+           squares around it are alike, whichever colour they are, and low when it is the
+           odd one out among its neighbours.</p>
+        <p><strong>Clusters</strong> sorts every square into one of four kinds: black
+           sitting among black, white among white, and the two ways of being the odd one
+           out. This is the map most software draws, and the four names
+           &mdash; high&ndash;high, low&ndash;low, high&ndash;low, low&ndash;high &mdash;
+           are what you will meet there. Here high simply means black, because a black
+           square is above the average and a white one below it.</p>
+        <p><strong>Local I</strong> shows the numbers behind those colours. Their average
+           is exactly the single number above: the global figure is not a separate
+           measurement, it is the average of these.</p>
+        <p class="refs"><b>For more, see:</b> Anselin, L. (1995) &ldquo;Local Indicators of Spatial Association &mdash; LISA.&rdquo; <i>Geographical Analysis</i> 27(2): 93&ndash;115.</p>
+      </div>
+
 
       <p class="visually-hidden" aria-live="polite" id="live"></p>
 
@@ -533,30 +597,120 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     <div class="controls">
 
       <fieldset>
-        <legend>Which squares count as neighbours, and how much</legend>
+        <legend>Which squares count as neighbours, and how much <button class="info" data-info="info-kernel" aria-expanded="false" aria-controls="info-kernel" title="Why does this matter?">i</button></legend>
         <div id="kernel" role="grid"
              aria-label="5 by 5 neighbour weights around the focal square. Click a square to change its weight."></div>
       </fieldset>
 
       <div class="btnrow" id="kernel-presets"></div>
 
+      <div class="help-panel" id="info-kernel" hidden>
+        <p><strong>Which squares count as neighbours is a choice you make</strong>, not
+           something the data hands you. The small grid is that choice, drawn out. The dot
+           at the centre is the square being measured; the numbers around it say how much
+           each nearby square counts towards it. Only the ratios matter, so doubling every
+           number changes nothing.</p>
+        <p><strong>Rook</strong> counts the four squares sharing an edge,
+           <strong>queen</strong> adds the four corners &mdash; named, as you would guess,
+           after the way the chess pieces move &mdash; and the decay kernels let distant
+           squares count for less rather than not at all. The same map can give very different answers under
+           different choices &mdash; the checkerboard scores &minus;1.00 under rook and
+           about &minus;0.03 under queen.</p>
+        <p><strong>Counting more neighbours is not just a nicer answer, it is the
+           difference between having one and not.</strong> With only four neighbours the
+           strongest possible result &mdash; all four matching &mdash; happens by luck
+           about six times in a hundred, which is commoner than the usual one-in-twenty
+           bar. So under rook nothing can ever be significant, whatever the pattern.
+           Eight neighbours get you to about three in a thousand, which can.</p>
+        <p>One limit worth knowing: <strong>Moran&rsquo;s I cannot see direction.</strong>
+           Load <strong>Half queen</strong>, which keeps only the four neighbours on one
+           side, and compare it with <strong>Queen</strong>. The number does not move at
+           all.</p>
+        <p class="refs"><b>For more, see:</b>
+           Cliff, A.D. &amp; Ord, J.K. (1981) <i>Spatial Processes: Models and
+           Applications</i>. London: Pion &mdash; the standard treatment of spatial
+           weights, rook&rsquo;s-case and queen&rsquo;s-case contiguity among them, and of
+           the distribution theory behind Moran&rsquo;s I.</p>
+      </div>
+
+
       <fieldset>
-        <legend>Test each square against chance</legend>
+        <legend>Test each square against chance <button class="info" data-info="info-sig" aria-expanded="false" aria-controls="info-sig" title="What does the test do?">i</button></legend>
         <div class="btnrow">
           <button class="opt" id="sig-off" aria-pressed="true">Off</button>
           <button class="opt" id="sig-raw" aria-pressed="false">Uncorrected</button>
           <button class="opt" id="sig-fdr" aria-pressed="false">Corrected <span class="term">FDR</span></button>
         </div>
+        <div class="btnrow alpharow" id="alpharow" role="group" aria-label="Significance level" hidden>
+          <span class="alphalabel" id="alphalabel">Significance level &alpha;</span>
+          <button class="opt" data-alpha="0.1">0.10</button>
+          <button class="opt" data-alpha="0.05">0.05</button>
+          <button class="opt" data-alpha="0.01">0.01</button>
+        </div>
       </fieldset>
+
+      <div class="help-panel" id="info-sig" hidden>
+        <p>The question is whether a square&rsquo;s neighbourhood could have come out this
+           way by luck. To answer it, the grid is dealt again: this square keeps its own
+           colour, every other square is shuffled at random, and we look at the
+           neighbourhood luck produced. Do that 999 times and count how often chance did
+           as well as reality. If that almost never happens, the square is worth noticing.
+           That fraction is the p-value.</p>
+        <p><strong>Uncorrected</strong> judges each square as though it were the only one
+           you asked about. But you are asking about every square at once, and rare things
+           stop being rare when you look often enough &mdash; roll a die twice and a six
+           is mildly interesting, roll it two hundred times and it is not.</p>
+        <p><strong>Corrected</strong> takes that into account, holding the share of
+           mistakes among the squares it marks to about one in twenty. Load
+           <strong>Random 2</strong>, choose a wide kernel, and switch between the two:
+           uncorrected marks a scatter of squares in a pattern with no structure
+           whatsoever, and correction removes every one.</p>
+        <p>The cost is real in the other direction too. Correction throws away the weakest
+           genuine findings along with the flukes, which is the trade it exists to make.</p>
+        <p><strong>The number below the buttons sets the bar</strong>, and it is a choice
+           as well. At 0.10 you accept more mistakes in order to miss less; at 0.01 the
+           reverse. Nothing in the data tells you which to pick, and one in twenty is a
+           convention rather than a fact about the world.</p>
+        <p><strong>It is not the same quantity in the two modes</strong>, which is why its
+           name changes. Uncorrected, it is the <em>significance level</em>
+           &alpha;: the chance of calling one square remarkable when it is not. Corrected,
+           it is <em>q</em>, the <em>false discovery rate</em>: the share of the squares
+           actually marked that you should expect to be mistakes. The first is a promise
+           about each test taken alone, the second a promise about the map as a whole.</p>
+        <p>A further nicety: because these p-values come from shuffling rather than from a
+           formula, they are <em>pseudo</em> p-values, and the smallest one 999 shuffles
+           can produce is 0.001.</p>
+        <p class="refs"><b>For more, see:</b> Anselin, L. (1995) &ldquo;Local Indicators of Spatial Association &mdash; LISA.&rdquo; <i>Geographical Analysis</i> 27(2): 93&ndash;115. &middot; Benjamini, Y. &amp; Hochberg, Y. (1995) &ldquo;Controlling the False Discovery Rate: A Practical and Powerful Approach to Multiple Testing.&rdquo; <i>Journal of the Royal Statistical Society B</i> 57(1): 289&ndash;300. &middot; Caldas de Castro, M. &amp; Singer, B.H. (2006) &ldquo;Controlling the False Discovery Rate: A New Application to Account for Multiple and Dependent Tests in Local Statistics of Spatial Association.&rdquo; <i>Geographical Analysis</i> 38(2): 180&ndash;208.</p>
+      </div>
+
 
     </div>
 
     <div class="patterns">
 
       <fieldset>
-        <legend>Zoom / extent <span class="term">reloads the pattern</span></legend>
+        <legend>Zoom / extent <span class="term">reloads the pattern</span> <button class="info" data-info="info-extent" aria-expanded="false" aria-controls="info-extent" title="Why offer two sizes?">i</button></legend>
         <div class="btnrow" id="extents"></div>
       </fieldset>
+
+      <div class="help-panel" id="info-extent" hidden>
+        <p>The same picture, cut into more and smaller squares. Both grids stay the same
+           size on screen, so what changes is how finely the pattern is divided, not how
+           much of the world you are looking at.</p>
+        <p>This matters for the test. More squares means more questions asked at once,
+           which correction has to allow for &mdash; but it also means more genuine signal,
+           and that wins. With the same pattern and the same kernel, about 58 in every 100
+           squares survive correction on the small grid and about 71 in every 100 on the
+           large one.</p>
+        <p>It also changes what the kernel means. The kernel is measured in squares, so the
+           same choice of neighbours reaches half as far across the map when the squares
+           are half the size.</p>
+        <p><strong>Results depending on the size of the units you chose</strong> is a
+           general problem in geography, not a quirk of this widget. It goes by the name
+           of the modifiable areal unit problem.</p>
+        <p class="refs"><b>For more, see:</b> Openshaw, S. (1984) <i>The Modifiable Areal Unit Problem</i>. Concepts and Techniques in Modern Geography 38. Norwich: Geo Books. &middot; Fotheringham, A.S. &amp; Wong, D.W.S. (1991) &ldquo;The Modifiable Areal Unit Problem in Multivariate Statistical Analysis.&rdquo; <i>Environment and Planning A</i> 23(7): 1025&ndash;1044.</p>
+      </div>
+
 
       <fieldset class="presets">
         <legend>Load a pattern</legend>
@@ -899,7 +1053,10 @@ self.onmessage = function (e) {
   // Significance runs on a worker so a paint stroke never waits for it. The worker's
   // source is the script tag above; when Workers are unavailable the same source is
   // compiled on the main thread instead, so there is only ever one implementation.
-  var PERMS = 999, PERM_SEED = 424242, FDR_Q = 0.05, RAW_ALPHA = 0.05;
+  var PERMS = 999, PERM_SEED = 424242;
+  // One threshold governs both buttons: the alpha of the uncorrected test and the q of
+  // the corrected one. It is a choice, so it is a control rather than a constant.
+  var ALPHAS = [0.1, 0.05, 0.01], alpha = 0.05;
 
   // Reject the k smallest p-values, k being the largest index whose p is at or below
   // (index / m) * q. Kept on this side so that switching between corrected and
@@ -989,6 +1146,10 @@ self.onmessage = function (e) {
   })();
   // k wins if present. Otherwise w=rook|queen is honoured as shorthand, so links
   // already written on slides keep working.
+  (function () {
+    var a = parseFloat(params.get("a"));
+    if (ALPHAS.indexOf(a) >= 0) alpha = a;
+  })();
   var sigParam = params.get("sig");
   var sigMode = (sigParam === "raw") ? "raw"
               : (sigParam === "fdr" || sigParam === "1") ? "fdr" : "off";
@@ -1158,6 +1319,8 @@ self.onmessage = function (e) {
   });
 
   // ---------------------------------------------------------------- rendering
+  function alphaText() { return alpha === 0.1 ? "0.10" : alpha === 0.05 ? "0.05" : "0.01"; }
+
   function fmt(v) {
     var s = v.toFixed(2);
     if (s === "-0.00") s = "0.00";
@@ -1237,8 +1400,8 @@ self.onmessage = function (e) {
     }
 
     if (sigMode !== "off" && sigCache) {
-      mask = sigMode === "fdr" ? bhReject(sigCache.p, FDR_Q)
-                               : rawReject(sigCache.p, RAW_ALPHA);
+      mask = sigMode === "fdr" ? bhReject(sigCache.p, alpha)
+                               : rawReject(sigCache.p, alpha);
       for (i = 0; i < N; i++) {
         if (mask[i]) passing++;
         if (sigCache.p[i] < minP) minP = sigCache.p[i];
@@ -1269,21 +1432,24 @@ self.onmessage = function (e) {
       sigLineEl.textContent = sigPendingFor ? "Testing each square\u2026" : "";
     } else if (sigMode === "raw" && sigCache) {
       sigLineEl.textContent = passing === 0
-        ? "No square reaches p of 0.05, judged on its own. With this few neighbours the " +
-          "best result they can give happens by luck more often than that."
-        : passing + " of " + N + " squares reach p of 0.05, each judged on its own. Some " +
-          "of those are luck: test " + N + " squares and a few pass by chance. Try Random 2.";
+        ? "No square reaches p of " + alphaText() + ", judged on its own. With this few " +
+          "neighbours the best result they can give happens by luck more often than that."
+        : passing + " of " + N + " squares reach p of " + alphaText() + ", each judged on " +
+          "its own. Some of those are luck: test " + N + " squares and a few pass by " +
+          "chance. Try Random 2.";
     } else if (sigMode === "fdr" && sigCache) {
       // Two very different reasons for an empty map, and they must not be conflated.
       sigLineEl.textContent = passing > 0
         ? passing + " of " + N + " squares survive correction for testing all " + N + " at once."
-        : minP > RAW_ALPHA
-          ? "No square even reaches p of 0.05 on its own. With this few neighbours the " +
+        : minP > alpha
+          ? "No square even reaches p of " + alphaText() + " on its own. With this few " +
+            "neighbours the " +
             "best result they can give happens by luck more often than that, so nothing " +
             "here can be significant. Count more neighbours."
           : "No square survives correction for testing all " + N + " at once. Some do " +
-            "reach p of 0.05 judged on their own \u2014 switch to Uncorrected to see " +
-            "them \u2014 but not enough to stand out from " + N + " tries.";
+            "reach p of " + alphaText() + " judged on their own \u2014 switch to " +
+            "Uncorrected to see them \u2014 but not enough to stand out from " + N +
+            " tries.";
     } else if (clusters) {
       sigLineEl.textContent = counts[0] + " black among black, " + counts[1] +
         " white among white, " + counts[2] + " black among white, " + counts[3] +
@@ -1343,6 +1509,7 @@ self.onmessage = function (e) {
     if (!sameKernel(kernel, KERNELS[0].make())) p.set("k", encodeKernel(kernel));
     if (sigMode !== "off") p.set("sig", sigMode);
     if (SIDE !== 15) p.set("n", String(SIDE));
+    if (sigMode !== "off" && alpha !== 0.05) p.set("a", alphaText());
     if (localView === "values") p.set("view", "values");
     if (present) p.set("present", "1");
     history.replaceState(null, "", location.pathname + "?" + p.toString());
@@ -1524,10 +1691,35 @@ self.onmessage = function (e) {
   function setSig(mode) {
     sigMode = mode;
     for (var m in sigBtns) sigBtns[m].setAttribute("aria-pressed", m === mode ? "true" : "false");
+    alphaRow.hidden = mode === "off";
+    alphaLabelEl.innerHTML = alphaLabel();
+    alphaRow.setAttribute("aria-label", alphaLabelEl.textContent);
     render();
   }
   Object.keys(sigBtns).forEach(function (m) {
     sigBtns[m].addEventListener("click", function () { setSig(m); });
+  });
+
+  var alphaRow = document.getElementById("alpharow"), alphaLabelEl = document.getElementById("alphalabel");
+
+  // The same number is not the same quantity in the two modes, and saying so is the
+  // point. Uncorrected, it is the significance level alpha: the chance of calling a
+  // single square remarkable when it is not. Corrected, it is q, the false discovery
+  // rate: the share of the squares actually marked that are expected to be mistakes.
+  function alphaLabel() {
+    return sigMode === "fdr" ? "False discovery rate q" : "Significance level \u03b1";
+  }
+  function setAlpha(a) {
+    alpha = a;
+    alphaRow.querySelectorAll("[data-alpha]").forEach(function (b) {
+      b.setAttribute("aria-pressed", parseFloat(b.dataset.alpha) === a ? "true" : "false");
+    });
+    alphaLabelEl.innerHTML = alphaLabel();
+    alphaRow.setAttribute("aria-label", alphaLabelEl.textContent);
+    render();
+  }
+  alphaRow.querySelectorAll("[data-alpha]").forEach(function (b) {
+    b.addEventListener("click", function () { setAlpha(parseFloat(b.dataset.alpha)); });
   });
 
   var extentsEl = document.getElementById("extents"), extentBtns = {};
@@ -1575,11 +1767,15 @@ self.onmessage = function (e) {
   }
   presentBtn.addEventListener("click", function () { setPresent(!present); });
 
-  var helpBtn = document.getElementById("helpbtn"), helpPanel = document.getElementById("help");
-  helpBtn.addEventListener("click", function () {
-    var open = helpBtn.getAttribute("aria-expanded") === "true";
-    helpBtn.setAttribute("aria-expanded", open ? "false" : "true");
-    helpPanel.hidden = open;
+  // One handler for every explanatory panel, the headline "?" included.
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-info]");
+    if (!b) return;
+    var panel = document.getElementById(b.dataset.info);
+    if (!panel) return;
+    var open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", open ? "false" : "true");
+    panel.hidden = open;
   });
   document.addEventListener("keydown", function (e) {
     if (e.key === "p" && !e.metaKey && !e.ctrlKey && !e.altKey &&
@@ -1588,6 +1784,7 @@ self.onmessage = function (e) {
 
   // ---------------------------------------------------------------- go
   buildGrids();
+  setAlpha(alpha);
   EXTENTS.forEach(function (m) {
     extentBtns[m].setAttribute("aria-pressed", m === SIDE ? "true" : "false");
   });

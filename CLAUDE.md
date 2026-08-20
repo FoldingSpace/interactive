@@ -47,7 +47,12 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 6. Try it with no dependency first. So far nothing has needed one.
 7. Where the method fails, say so on screen. A blank result reads as a fact about the
    data when it is a fact about the method.
-8. Nothing ships without going through `docs/review.md`, including its correctness pass.
+8. Every control that embodies a choice carries an (i) explanation, ending in
+   `For more, see:` with real sources.
+9. **No citation ships unchecked.** A separate adversarial agent must confirm each source
+   exists, that its details are exact, and that it supports the claim attached to it.
+   Unconfirmable citations are removed, not hedged.
+10. Nothing ships without going through `docs/review.md`, including its correctness pass.
 
 ## Working notes
 

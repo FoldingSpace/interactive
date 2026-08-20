@@ -46,3 +46,66 @@ in `vendor/LICENSES/` alongside the code.
 - Added: YYYY-MM-DD
 - Notes: modifications made, if any
 ```
+
+---
+
+## Works cited in explanations
+
+Every entry below has been through the adversarial check required by `principles.md`
+section 11: a separate agent briefed to falsify each one, confirming the work exists, that
+the details are exact, and that it supports the claim attached to it.
+
+Checked 2026-08-20.
+
+| Work | Cited for | Status |
+|---|---|---|
+| Moran, P.A.P. (1950) "Notes on Continuous Stochastic Phenomena." *Biometrika* 37(1–2): 17–23. | Where the measure comes from. | Verified |
+| Tobler, W.R. (1970) "A Computer Movie Simulating Urban Growth in the Detroit Region." *Economic Geography* 46(sup1): 234–240. | Near things being more alike than distant ones. | Verified — the sentence was confirmed in the article text, and `sup1` is the correct issue, not the widely copied `46(2)`. |
+| Anselin, L. (1995) "Local Indicators of Spatial Association — LISA." *Geographical Analysis* 27(2): 93–115. | Local Moran's I; that the local values sum to a multiple of the global one; the conditional permutation approach. | Verified, all three |
+| Benjamini, Y. & Hochberg, Y. (1995) "Controlling the False Discovery Rate." *JRSS B* 57(1): 289–300. | The false discovery rate and the step-up procedure. | Verified |
+| Caldas de Castro, M. & Singer, B.H. (2006) "Controlling the False Discovery Rate…" *Geographical Analysis* 38(2): 180–208. | FDR applied to local spatial statistics, and preferred to Bonferroni. | Verified |
+| Openshaw, S. (1984) *The Modifiable Areal Unit Problem*. CATMOG 38. Norwich: Geo Books. | The scale effect: results changing with the size of the units. | Verified from the document itself. Some catalogues date it 1983. |
+| Fotheringham, A.S. & Wong, D.W.S. (1991) "The Modifiable Areal Unit Problem in Multivariate Statistical Analysis." *Environment and Planning A* 23(7): 1025–1044. | Results varying with scale and zoning. | Verified. Some databases corrupt the second author to "Wong, M.S."; D.W.S. is correct. |
+| Cliff, A.D. & Ord, J.K. (1981) *Spatial Processes: Models and Applications*. London: Pion. | The standard treatment of spatial weights, rook's-case and queen's-case contiguity among them, and of the distribution theory behind Moran's I. | Verified after two rounds. Not cited as the origin of the terminology — see below. |
+
+### What the check caught
+
+Two entries failed on the first round, and one more claim failed on the second. The
+process is worth recording, because the second round changed the answer twice.
+
+**Getis & Aldstadt (2004)** was cited for the consequences of choosing a spatial weights
+matrix. The paper exists, its details were exact, and it does not make that argument — it
+is a *constructive* paper proposing a way to **build** a weights matrix. **A real paper
+attached to a claim it never made**, which is precisely the failure that survives a casual
+read, and the reason this rule exists at all. Removed.
+
+**Its proposed replacement, Getis (2009)**, was not accepted on the checker's word, because
+proposing is not verifying. Sent back, it found the details exact but the piece to be a
+short reflective commentary in a themed anniversary issue, closed access, with an abstract
+merely *compatible* with the claim. It declined to certify from an abstract and reported
+CANNOT CONFIRM. **Removed rather than hedged**, per the rule. The widget makes the point
+by demonstration instead: checkerboard reads −1.00 under rook and −0.03 under queen.
+
+**"Where the rook and queen terminology comes from" was dropped as a claim entirely.**
+The second round found the terms in Cliff & Ord's own text — but also found them
+presenting the chess names as a borrowed convention, and crediting rook's case to Moran
+(1948) and Krishna Iyer (1949) and queen's case to Dacey (1965). No origination claim is
+now attached to anything. The panel says the names come from chess, which is true and
+claims nothing about who coined them.
+
+**The checker retracted two of its own round-one findings.** It had recommended switching
+to Cliff & Ord (1973) on the grounds that the 1981 volume might not contain the material;
+on the second pass it read the 1981 text, found it there, and withdrew the recommendation —
+so the original citation stands. It had also said Moran (1950) was not the origin of the
+*test*; having obtained the full paper, it withdrew that too, since Moran defines I, names
+it, derives its first two moments and argues asymptotic normality. What Cliff and Ord added
+was the general weights matrix for irregular lattices.
+
+An adversarial checker that will not correct itself is only half a check.
+
+### Cited in the documentation only
+
+| Work | Cited for | Status |
+|---|---|---|
+| Benjamini, Y. & Yekutieli, D. (2001) *Annals of Statistics* 29(4): 1165–1188. | That BH controls FDR under positive regression dependency, which is why it is defensible for spatial data. | Verified |
+| Westfall, P.H. & Young, S.S. (1993) *Resampling-Based Multiple Testing*. New York: Wiley. | The permutation minP/maxT procedures that account for dependence. | Verified. The short labels minP and maxT were popularised later, in the microarray literature; the procedures are theirs. |

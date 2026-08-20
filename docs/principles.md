@@ -299,7 +299,43 @@ Everything we ship is open, and everything borrowed is credited.
 - Our own code is MIT and our own text and figures are CC BY 4.0, so anyone can pick a
   widget up and adapt it. Anything we add must be compatible with that.
 
-## 11. Review before shipping
+## 11. Explanations and what they cite
+
+Every control that embodies a choice carries an **(i)** button: a short explanation, in
+plain words, of what the choice does and why it matters. Explaining to a beginner is not
+the same as leaving out the reasoning. Say what the thing does, say what it costs, and
+say what it cannot do — a student who understands the trade is better served than one who
+has been given a simplified answer they will later have to unlearn.
+
+Each explanation ends with **For more, see:** and one or two real sources, so a student who
+wants the proper treatment knows where to go and can see that the widget is reporting
+established work rather than inventing it.
+
+### Citations are checked adversarially, always
+
+**No source appears in this repository until a separate adversarial check has confirmed it
+exists and says what we claim it says.** The check is run by a subagent whose brief is to
+falsify, not confirm: assume every entry is wrong until independent evidence says
+otherwise, and report CANNOT CONFIRM rather than guessing.
+
+Three failure modes, in increasing order of harm:
+
+1. **The work does not exist.** A fabricated citation.
+2. **The work exists but the details are wrong** — year, journal, volume, pages. Makes a
+   real source hard to find and signals carelessness about the rest.
+3. **The work exists and is cited accurately, but does not support the claim attached to
+   it.** This is the worst, because it survives a casual look. A plausible paper next to a
+   claim it never made is harder to catch and more damaging than an obvious invention.
+
+The check must test all three, and the third explicitly. Anything reported as wrong is
+corrected or removed before the material ships — never softened, never left in with a
+hedge. Anything reported as CANNOT CONFIRM is removed, because an unverifiable citation in
+teaching material is worse than no citation.
+
+This applies to every explanation, caption, and document in the repository, not only to
+things labelled as a bibliography.
+
+## 12. Review before shipping
 
 No widget goes in front of students without the passes described in `docs/review.md`.
 The pedagogical critique is the one that can send the work back for redesign, not just

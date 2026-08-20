@@ -356,6 +356,25 @@ probability of roughly its neighbour count over 224 — under 2 per cent for roo
 for the widest kernel. This was a performance decision: per-square drawing needs about
 4,800 random numbers per permutation against 225, and the generator was the entire cost.
 
+### The threshold is a control, and is named for what it is
+
+Three values, 0.10, 0.05 and 0.01, shown only when a test is running. Because the masks
+are derived on the main thread from the stored p-values, changing it is instant.
+
+**Its name changes with the mode, because it is not the same quantity.** Uncorrected it is
+the **significance level α** — the chance of calling one square remarkable when it is not,
+a promise about each test taken alone. Corrected it is **q, the false discovery rate** —
+the share of the squares actually marked that should be expected to be mistakes, a promise
+about the map as a whole. Labelling both "how strict" would have blurred a distinction
+worth teaching, and neither name is ours: both are the standard terms.
+
+The p-values are **pseudo p-values**, since they come from shuffling rather than a
+distributional formula, and 999 shuffles cannot produce anything smaller than 0.001.
+
+The threshold also exposes the discreteness again: under queen, 0.10 and 0.05 select the
+same squares, because eight binary neighbours admit only about nine distinct p-values and
+none falls in that interval.
+
 ### Two thresholds, and why both are offered
 
 The control has three states: off, **uncorrected**, and **corrected** by Benjamini-Hochberg
@@ -479,6 +498,22 @@ reached and says a kernel with more neighbours gives finer p-values. This ties t
 significance test back to the kernel editor: the weights decide not only the answer but
 whether anything is detectable at all.
 
+## Explaining the choices
+
+Every control that embodies a choice carries an **(i)** button opening a short panel: the
+headline number, the second grid, the significance test, the kernel, and the extent. Each
+says what the choice does, what it costs, and what it cannot do, in plain words but
+without dropping the reasoning — a student who understands the trade is better served than
+one given a simplified answer they will later have to unlearn.
+
+Each panel ends with **For more, see:** and one or two sources. Per `principles.md`
+section 11, none of those appear until an adversarial check has confirmed the work exists,
+that its details are exact, and that it supports the claim attached to it.
+
+The **(i)** and **?** buttons are 24 px — the minimum a target may be rather than the 44 px
+the primary controls get. They sit inside a legend, where a 44 px hit area would overlap
+the control row beneath.
+
 ## Performance
 
 Significance runs on a **worker thread**, built from a `<script type="javascript/worker">`
@@ -598,7 +633,11 @@ Measured, not assumed.
   the 44 px target size**: fifteen columns across a phone leaves 24 px, and the spatial
   arrangement is the content. It meets the 24 px WCAG 2.2 AA minimum and no more. Keyboard
   operation is the alternative route.
-- All other controls are at least 44 px.
+- The pattern buttons, kernel presets, view, significance and threshold controls are at
+  least 44 px. The inline **(i)** and **?** buttons are 24 px, which is the minimum a
+  target may be rather than the 44 px target size — they sit inside a legend, where a
+  44 px hit area would overlap the control row beneath. An earlier draft of this file
+  claimed every control was 44 px; that was never true of the ? button.
 - Contrast: body text 17.8:1; secondary text 6.3:1; grey against white cells 4.1:1; cell
   borders 3.4:1 against grey and 14.2:1 against white; control borders 3.4:1 light and
   4.0:1 dark; focus ring 6.4:1. The control border started at 1.9:1 and was darkened after

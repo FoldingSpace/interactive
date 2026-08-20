@@ -104,6 +104,13 @@ legend text, captions.
 - Can any sentence be shorter without losing its meaning?
 - Read it aloud. Anything that trips the tongue gets rewritten.
 
+**Every source cited must have been through an adversarial check.** Not a look-over: a
+separate agent briefed to falsify each entry — does the work exist, are the details exact,
+and does it actually support the claim it is attached to? The third is the one that
+matters, because a real paper attached to a claim it never made survives casual reading.
+Anything wrong is corrected or removed; anything that cannot be confirmed is removed. See
+`principles.md` section 11.
+
 ## 4. Accessibility
 
 - Keyboard only: reach every control, operate every control, see where focus is.
