@@ -233,7 +233,11 @@ near the cut.
 the front must show the same grid, or the discussion falls apart. Never replace these
 with `Math.random()`.
 
-The opening state is "Patches" with rook neighbours. It shows clear positive
+The opening state is "Patches" with **queen** neighbours. Queen rather than rook because
+rook cannot reach significance at all — the strongest result four neighbours can give
+happens by luck about six times in a hundred — so a student who turns the test on under
+the default would meet a dead end before meeting the idea. Rook is one click away and
+`?w=rook` still names it. It shows clear positive
 autocorrelation in the first second, and unlike the geometric patterns it looks like
 something a student might actually map. "Start over" returns to it.
 
@@ -664,7 +668,7 @@ slide or handed out.
 
 - `g` — the 225 cells packed into 29 bytes, little-endian bit order within each byte,
   then base64url with padding stripped. Roughly 39 characters.
-- `k` — the kernel as 24 digits, row by row, centre omitted. Absent means rook.
+- `k` — the kernel as 24 digits, row by row, centre omitted. Absent means queen.
 - `w` — `rook` or `queen`, honoured as shorthand when `k` is absent, so links already
   written on slides before the kernel editor existed still work. `k` wins if both appear.
 - `sig` — `1` turns the significance test on; absent means off.

@@ -1174,8 +1174,10 @@ self.onmessage = function (e) {
     var n = parseInt(params.get("n"), 10);
     if (EXTENTS.indexOf(n) >= 0) { SIDE = n; N = SIDE * SIDE; }
   })();
-  // k wins if present. Otherwise w=rook|queen is honoured as shorthand, so links
-  // already written on slides keep working.
+  // k wins if present. Otherwise w=rook|queen is honoured as shorthand, so links already
+  // written on slides keep working. Queen is the default: it is the neighbour definition
+  // that can actually detect anything, so turning the test on gives a real answer rather
+  // than the rook dead end.
   (function () {
     var a = parseFloat(params.get("a"));
     if (ALPHAS.indexOf(a) >= 0) alpha = a;
@@ -1185,7 +1187,7 @@ self.onmessage = function (e) {
               : (sigParam === "fdr" || sigParam === "1") ? "fdr" : "off";
   var localView = params.get("view") === "values" ? "values" : "clusters";
   var kernel = decodeKernel(params.get("k")) ||
-               (params.get("w") === "queen" ? KERNELS[1].make() : KERNELS[0].make());
+               (params.get("w") === "rook" ? KERNELS[0].make() : KERNELS[1].make());
   var present = params.get("present") === "1";
   var opening = PRESETS[6].make();              // patches: clustered, and looks like real data
   var grid = decode(params.get("g") || "") || opening;
@@ -1536,7 +1538,7 @@ self.onmessage = function (e) {
 
     var p = new URLSearchParams();
     p.set("g", encode(grid));
-    if (!sameKernel(kernel, KERNELS[0].make())) p.set("k", encodeKernel(kernel));
+    if (!sameKernel(kernel, KERNELS[1].make())) p.set("k", encodeKernel(kernel));
     if (sigMode !== "off") p.set("sig", sigMode);
     if (SIDE !== 15) p.set("n", String(SIDE));
     if (sigMode !== "off" && alpha !== 0.05) p.set("a", alphaText());
@@ -1782,7 +1784,7 @@ self.onmessage = function (e) {
 
   document.getElementById("reset").addEventListener("click", function () {
     grid = PRESETS[6].make();
-    kernel = KERNELS[0].make();
+    kernel = KERNELS[1].make();
     sigCache = null; sigPendingFor = null;
     render();
     liveEl.textContent = "Reset to the starting pattern and rook weights.";
