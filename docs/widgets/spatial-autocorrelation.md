@@ -407,30 +407,63 @@ holding the same thing all survive the change. Rules drop from 2 px to 1 px at t
 extent so the picture does not drown in lines; they are the grid's own background showing
 through a `gap`, which keeps them exactly one rule wide however many cells there are.
 
-### One surface, two sets of units
+### One lattice, clipped
 
-The two extents show **the same pattern**, not two draws that happen to resemble each
-other. The random field and its smoothing happen once, always on the 30 × 30 lattice, so
-the surface does not depend on the extent at all; for the coarse extent each 2 × 2 block is
-averaged into one square. The 15 × 15 pattern is literally the 30 × 30 one aggregated.
+Every pattern is generated once on the 30 × 30 lattice, and the smaller extent is a
+**centred 15 × 15 window cut out of it**. A square therefore means the same thing at either
+size, and the small grid shows less of the same world rather than the same world redrawn.
+Verified: all eight patterns match their window exactly, cell for cell.
 
-Verified: the coarse square agrees with the majority of its own 2 × 2 block in 224 of 225
-cases, the exception being a genuine 2–2 tie at the threshold. Black density holds at 50.2
-per cent either way — 113 of 225 and 452 of 900.
+**Clipping is the only derivation that works for all of them.** Averaging 2 × 2 blocks gives
+a 2–2 tie in every block of a checkerboard; sampling every other square turns a
+checkerboard into a solid colour. Cutting a window leaves each pattern exactly what it was,
+so the exact results survive: **checkerboard −1.00 and stripes 0.00 under rook at both
+extents**.
 
-The random patterns are **sampled** from the same lattice rather than redrawn, taking one
-square per block. Sampling and not averaging, because averaging noise would manufacture
-clustering that is not in it.
+**The patch seeds were chosen by search, and that is not a detail.** Clipping a window out
+of a patchy surface lands somewhere black-heavy or white-heavy: the first seeds tried gave
+67 per cent black in the window for Patches and 22 per cent for Big patches. At those
+densities the small extent confounds how much black there is with how it is arranged,
+which is precisely what `principles.md` section 5 exists to prevent. Seeds 209 and 1100
+were found by searching for a centred window holding 113 black squares of 225 — the same
+share as the full lattice — while staying visibly multi-blob at both sizes. Density now
+holds at 50 per cent for both patterns at both extents.
 
-The geometric patterns stay rules rather than pictures. A cell-level checkerboard at 30 × 30
-is finer in absolute terms than at 15 × 15, but making it a 2 × 2 block checkerboard to
-preserve apparent size would destroy the exact −1.0000, which is worth more. Both exact
-results hold at both extents: **checkerboard −1.0000 and stripes 0.0000 under rook**.
+The search ran in Node against a copy of the widget's own generator rather than a
+reimplementation, because an earlier reimplementation of the same random number generator
+silently diverged and cost a round of confusion.
 
-**This construction is the point, not a convenience.** One surface observed through two
-sets of units is the modifiable areal unit problem itself, and the widget now demonstrates
-the scale effect in a click: the same Patches surface reads **+0.58 at 15 × 15 and +0.67 at
-30 × 30** under queen weights. Nothing about the world changed; only the units did.
+**What the control shows, and what it turned out not to show.** Clipping holds the square
+size fixed and changes only how much is on screen, so this is a change of *study area*,
+not of scale.
+
+It was built expecting to demonstrate statistical power — more squares, more tests to
+correct for, but more real signal too, with the second winning. Measured, **it does the
+opposite**, and the reason is worth more than the expectation was:
+
+| Extent | Survive correction (Patches, 1/d²) | Global I (queen) |
+|---|---|---|
+| 15 × 15 window | 164 / 225 = **73%** | **+0.69** |
+| 30 × 30 full | 606 / 900 = **67%** | **+0.62** |
+
+The window sits over the middle of a large patch, so it is genuinely more clustered than
+the whole surface. **Where the boundary is drawn changes the answer**, and here that effect
+beats the power effect outright. That is a real and awkward problem in spatial analysis
+rather than a defect, so the panel teaches it directly.
+
+Under the earlier aggregation construction the power comparison *was* clean — 58 per cent
+against 71 per cent — because the area was held fixed and only resolution changed. Clipping
+buys uniform treatment of every pattern, including the checkerboard that aggregation
+destroys, and pays for it by confounding the power comparison with the choice of window.
+That trade is worth knowing if the control is ever revisited.
+
+**The citations were re-pointed rather than left in place.** The extent panel previously
+invoked the modifiable areal unit problem, which under clipping would be wrong: MAUP is
+about the size and drawing of the units, and clipping changes neither. The panel now says
+plainly what the control does not change, and cites Openshaw and Fotheringham & Wong for
+that neighbouring problem — a claim they do support. Attaching a real source to a claim it
+does not support is the failure `principles.md` section 11 exists to catch, and it would
+have been embarrassing to commit it in the same session as the rule.
 
 The kernel is deliberately *not* scaled. It is measured in squares, so the same kernel is
 a finer neighbourhood on the larger grid — which is the honest thing for it to be, and a

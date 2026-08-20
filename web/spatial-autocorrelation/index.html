@@ -694,21 +694,30 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
       </fieldset>
 
       <div class="help-panel" id="info-extent" hidden>
-        <p>The same picture, cut into more and smaller squares. Both grids stay the same
-           size on screen, so what changes is how finely the pattern is divided, not how
-           much of the world you are looking at.</p>
-        <p>This matters for the test. More squares means more questions asked at once,
-           which correction has to allow for &mdash; but it also means more genuine signal,
-           and that wins. With the same pattern and the same kernel, about 58 in every 100
-           squares survive correction on the small grid and about 71 in every 100 on the
-           large one.</p>
-        <p>It also changes what the kernel means. The kernel is measured in squares, so the
-           same choice of neighbours reaches half as far across the map when the squares
-           are half the size.</p>
-        <p><strong>Results depending on the size of the units you chose</strong> is a
-           general problem in geography, not a quirk of this widget. It goes by the name
-           of the modifiable areal unit problem.</p>
-        <p class="refs"><b>For more, see:</b> Openshaw, S. (1984) <i>The Modifiable Areal Unit Problem</i>. Concepts and Techniques in Modern Geography 38. Norwich: Geo Books. &middot; Fotheringham, A.S. &amp; Wong, D.W.S. (1991) &ldquo;The Modifiable Areal Unit Problem in Multivariate Statistical Analysis.&rdquo; <i>Environment and Planning A</i> 23(7): 1025&ndash;1044.</p>
+        <p>The squares are the same size in both. What changes is <strong>how much of the
+           map you are looking at</strong>: the smaller grid is a window cut out of the
+           middle of the larger one, not a different pattern.</p>
+        <p><strong>Where you draw the boundary changes the answer.</strong> Load
+           <strong>Patches</strong> and switch between the two. The window scores higher
+           than the whole, because it happens to sit over the middle of a large patch. Move
+           the boundary and you would get a different number from the same world &mdash; a
+           real difficulty in spatial analysis, not an artefact of this widget.</p>
+        <p>There is a second effect pulling the other way. More squares means more
+           questions asked at once, which correction has to allow for &mdash; but it also
+           means more genuine signal, and that usually wins. Here the two effects fight and
+           the boundary wins: 73 in every 100 squares survive correction on the window
+           against 67 on the whole.</p>
+        <p>Note what this control does <em>not</em> change: the size of the squares. Making
+           the units themselves bigger or smaller, or drawing their boundaries differently,
+           is a separate and equally awkward problem, known as the modifiable areal unit
+           problem.</p>
+        <p class="refs"><b>For more, see:</b>
+           Openshaw, S. (1984) <i>The Modifiable Areal Unit Problem</i>. Concepts and
+           Techniques in Modern Geography 38. Norwich: Geo Books &middot;
+           Fotheringham, A.S. &amp; Wong, D.W.S. (1991) &ldquo;The Modifiable Areal Unit
+           Problem in Multivariate Statistical Analysis.&rdquo; <i>Environment and
+           Planning A</i> 23(7): 1025&ndash;1044 &mdash; both on results changing with the
+           size and drawing of the units, which is the neighbouring problem to this one.</p>
       </div>
 
 
@@ -836,8 +845,7 @@ self.onmessage = function (e) {
   var N = SIDE * SIDE;
   // Everything that is measured in cells scales with the extent, so a pattern means the
   // same shape at either size rather than the same number of cells.
-  function scaled(v) { return Math.max(1, Math.round(v * SIDE / 15)); }
-  function halfish() { return Math.round(N * 113 / 225); }
+
 
   // ---------------------------------------------------------------- patterns
   // Fixed seeds so that every device shows the same "random" pattern. A phone
@@ -862,26 +870,52 @@ self.onmessage = function (e) {
       for (c = 0; c < SIDE; c++) g[r * SIDE + c] = f[(r * k) * BASE + (c * k)];
     return g;
   }
-  // Patchy patterns: one underlying surface, observed at whichever extent is in use.
+  // Every pattern is generated once on the 30 by 30 lattice and the smaller extent is a
+  // centred window cut out of it. So the squares mean the same thing at either size and
+  // the small grid shows less of the same world, rather than the same world redrawn.
   //
-  // The random field and its smoothing happen once, always on the 30 by 30 lattice, so
-  // the surface does not depend on the extent at all. For the coarser extent each 2 by 2
-  // block is averaged into a single square. The 15 by 15 pattern is therefore literally
-  // the 30 by 30 one aggregated, not a second draw that happens to look similar -- which
-  // is the honest way to offer two extents, and is the modifiable areal unit problem
-  // made concrete: one surface, two sets of units.
+  // Clipping is the only derivation that works for all of them. Averaging 2 by 2 blocks
+  // would give a tie in every block of a checkerboard, and sampling every other square
+  // would turn a checkerboard into a solid colour. Cutting a window leaves each pattern
+  // exactly what it was.
   var BASE = 30;
 
-  function patchGrid(seed, baseRadius, passes, nGrey) {
+  // The seeds are not arbitrary. They were chosen by search so that the centred window
+  // holds 113 black squares of 225 -- the same share as the full lattice -- because
+  // otherwise the small extent lands on a black-heavy or white-heavy part of the surface
+  // and density gets confounded with arrangement, which is the one thing the patterns
+  // exist to hold apart. See principles.md section 5.
+  function clipToExtent(base) {
+    if (SIDE === BASE) return base;
+    var off = Math.floor((BASE - SIDE) / 2), g = new Uint8Array(N), r, c;
+    for (r = 0; r < SIDE; r++)
+      for (c = 0; c < SIDE; c++) g[r * SIDE + c] = base[(r + off) * BASE + (c + off)];
+    return g;
+  }
+
+  function build(fn) {
+    var g = new Uint8Array(BASE * BASE), r, c;
+    for (r = 0; r < BASE; r++)
+      for (c = 0; c < BASE; c++) g[r * BASE + c] = fn(r, c) ? 1 : 0;
+    return clipToExtent(g);
+  }
+
+  function randomGrid(seed) {
+    var rnd = mulberry32(seed), NB = BASE * BASE, g = new Uint8Array(NB), i;
+    for (i = 0; i < NB; i++) g[i] = rnd() < 0.5 ? 1 : 0;
+    return clipToExtent(g);
+  }
+
+  function patchGrid(seed, radius, passes) {
     var rnd = mulberry32(seed), NB = BASE * BASE, f = new Float64Array(NB),
-        i, p, r, c, rr, cc, r0, r1, c0, c1, sum, cnt, out, k, br, bc;
+        i, p, r, c, rr, cc, r0, r1, c0, c1, sum, cnt, out;
     for (i = 0; i < NB; i++) f[i] = rnd();
     for (p = 0; p < passes; p++) {
       out = new Float64Array(NB);
       for (r = 0; r < BASE; r++) {
         for (c = 0; c < BASE; c++) {
-          r0 = Math.max(0, r - baseRadius); r1 = Math.min(BASE - 1, r + baseRadius);
-          c0 = Math.max(0, c - baseRadius); c1 = Math.min(BASE - 1, c + baseRadius);
+          r0 = Math.max(0, r - radius); r1 = Math.min(BASE - 1, r + radius);
+          c0 = Math.max(0, c - radius); c1 = Math.min(BASE - 1, c + radius);
           sum = 0; cnt = 0;
           for (rr = r0; rr <= r1; rr++)
             for (cc = c0; cc <= c1; cc++) { sum += f[rr * BASE + cc]; cnt++; }
@@ -890,32 +924,12 @@ self.onmessage = function (e) {
       }
       f = out;
     }
-
-    // Aggregate the surface down to the extent in use.
-    k = BASE / SIDE;
-    var field = new Float64Array(N);
-    for (r = 0; r < SIDE; r++) {
-      for (c = 0; c < SIDE; c++) {
-        sum = 0;
-        for (br = 0; br < k; br++)
-          for (bc = 0; bc < k; bc++) sum += f[(r * k + br) * BASE + (c * k + bc)];
-        field[r * SIDE + c] = sum / (k * k);
-      }
-    }
-
     var order = [];
-    for (i = 0; i < N; i++) order.push(i);
-    order.sort(function (a, b) { return field[b] - field[a] || a - b; });
-    var g = new Uint8Array(N);
-    for (i = 0; i < nGrey; i++) g[order[i]] = 1;
-    return g;
-  }
-
-  function build(fn) {
-    var g = new Uint8Array(N);
-    for (var r = 0; r < SIDE; r++)
-      for (var c = 0; c < SIDE; c++) g[r * SIDE + c] = fn(r, c) ? 1 : 0;
-    return g;
+    for (i = 0; i < NB; i++) order.push(i);
+    order.sort(function (a, b) { return f[b] - f[a] || a - b; });
+    var g = new Uint8Array(NB);
+    for (i = 0; i < Math.round(NB * 113 / 225); i++) g[order[i]] = 1;
+    return clipToExtent(g);
   }
 
   var PRESETS = [
@@ -924,9 +938,9 @@ self.onmessage = function (e) {
     { id: "checker",     label: "Checkerboard",   make: function () { return build(function (r, c) { return (r + c) % 2 === 0; }); } },
     { id: "stripes",     label: "Stripes",        make: function () { return build(function (r, c) { return c % 2 === 0; }); } },
     { id: "stripes3",    label: "Stripes every 3", make: function () { return build(function (r, c) { return c % 3 === 0; }); } },
-    { id: "half",        label: "Half and half",  make: function () { return build(function (r, c) { return c < SIDE / 2; }); } },
-    { id: "patches",     label: "Patches",        make: function () { return patchGrid(3141, 4, 1, halfish()); } },
-    { id: "bigpatches",  label: "Big patches",    make: function () { return patchGrid(8080, 6, 2, halfish()); } },
+    { id: "half",        label: "Half and half",  make: function () { return build(function (r, c) { return c < BASE / 2; }); } },
+    { id: "patches",     label: "Patches",        make: function () { return patchGrid(209, 4, 1); } },
+    { id: "bigpatches",  label: "Big patches",    make: function () { return patchGrid(1100, 6, 2); } },
     { id: "random1",     label: "Random 1",       make: function () { return randomGrid(20260819); } },
     { id: "random2",     label: "Random 2",       make: function () { return randomGrid(77123); } }
   ];
