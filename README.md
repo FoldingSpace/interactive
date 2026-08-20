@@ -37,6 +37,12 @@ and nothing goes out without the checks in [docs/review.md](docs/review.md).
 | [docs/review.md](docs/review.md) | The passes a widget must survive before release |
 | [docs/deployment.md](docs/deployment.md) | How this repository is published, and why |
 
+## Who made it
+
+Luke Bergmann, with Claude (Anthropic). The widgets were built in conversation: the
+teaching judgement, the decisions and the direction are Luke's; Claude wrote the code,
+ran the checks and argued back.
+
 ## Licence
 
 Code is [MIT](LICENSE). Text, figures, and other non-code materials are
