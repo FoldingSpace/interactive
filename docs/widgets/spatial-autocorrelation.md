@@ -9,8 +9,9 @@ Written so the widget could be rebuilt from this description alone.
 
 ## The one thing
 
-**Spatial autocorrelation measures whether nearby places resemble each other — and
-"nearby" is a weighting you design, not a fact the data hands you.**
+**Spatial autocorrelation measures whether nearby places resemble each other — "nearby"
+is a weighting you design, and the single global number is just the average of what every
+square contributes.**
 
 The second half is the part students usually miss, so the weights are an editable picture
 rather than a fixed choice between two options.
@@ -233,6 +234,118 @@ things are, not how many there are.
 
 **Half queen against Queen** does not move the number at all. See above.
 
+## Local Moran's I
+
+A second, read-only grid beside the data shows each square's own Moran's I, so you can
+paint on the left and watch the right respond.
+
+```
+        n     z_i * sum_j w_ij z_j
+  I*_i = —— * ————————————————————,     m2 = sum_i z_i^2 / n
+        S0            m2
+```
+
+The `n/S0` factor is not in Anselin's definition. It is here for two reasons, and both
+matter.
+
+**The mean of the local values is then exactly the global I.** Verified for every kernel
+and every pattern. Without the factor the identity is `global = sum(local) / S0`, which is
+true but says nothing to a student; with it, the headline number is simply the average of
+the map beside it. That is the whole framing of the feature, and it is checkable on screen.
+
+**One colour scale then serves every kernel.** Raw local values scale with total kernel
+weight: under 1/d² they run past ±40 while rook stays near ±3, and no fixed ramp could
+show both. Rescaled, every kernel lands in about −1.1 to +1.4.
+
+Undefined in the same two cases as the global number — one colour everywhere, or an empty
+kernel — and the grid blanks.
+
+### Colour
+
+ColorBrewer PuOr, purple for the opposite of clustering, orange for clustering, symmetric
+and **centred at zero** so equal magnitudes read equally either side. Clamped at ±1.5.
+
+**There is no second cue for the sign.** This is a deliberate exception to
+`principles.md` section 8, taken knowingly: the difference between a cluster and an
+outlier is invisible in greyscale, on a projector, and to a reader with colour vision
+deficiency. The value is in each cell's `aria-label`, which is the only non-visual route.
+If this proves a problem in a real lecture room, a dot on negative cells is the fix.
+
+## Significance
+
+A switch turns on a conditional permutation test, with Benjamini-Hochberg correction at
+q = 0.05 applied by default. Squares that do not pass fade out on the same ramp rather
+than switching to a different encoding, so turning it on drains the noise and leaves the
+structure.
+
+### What the test does
+
+Each square keeps its own value while its neighbours are replaced by a random draw from
+the rest of the grid, 999 times, and the two-sided p-value is the share of draws at least
+as extreme as the observed value. **The seed is fixed**, for the reason in
+`principles.md` section 5: a phone at the back and the projector at the front must agree
+about which squares are significant, or the discussion falls apart.
+
+The permutation shuffles the whole grid once per iteration rather than drawing
+independently for each square. Both randomise a square's neighbours while it keeps its own
+value; the difference is that a square's own value can land in its own neighbourhood, with
+probability of roughly its neighbour count over 224 — under 2 per cent for rook, about 11
+for the widest kernel. This was a performance decision: per-square drawing needs about
+4,800 random numbers per permutation against 225, and the generator was the entire cost.
+
+### Verified counts
+
+Squares passing at q = 0.05, checked against an independent numpy implementation:
+
+| Pattern | Rook | Queen | Even | 1/d² |
+|---|---|---|---|---|
+| Patches | 0 | 50 | ~117 | 110 |
+| Big patches | 0 | **83** | ~142 | 142 |
+| Random 1 | 0 | **0** | 0 | 0 |
+| Random 2 | 0 | **0** | 0 | 0 |
+| Checkerboard | 0 | 0 | 0 | 0 |
+
+Counts move by a few between runs of the two permutation schemes; Big patches under queen
+reproduces numpy's 83 exactly. **Both random patterns give zero**, which is the correction
+doing its job: uncorrected they show 3 to 15 squares, and a student can see that by
+reading the smallest p-value in the message.
+
+### Rook cannot detect anything, and says so
+
+Four binary neighbours give five possible outcomes, so the smallest attainable p-value is
+about 0.042. Correcting for 225 tests needs smaller than that, so **under rook nothing
+ever passes, whatever the pattern.** Patches has a global I of +0.59 and zero significant
+squares.
+
+Rather than show a silent blank, the widget reports the smallest p-value any square
+reached and says a kernel with more neighbours gives finer p-values. This ties the
+significance test back to the kernel editor: the weights decide not only the answer but
+whether anything is detectable at all.
+
+## Performance
+
+Significance runs on a **worker thread**, built from a `<script type="javascript/worker">`
+tag via a Blob URL, so the page stays one self-contained file and there is only one copy
+of the code — when Workers are unavailable the same source is compiled on the main thread.
+
+Three optimisations, in the order they mattered:
+
+1. **Shuffle once per permutation** rather than drawing per square: 225 random numbers
+   instead of about 4,800. Took the worst case from 963 ms to 203 ms.
+2. **Integer arithmetic in the hot loop.** The data is binary, so `z` takes only two
+   values and the weighted lag is `S − mean·T`, where `T` is the square's total neighbour
+   weight and `S` the total weight of its grey neighbours. The inner loop adds integer
+   weights and does no floating-point at all. Worst case to about 150 ms.
+3. **Incremental DOM writes.** Only cells whose colour or label actually changed are
+   touched. A paint frame went from 42 ms to 14 ms, which is what makes dragging smooth.
+
+Measured after warm-up: 57 ms (rook) to 150 ms (even weights), with the UI blocked for
+none of it. A matrix library would not help — this is a sparse product, about 4,800
+non-zeros in a 225 × 225 matrix, and a dense routine would do ten times the arithmetic.
+The remaining avenue, if it is ever needed, is that for equal-weight kernels the null
+distribution of the neighbour count is hypergeometric and could be computed exactly with
+no simulation at all.
+
 ## The kernel editor
 
 Click a cell to step its weight up, wrapping from 9 back to 0; shift-click or right-click
@@ -271,12 +384,18 @@ entirely by the pointer events.
 
 Two layouts, split at 56rem, following `docs/principles.md` section 3.
 
-- **Narrow**: single column — heading, grid, readout, kernel, patterns.
-- **Wide**: grid on the left; readout, kernel and patterns stacked in a right column.
-- **Wide and presenting**: three columns. Grid on the left, readout with the pattern
-  buttons beneath it in the middle, kernel and its presets on the right. There is not
-  enough vertical room for everything once the kernel is on screen, and a projector has
-  width to spare, so presentation mode spreads sideways rather than down.
+- **Narrow**: single column — heading, data grid, local grid, readout, kernel, patterns.
+- **Wide**: the two grids side by side on the left; readout, kernel and patterns stacked
+  in a right column.
+- **Wide and presenting**: four columns — data grid, local grid, readout, kernel — with
+  the pattern buttons as one wide row beneath. Stacking the grids made the left column
+  taller than any projector; going sideways uses the shape a projector actually has.
+
+Two layout traps, both found by measuring rather than looking. The significance sentence
+is one long line, and inside an `auto`-sized grid column it stretched that column and
+pushed the controls off screen — the wrappers are now pinned to the grid width. And a
+stale `body[data-present="1"] #grid` rule from the previous layout outranked the media
+query on specificity, forcing the grid to 435 px inside a 282 px wrapper.
 
 ### Presentation mode
 
@@ -305,6 +424,7 @@ slide or handed out.
 - `k` — the kernel as 24 digits, row by row, centre omitted. Absent means rook.
 - `w` — `rook` or `queen`, honoured as shorthand when `k` is absent, so links already
   written on slides before the kernel editor existed still work. `k` wins if both appear.
+- `sig` — `1` turns the significance test on; absent means off.
 - `present` — `1`; absent means normal size.
 
 The URL is rewritten with `history.replaceState` on every change, so the back button is
@@ -386,6 +506,31 @@ in the "?" panel only, with no on-screen warning when a kernel is asymmetric. A 
 who builds a directional kernel without opening the panel has no signal that the statistic
 is ignoring what they drew. This was a deliberate call against putting a warning on the
 face of the widget.
+
+**Revised 2026-08-19, fourth pass: local Moran's I.** A second grid shows each square's
+own local I, with an optional permutation test corrected for false discovery rate. Decided
+in a grilling session.
+
+What the evidence settled: the `n/S0` rescaling, because it makes the global number the
+plain average of the local map and lets one colour ramp serve every kernel; FDR by default,
+because both random patterns then correctly give zero where uncorrected they show 3 to 15;
+and naming the cause when rook can detect nothing, because a silent blank map reads as a
+statement about the pattern when it is a statement about the weights.
+
+Two bugs found by testing rather than reading. Significance results lagged one edit
+behind: an "in flight" flag stopped a new request being issued mid-computation, so the
+previous state's answer was applied to the current state. Replaced with a key on the state
+actually requested. And the presentation layout was broken by a stale rule from the
+previous pass that outranked its replacement on specificity.
+
+**Known and accepted:** no second cue for the sign of a local value, so cluster and
+outlier are indistinguishable in greyscale, on a projector, and to a colour-blind reader.
+Recorded above as a deliberate exception.
+
+**Scope watch.** The widget now teaches four things: what autocorrelation measures, that
+the weights are a design choice, that the global number decomposes into local ones, and
+that testing 225 things at once has a cost. `principles.md` says to split when the one
+thing takes more than a sentence. Not split yet, but this is the point to watch.
 
 **Not yet done:** a real projector in a lit room, and a compressed recording. Those need
 the lecture machine.

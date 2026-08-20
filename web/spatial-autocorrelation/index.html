@@ -34,7 +34,7 @@ body {
   font-size: calc(1rem * var(--ui));
   line-height: 1.45;
 }
-body[data-present="1"] { --ui: 1.28; }
+body[data-present="1"] { --ui: 1.22; }
 
 .wrap {
   max-width: 78rem;
@@ -59,25 +59,40 @@ body[data-present="1"] .intro { display: none; }
 .main { display: grid; grid-template-columns: 1fr; gap: calc(0.9rem * var(--ui)); }
 @media (min-width: 56rem) {
   .main {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas: "grid readout" "grid controls" "grid patterns";
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas: "grid local readout"
+                         "grid local controls"
+                         "grid local patterns";
     align-content: start;
     align-items: start;
     gap: calc(1.1rem * var(--ui)) calc(1.5rem * var(--ui));
   }
   .gridwrap { grid-area: grid; }
+  .localwrap { grid-area: local; }
+  /* Pin the wrappers to the grid width. Without this the significance sentence, which
+     is one long line, stretches its auto-sized column and squeezes out the controls. */
+  .gridwrap, .localwrap { width: min(30vw, 52vh, 24rem); }
+  .gridwrap #grid, .localwrap #local { width: 100%; }
   .readout  { grid-area: readout; }
   .controls { grid-area: controls; }
   .patterns { grid-area: patterns; }
 
   /* Presenting: the kernel gets a column of its own on the right, and the pattern
      buttons fill the space under the readout rather than crowding it. */
+  /* Presenting: the two grids sit side by side so both stay large, readout and kernel
+     share the right-hand column, and the pattern buttons run as one wide row beneath
+     everything. Stacking the grids made the column taller than any projector. */
   body[data-present="1"] .main {
-    grid-template-columns: auto minmax(0, 1.05fr) minmax(0, 0.95fr);
-    grid-template-areas: "grid readout  controls"
-                         "grid patterns controls";
+    grid-template-columns: auto auto minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "grid     local    readout  controls"
+                         "patterns patterns patterns patterns";
     align-content: start;
   }
+  body[data-present="1"] .gridwrap,
+  body[data-present="1"] .localwrap { width: min(25vw, 54vh); }
+  body[data-present="1"] #kernel { width: calc(9rem * var(--ui)); }
+  body[data-present="1"] .patterns { flex-direction: row; flex-wrap: wrap; align-items: flex-end; }
+  body[data-present="1"] .patterns .presets { flex: 1 1 auto; }
 
   body[data-present="1"] .wrap {
     height: 100vh;
@@ -100,7 +115,37 @@ body[data-present="1"] .intro { display: none; }
 }
 
 /* ---- the grid ---- */
-.gridwrap { display: flex; justify-content: center; }
+.gridwrap, .localwrap {
+  display: flex; flex-direction: column; align-items: center;
+  gap: calc(0.3rem * var(--ui));
+}
+.gridlabel {
+  margin: 0; align-self: flex-start;
+  font-size: calc(0.85rem * var(--ui)); font-weight: 600; color: var(--ink-soft);
+}
+#local {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  width: min(97vw, 58vh, 34rem);
+  aspect-ratio: 1 / 1;
+  background: var(--cell-line);
+  border: calc(2px * var(--ui)) solid var(--cell-line);
+}
+.lcell { border: 1px solid var(--cell-line); min-width: 0; min-height: 0; }
+.localwrap .pairs { align-self: stretch; }
+.key {
+  display: flex; align-items: center; gap: calc(0.4rem * var(--ui));
+  align-self: stretch; min-width: 0;
+  font-size: calc(0.78rem * var(--ui)); color: var(--ink-soft);
+}
+.keybar {
+  flex: 1 1 auto; height: calc(0.7rem * var(--ui));
+  border: 1px solid var(--edge);
+  background: linear-gradient(to right,
+    rgb(84,39,136), rgb(153,142,195), rgb(216,218,235),
+    rgb(247,247,247),
+    rgb(254,224,182), rgb(241,163,64), rgb(179,88,6));
+}
 #grid {
   display: grid;
   user-select: none;
@@ -113,9 +158,9 @@ body[data-present="1"] .intro { display: none; }
   border: calc(2px * var(--ui)) solid var(--cell-line);
   touch-action: manipulation;
 }
-body[data-present="1"] #grid { width: min(34vw, 78vh); }
 @media (max-width: 55.99rem) {
-  body[data-present="1"] #grid { width: min(97vw, 62vh); }
+  body[data-present="1"] #grid,
+  body[data-present="1"] #local { width: min(97vw, 62vh); }
   .wrap { padding-left: calc(0.2rem * var(--ui)); padding-right: calc(0.2rem * var(--ui)); }
   h1 { font-size: calc(1.05rem * var(--ui)); }
 }
@@ -333,8 +378,19 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
   <div class="main">
 
     <div class="gridwrap">
+      <p class="gridlabel" id="pattern-label">The pattern</p>
       <div id="grid" role="grid"
            aria-label="15 by 15 grid of squares. Each square is grey or white."></div>
+    </div>
+
+    <div class="localwrap">
+      <p class="gridlabel">Local Moran&rsquo;s I <span class="term" id="local-note"></span></p>
+      <div id="local" role="grid"
+           aria-label="15 by 15 grid showing each square's own Moran's I."></div>
+      <div class="key" aria-hidden="true">
+        <span>opposite</span><div class="keybar" id="keybar"></div><span>clustered</span>
+      </div>
+      <p class="pairs" id="sigline"></p>
     </div>
 
     <div class="readout">
@@ -382,6 +438,14 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
            <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
       </div>
 
+      <fieldset>
+        <legend>Test each square against chance</legend>
+        <div class="btnrow">
+          <button class="opt" id="sig-off" aria-pressed="true">Off</button>
+          <button class="opt" id="sig-on" aria-pressed="false">Significant only</button>
+        </div>
+      </fieldset>
+
       <p class="visually-hidden" aria-live="polite" id="live"></p>
 
     </div>
@@ -413,6 +477,111 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     </div>
   </div>
 </div>
+
+<script id="sig-worker" type="javascript/worker">
+// Conditional permutation test for local Moran's I. Runs on a worker thread so that
+// painting never waits for it. This is the only implementation: when Workers are not
+// available the main thread builds a function from this same source.
+self.onmessage = function (e) {
+  var d = e.data, x = d.x, kern = d.kern, SIDE = d.side, KRAD = d.krad, KSIDE = 2 * KRAD + 1,
+      N = SIDE * SIDE, PERMS = d.perms, i, j, k, r, c, dr, dc, rr, cc, w;
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // Flat neighbour lists in typed arrays. The array-of-objects version this replaces
+  // spent most of its time chasing property lookups in the inner loop.
+  var start = new Int32Array(N + 1), total = 0;
+  for (r = 0; r < SIDE; r++) for (c = 0; c < SIDE; c++) {
+    i = r * SIDE + c; start[i] = total;
+    for (dr = -KRAD; dr <= KRAD; dr++) for (dc = -KRAD; dc <= KRAD; dc++) {
+      if (kern[(dr + KRAD) * KSIDE + (dc + KRAD)] === 0) continue;
+      rr = r + dr; cc = c + dc;
+      if (rr < 0 || rr >= SIDE || cc < 0 || cc >= SIDE) continue;
+      total++;
+    }
+  }
+  start[N] = total;
+  var nbIdx = new Int32Array(total), nbW = new Int32Array(total), q = 0;
+  for (r = 0; r < SIDE; r++) for (c = 0; c < SIDE; c++) {
+    for (dr = -KRAD; dr <= KRAD; dr++) for (dc = -KRAD; dc <= KRAD; dc++) {
+      w = kern[(dr + KRAD) * KSIDE + (dc + KRAD)];
+      if (w === 0) continue;
+      rr = r + dr; cc = c + dc;
+      if (rr < 0 || rr >= SIDE || cc < 0 || cc >= SIDE) continue;
+      nbIdx[q] = rr * SIDE + cc; nbW[q] = w; q++;
+    }
+  }
+
+  var sum = 0, mean, den = 0, z = new Float64Array(N);
+  for (i = 0; i < N; i++) sum += x[i];
+  mean = sum / N;
+  for (i = 0; i < N; i++) { z[i] = x[i] - mean; den += z[i] * z[i]; }
+  if (den === 0 || total === 0) { self.postMessage({ token: d.token, p: null }); return; }
+  var m2 = den / N;
+
+  var obs = new Float64Array(N), lag;
+  for (i = 0; i < N; i++) {
+    lag = 0;
+    for (k = start[i]; k < start[i + 1]; k++) lag += nbW[k] * z[nbIdx[k]];
+    obs[i] = z[i] * lag / m2;
+  }
+
+  // One shuffle of the whole grid per permutation, rather than an independent draw per
+  // square: 225 random numbers per permutation instead of about 4,800, and the random
+  // number generator was the whole cost. The difference is that a square's own value can
+  // land in its own neighbourhood, with probability of about the neighbour count over
+  // 224 -- under two per cent for rook, about eleven for the widest kernel.
+  //
+  // The arithmetic is integer. The data is binary, so z takes only two values and the
+  // weighted lag is  S - mean * T,  where T is the square's total neighbour weight (a
+  // constant) and S is the total weight of its grey neighbours. So the permutation only
+  // has to add up integer weights over grey neighbours -- no floating point in the hot
+  // loop at all.
+  var rnd = mulberry32(d.seed), bits = new Int32Array(N), order = new Int32Array(N),
+      total_w = new Int32Array(N), ge = new Int32Array(N), absObs = new Float64Array(N),
+      p = new Float64Array(N), rIter, pick, t, S, zi, tw;
+  for (i = 0; i < N; i++) {
+    bits[i] = x[i] ? 1 : 0;
+    absObs[i] = Math.abs(obs[i]);
+    tw = 0;
+    for (k = start[i]; k < start[i + 1]; k++) tw += nbW[k];
+    total_w[i] = tw;
+  }
+  var greyZ = 1 - mean, whiteZ = -mean;    // the only two values z can take
+  for (rIter = 0; rIter < PERMS; rIter++) {
+    for (j = N - 1; j > 0; j--) {
+      pick = (rnd() * (j + 1)) | 0;
+      t = bits[j]; bits[j] = bits[pick]; bits[pick] = t;
+    }
+    for (i = 0; i < N; i++) {
+      S = 0;
+      for (k = start[i]; k < start[i + 1]; k++) S += nbW[k] * bits[nbIdx[k]];
+      // lag = S * greyZ + (T - S) * whiteZ
+      zi = z[i] * (S * greyZ + (total_w[i] - S) * whiteZ) / m2;
+      if (zi < 0) zi = -zi;
+      if (zi >= absObs[i]) ge[i]++;
+    }
+  }
+  for (i = 0; i < N; i++) p[i] = (ge[i] + 1) / (PERMS + 1);
+
+  // Benjamini and Hochberg
+  var order = new Int32Array(N);
+  for (i = 0; i < N; i++) order[i] = i;
+  var ord = Array.prototype.slice.call(order).sort(function (a, b) { return p[a] - p[b]; });
+  var kmax = -1, mask = new Uint8Array(N);
+  for (i = 0; i < N; i++) if (p[ord[i]] <= ((i + 1) / N) * d.q) kmax = i;
+  for (i = 0; i <= kmax; i++) mask[ord[i]] = 1;
+
+  self.postMessage({ token: d.token, p: p, mask: mask });
+};
+</script>
 
 <script>
 (function () {
@@ -587,6 +756,80 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     return total === 0 ? null : { matched: matched, total: total };
   }
 
+  // ---------------------------------------------------------------- local Moran's I
+  // I*_i = (n / S0) * z_i * (sum_j w_ij z_j) / m2,      m2 = sum_i z_i^2 / n
+  //
+  // The n/S0 factor is not in the textbook definition. It is here because it makes the
+  // mean of the local values exactly the global I, for every kernel, and because without
+  // it the values scale with the total kernel weight -- local I under 1/d squared would
+  // run to forty while rook ran to three, and no fixed colour scale could serve both.
+  function localI(x, kern) {
+    var n = x.length, r, c, dr, dc, rr, cc, i, w,
+        sum = 0, mean, den = 0, s0 = 0, m2,
+        lag = new Float64Array(n), out = new Float64Array(n), z = new Float64Array(n);
+    for (i = 0; i < n; i++) sum += x[i];
+    mean = sum / n;
+    for (i = 0; i < n; i++) { z[i] = x[i] - mean; den += z[i] * z[i]; }
+    if (den === 0) return null;
+    for (r = 0; r < SIDE; r++) {
+      for (c = 0; c < SIDE; c++) {
+        i = r * SIDE + c;
+        for (dr = -KRAD; dr <= KRAD; dr++) {
+          for (dc = -KRAD; dc <= KRAD; dc++) {
+            w = kern[(dr + KRAD) * KSIDE + (dc + KRAD)];
+            if (w === 0) continue;
+            rr = r + dr; cc = c + dc;
+            if (rr < 0 || rr >= SIDE || cc < 0 || cc >= SIDE) continue;
+            lag[i] += w * z[rr * SIDE + cc];
+            s0 += w;
+          }
+        }
+      }
+    }
+    if (s0 === 0) return null;
+    m2 = den / n;
+    for (i = 0; i < n; i++) out[i] = (n / s0) * z[i] * lag[i] / m2;
+    return out;
+  }
+
+  // Significance runs on a worker so a paint stroke never waits for it. The worker's
+  // source is the script tag above; when Workers are unavailable the same source is
+  // compiled on the main thread instead, so there is only ever one implementation.
+  var PERMS = 999, PERM_SEED = 424242, FDR_Q = 0.05;
+
+  var sigWorker = null, sigInline = null, sigToken = 0;
+  (function setupWorker() {
+    var src = document.getElementById("sig-worker").textContent;
+    try {
+      sigWorker = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+    } catch (err) {
+      sigWorker = null;
+    }
+    if (!sigWorker) {
+      sigInline = function (msg, reply) {
+        var fake = { postMessage: reply, onmessage: null };
+        (new Function("self", src))(fake);
+        fake.onmessage({ data: msg });
+      };
+    }
+  })();
+
+  function requestSignificance(x, kern, done) {
+    var msg = {
+      token: ++sigToken, x: Float64Array.from(x), kern: Int32Array.from(kern),
+      side: SIDE, krad: KRAD, perms: PERMS, seed: PERM_SEED, q: FDR_Q
+    };
+    if (sigWorker) {
+      sigWorker.onmessage = function (e) {
+        if (e.data.token !== sigToken) return;   // a newer request has superseded this
+        done(e.data);
+      };
+      sigWorker.postMessage(msg);
+    } else {
+      sigInline(msg, function (out) { done(out); });
+    }
+  }
+
   // ---------------------------------------------------------------- url state
   function encode(x) {
     var bytes = new Uint8Array(Math.ceil(N / 8)), i, s = "";
@@ -620,6 +863,7 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
   var params = new URLSearchParams(location.search);
   // k wins if present. Otherwise w=rook|queen is honoured as shorthand, so links
   // already written on slides keep working.
+  var showSig = params.get("sig") === "1";
   var kernel = decodeKernel(params.get("k")) ||
                (params.get("w") === "queen" ? KERNELS[1].make() : KERNELS[0].make());
   var present = params.get("present") === "1";
@@ -659,6 +903,35 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     cells[i] = b;
   }
   cells[0].tabIndex = 0;
+
+  var localEl = document.getElementById("local");
+  var sigLineEl = document.getElementById("sigline");
+  var localNoteEl = document.getElementById("local-note");
+  var lcells = new Array(N);
+  (function buildLocalGrid() {
+    for (var i = 0; i < N; i++) {
+      var d = document.createElement("div");
+      d.className = "lcell";
+      d.setAttribute("role", "gridcell");
+      localEl.appendChild(d);
+      lcells[i] = d;
+    }
+  })();
+
+  // ColorBrewer PuOr, purple for the opposite of clustering, orange for clustering.
+  // The ramp is symmetric about zero so equal magnitudes read equally either side.
+  var RAMP = [[84,39,136],[153,142,195],[216,218,235],[247,247,247],
+              [254,224,182],[241,163,64],[179,88,6]];
+  var RAMP_MAX = 1.5;   // covers the observed range of about -1.1 to +1.4
+
+  function rampColour(v, fade) {
+    var t = Math.max(-1, Math.min(1, v / RAMP_MAX));
+    var f = (t + 1) / 2 * (RAMP.length - 1);
+    var i = Math.min(RAMP.length - 2, Math.floor(f)), g = f - i, c = [], k;
+    for (k = 0; k < 3; k++) c[k] = Math.round(RAMP[i][k] + g * (RAMP[i + 1][k] - RAMP[i][k]));
+    if (fade) for (k = 0; k < 3; k++) c[k] = Math.round(c[k] + 0.88 * (255 - c[k]));
+    return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+  }
 
   // Direction wording for screen readers: "two east, one north".
   function offsetWords(dr, dc) {
@@ -701,6 +974,7 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     b.dataset.kernel = k.id;
     b.addEventListener("click", function () {
       kernel = k.make();
+      sigCache = null; sigPendingFor = null;
       render();
       liveEl.textContent = "Neighbour weights set to " + b.textContent + ".";
     });
@@ -714,6 +988,7 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     b.textContent = p.label;
     b.addEventListener("click", function () {
       grid = p.make();
+      sigCache = null; sigPendingFor = null;
       render();
       liveEl.textContent = "Loaded pattern: " + p.label + ".";
     });
@@ -761,13 +1036,82 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     });
   }
 
+  // The local values are one pass over the grid and are recomputed on every frame.
+  // Significance is thousands of passes, so it is asked for on a worker and only once a
+  // paint stroke has ended. Whatever was last computed stays on screen meanwhile.
+  // Keyed on the state it was asked for, not a plain "in flight" flag. A flag meant
+  // that a change arriving mid-request issued no new request, and the reply from the
+  // previous state was then applied to the current one -- results lagged by one edit.
+  var sigCache = null, sigPendingFor = null;
+
+  function renderLocal() {
+    var li = localI(grid, kernel), i, mask = null, passing = 0, minP = 1;
+
+    if (li === null) {
+      for (i = 0; i < N; i++) {
+        lcells[i].style.background = "";
+        lcells[i].removeAttribute("aria-label");
+      }
+      sigLineEl.textContent = "";
+      localNoteEl.textContent = "";
+      return;
+    }
+
+    if (showSig && !sigCache && !painting) {
+      var want = encode(grid) + "|" + encodeKernel(kernel);
+      if (sigPendingFor !== want) {
+        sigPendingFor = want;
+        requestSignificance(grid, kernel, function (out) {
+          if (sigPendingFor !== want) return;      // state moved on while we waited
+          sigPendingFor = null;
+          sigCache = out.p ? { p: out.p, mask: out.mask } : null;
+          renderLocal();
+        });
+      }
+    }
+
+    if (showSig && sigCache) {
+      mask = sigCache.mask;
+      for (i = 0; i < N; i++) {
+        if (mask[i]) passing++;
+        if (sigCache.p[i] < minP) minP = sigCache.p[i];
+      }
+    }
+
+    for (i = 0; i < N; i++) {
+      var col = rampColour(li[i], mask ? !mask[i] : false);
+      if (lcells[i]._col !== col) { lcells[i].style.background = col; lcells[i]._col = col; }
+      var lab = cellLabel(i) + ", local Moran's I " + li[i].toFixed(2) +
+        (mask ? (mask[i] ? ", stands out from chance" : ", does not stand out") : "");
+      if (lcells[i]._lab !== lab) { lcells[i].setAttribute("aria-label", lab); lcells[i]._lab = lab; }
+    }
+
+    localNoteEl.textContent = showSig ? "(significant only)" : "";
+
+    if (!showSig) {
+      sigLineEl.textContent = "The average of these 225 values is the number above.";
+    } else if (!sigCache) {
+      sigLineEl.textContent = sigPendingFor ? "Testing each square\u2026" : "";
+    } else if (passing > 0) {
+      sigLineEl.textContent = passing + " of 225 squares stand out from chance, after " +
+        "allowing for testing all 225 at once.";
+    } else {
+      sigLineEl.textContent = "No square stands out from chance. The smallest p-value any " +
+        "square reached is " + minP.toFixed(3) + ", and correcting for 225 tests at once " +
+        "needs smaller than that. A kernel with more neighbours gives finer p-values.";
+    }
+  }
+
   function render() {
     var i;
     renderKernel();
     for (i = 0; i < N; i++) {
       var on = grid[i] === 1;
-      cells[i].setAttribute("aria-pressed", on ? "true" : "false");
-      cells[i].setAttribute("aria-label", cellLabel(i) + ", " + (on ? "grey" : "white"));
+      if (cells[i]._on !== on) {
+        cells[i].setAttribute("aria-pressed", on ? "true" : "false");
+        cells[i].setAttribute("aria-label", cellLabel(i) + ", " + (on ? "grey" : "white"));
+        cells[i]._on = on;
+      }
     }
 
     var I = moransI(grid, kernel);
@@ -801,9 +1145,12 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
       : "Moran's I is " + fmt(I) + ". " + describe(I)) +
       (ag ? " " + pct + " per cent of the neighbour relationship joins matching squares." : "");
 
+    renderLocal();
+
     var p = new URLSearchParams();
     p.set("g", encode(grid));
     if (!sameKernel(kernel, KERNELS[0].make())) p.set("k", encodeKernel(kernel));
+    if (showSig) p.set("sig", "1");
     if (present) p.set("present", "1");
     history.replaceState(null, "", location.pathname + "?" + p.toString());
   }
@@ -811,6 +1158,7 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
   // ---------------------------------------------------------------- events
   function toggle(i) {
     grid[i] = grid[i] ? 0 : 1;
+    sigCache = null; sigPendingFor = null;
     render();
   }
 
@@ -843,6 +1191,7 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     paintValue = grid[i] ? 0 : 1;
     grid[i] = paintValue;
     lastPainted = i;
+    sigCache = null; sigPendingFor = null;
     render();
     if (e.pointerType !== "touch") {
       painting = true;
@@ -866,6 +1215,7 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     if (!painting) return;
     painting = false;
     lastPainted = -1;
+    if (showSig) { sigCache = null; render(); }
     try { gridEl.releasePointerCapture(e.pointerId); } catch (err) {}
   }
   gridEl.addEventListener("pointerup", stopPainting);
@@ -915,6 +1265,7 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
   function bumpWeight(idx, delta) {
     if (idx === KMID) return;
     kernel[idx] = (kernel[idx] + delta + 10) % 10;
+    sigCache = null; sigPendingFor = null;
     render();
   }
 
@@ -963,9 +1314,20 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
     t.tabIndex = 0;
   });
 
+  var sigOffBtn = document.getElementById("sig-off"), sigOnBtn = document.getElementById("sig-on");
+  function setSig(on) {
+    showSig = on;
+    sigOffBtn.setAttribute("aria-pressed", on ? "false" : "true");
+    sigOnBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    render();
+  }
+  sigOffBtn.addEventListener("click", function () { setSig(false); });
+  sigOnBtn.addEventListener("click", function () { setSig(true); });
+
   document.getElementById("reset").addEventListener("click", function () {
     grid = PRESETS[6].make();
     kernel = KERNELS[0].make();
+    sigCache = null; sigPendingFor = null;
     render();
     liveEl.textContent = "Reset to the starting pattern and rook weights.";
   });
@@ -992,7 +1354,7 @@ body[data-present="1"] .help-panel[hidden] { display: none; }
 
   // ---------------------------------------------------------------- go
   setPresent(present);
-  render();
+  setSig(showSig);
 })();
 </script>
 </body>
