@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spatial autocorrelation on a grid</title>
+<style>
+:root {
+  --ui: 1;
+  --cell-on: #7d7d7d;
+  --cell-off: #ffffff;
+  --cell-line: #2b2b2b;
+  --ink: #16181d;
+  --ink-soft: #545a63;
+  --page: #ffffff;
+  --panel: #f2f3f5;
+  --edge: #848b95;
+  --focus: #0b57d0;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
+    --panel: #1e2128; --edge: #6e7682; --focus: #7cacff;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: calc(1rem * var(--ui));
+  line-height: 1.45;
+}
+body[data-present="1"] { --ui: 1.28; }
+
+.wrap {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: calc(1rem * var(--ui)) calc(0.9rem * var(--ui)) calc(2rem * var(--ui));
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.9rem * var(--ui));
+}
+h1 {
+  font-size: calc(1.15rem * var(--ui));
+  margin: 0;
+  font-weight: 650;
+}
+.intro { margin: 0; color: var(--ink-soft); max-width: 42em; }
+body[data-present="1"] .intro { display: none; }
+
+/* ---- layout: stacked on touch, side by side on wide pointer devices ---- */
+.main { display: flex; flex-direction: column; gap: calc(0.9rem * var(--ui)); }
+@media (min-width: 56rem) {
+  .main { flex-direction: row; align-items: flex-start; gap: calc(1.5rem * var(--ui)); }
+  .gridwrap { flex: 0 0 auto; }
+  .readout { flex: 1 1 auto; position: sticky; top: 1rem; }
+
+  body[data-present="1"] .wrap {
+    height: 100vh;
+    padding-top: calc(0.5rem * var(--ui));
+    padding-bottom: calc(0.5rem * var(--ui));
+    gap: calc(0.5rem * var(--ui));
+    overflow: hidden;
+  }
+  body[data-present="1"] .main { gap: calc(1.1rem * var(--ui)); min-height: 0; }
+  body[data-present="1"] .readout {
+    gap: calc(0.5rem * var(--ui));
+    max-height: 100%;
+    overflow-y: auto;     /* safety net: never clip a control */
+  }
+  body[data-present="1"] .stat { padding: calc(0.55rem * var(--ui)) calc(0.7rem * var(--ui)); }
+  body[data-present="1"] .big { font-size: calc(2.8rem * var(--ui)); }
+  body[data-present="1"] .scale { margin-top: calc(0.45rem * var(--ui)); }
+}
+
+/* ---- the grid ---- */
+.gridwrap { display: flex; justify-content: center; }
+#grid {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 0;
+  width: min(97vw, 58vh, 34rem);
+  aspect-ratio: 1 / 1;
+  background: var(--cell-line);
+  border: calc(2px * var(--ui)) solid var(--cell-line);
+  touch-action: manipulation;
+}
+body[data-present="1"] #grid { width: min(43vw, 74vh); }
+@media (max-width: 55.99rem) {
+  body[data-present="1"] #grid { width: min(97vw, 62vh); }
+  .wrap { padding-left: calc(0.2rem * var(--ui)); padding-right: calc(0.2rem * var(--ui)); }
+  h1 { font-size: calc(1.05rem * var(--ui)); }
+}
+.cell {
+  appearance: none;
+  border: 1px solid var(--cell-line);
+  margin: 0;
+  padding: 0;
+  background: var(--cell-off);
+  cursor: pointer;
+  min-width: 0;
+  min-height: 0;
+}
+.cell[aria-pressed="true"] { background: var(--cell-on); }
+.cell:focus-visible {
+  outline: calc(3px * var(--ui)) solid var(--focus);
+  outline-offset: calc(-3px * var(--ui));
+  z-index: 2;
+  position: relative;
+}
+
+/* ---- readout ---- */
+.readout { display: flex; flex-direction: column; gap: calc(0.75rem * var(--ui)); }
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.8rem * var(--ui)) calc(0.9rem * var(--ui));
+}
+.stat h2 {
+  margin: 0 0 calc(0.15rem * var(--ui));
+  font-size: calc(0.85rem * var(--ui));
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}
+.big {
+  font-size: calc(2.6rem * var(--ui));
+  line-height: 1.05;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+.plain { margin: calc(0.35rem * var(--ui)) 0 0; }
+.undefined-note { font-size: calc(0.95rem * var(--ui)); color: var(--ink-soft); }
+
+/* scale bar */
+.scale { margin-top: calc(0.7rem * var(--ui)); }
+.track {
+  position: relative;
+  height: calc(1.1rem * var(--ui));
+  background: linear-gradient(to right, #d9d9d9, #f4f4f4 50%, #d9d9d9);
+  border: 1px solid var(--edge);
+  border-radius: calc(0.2rem * var(--ui));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .track {
+    background: linear-gradient(to right, #3a3f48, #262a31 50%, #3a3f48);
+  }
+}
+.zero {
+  position: absolute; top: -2px; bottom: -2px; left: 50%;
+  width: calc(2px * var(--ui)); background: var(--edge); transform: translateX(-50%);
+}
+.marker {
+  position: absolute; top: calc(-0.35rem * var(--ui)); bottom: calc(-0.35rem * var(--ui));
+  width: calc(4px * var(--ui));
+  background: var(--focus);
+  transform: translateX(-50%);
+  transition: left 0.15s ease-out;
+}
+@media (prefers-reduced-motion: reduce) { .marker { transition: none; } }
+.ticks {
+  display: flex; justify-content: space-between;
+  font-size: calc(0.8rem * var(--ui)); color: var(--ink-soft);
+  margin-top: calc(0.15rem * var(--ui));
+}
+
+/* ---- controls ---- */
+fieldset { border: 0; margin: 0; padding: 0; }
+legend {
+  padding: 0 0 calc(0.35rem * var(--ui));
+  font-size: calc(0.85rem * var(--ui));
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.btnrow { display: flex; flex-wrap: wrap; gap: calc(0.4rem * var(--ui)); }
+button.opt, button.act {
+  font: inherit;
+  font-size: calc(0.95rem * var(--ui));
+  padding: calc(0.55rem * var(--ui)) calc(0.8rem * var(--ui));
+  min-height: calc(2.75rem * var(--ui));
+  background: var(--panel);
+  color: var(--ink);
+  border: calc(2px * var(--ui)) solid var(--edge);
+  border-radius: calc(0.4rem * var(--ui));
+  cursor: pointer;
+}
+button.opt[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--page);
+  border-color: var(--ink);
+}
+button.opt:focus-visible, button.act:focus-visible {
+  outline: calc(3px * var(--ui)) solid var(--focus);
+  outline-offset: 2px;
+}
+.presets { margin-top: calc(0.2rem * var(--ui)); }
+.term { opacity: 0.72; font-size: 0.9em; }
+button.opt[aria-pressed="true"] .term { opacity: 0.85; }
+footer {
+  font-size: calc(0.85rem * var(--ui));
+  color: var(--ink-soft);
+  border-top: 1px solid var(--edge);
+  padding-top: calc(0.6rem * var(--ui));
+}
+body[data-present="1"] footer, body[data-present="1"] .howto { display: none; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Spatial autocorrelation on a grid</h1>
+    <p class="intro">Tap any square to change its colour. The number below measures
+       how much each square is like its neighbours.</p>
+  </header>
+
+  <div class="main">
+
+    <div class="gridwrap">
+      <div id="grid" role="grid"
+           aria-label="15 by 15 grid of squares. Each square is grey or white."></div>
+    </div>
+
+    <div class="readout">
+
+      <div class="stat">
+        <h2>Moran&rsquo;s I</h2>
+        <p class="big" id="moran">&mdash;</p>
+        <div class="scale" aria-hidden="true">
+          <div class="track">
+            <div class="zero"></div>
+            <div class="marker" id="marker" style="left:50%"></div>
+          </div>
+          <div class="ticks"><span>&minus;1 scattered</span><span>0</span><span>+1 clustered</span></div>
+        </div>
+        <p class="plain" id="verdict"></p>
+      </div>
+
+      <div class="stat">
+        <h2>Neighbouring pairs</h2>
+        <p class="plain" id="pairs"></p>
+        <p class="plain" id="counts"></p>
+      </div>
+
+      <p class="visually-hidden" aria-live="polite" id="live"></p>
+
+      <fieldset>
+        <legend>Which squares count as neighbours</legend>
+        <div class="btnrow">
+          <button class="opt" id="rook" aria-pressed="true">Sides only <span class="term">(rook)</span></button>
+          <button class="opt" id="queen" aria-pressed="false">Sides and corners <span class="term">(queen)</span></button>
+        </div>
+      </fieldset>
+
+      <fieldset class="presets">
+        <legend>Load a pattern</legend>
+        <div class="btnrow" id="presets"></div>
+      </fieldset>
+
+      <div class="btnrow">
+        <button class="act" id="reset">Start over</button>
+        <button class="act" id="present">Big screen</button>
+      </div>
+
+      <footer>
+        <p class="howto">Click or tap a square to switch it between grey and white.
+           With a keyboard, move with the arrow keys and press space.</p>
+        <p>Made by Luke Bergmann. Code MIT, text CC BY 4.0.
+           <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
+      </footer>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var SIDE = 15;
+  var N = SIDE * SIDE;
+
+  // ---------------------------------------------------------------- patterns
+  // Fixed seeds so that every device shows the same "random" pattern. A phone
+  // in the third row and the projector at the front must agree.
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function randomGrid(seed) {
+    var rnd = mulberry32(seed), g = new Uint8Array(N);
+    for (var i = 0; i < N; i++) g[i] = rnd() < 0.5 ? 1 : 0;
+    return g;
+  }
+  function build(fn) {
+    var g = new Uint8Array(N);
+    for (var r = 0; r < SIDE; r++)
+      for (var c = 0; c < SIDE; c++) g[r * SIDE + c] = fn(r, c) ? 1 : 0;
+    return g;
+  }
+
+  var PRESETS = [
+    { id: "all-grey",    label: "All grey",       make: function () { return build(function () { return 1; }); } },
+    { id: "all-white",   label: "All white",      make: function () { return build(function () { return 0; }); } },
+    { id: "checker",     label: "Checkerboard",   make: function () { return build(function (r, c) { return (r + c) % 2 === 0; }); } },
+    { id: "stripes",     label: "Stripes",        make: function () { return build(function (r, c) { return c % 2 === 0; }); } },
+    { id: "stripes3",    label: "Stripes every 3", make: function () { return build(function (r, c) { return c % 3 === 0; }); } },
+    { id: "half",        label: "Half and half",  make: function () { return build(function (r, c) { return c < SIDE / 2; }); } },
+    { id: "random1",     label: "Random 1",       make: function () { return randomGrid(20260819); } },
+    { id: "random2",     label: "Random 2",       make: function () { return randomGrid(77123); } }
+  ];
+
+  // ---------------------------------------------------------------- weights
+  function neighbourLists(queen) {
+    var out = new Array(N), r, c, dr, dc, rr, cc, list;
+    for (r = 0; r < SIDE; r++) {
+      for (c = 0; c < SIDE; c++) {
+        list = [];
+        for (dr = -1; dr <= 1; dr++) {
+          for (dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            if (!queen && dr !== 0 && dc !== 0) continue;
+            rr = r + dr; cc = c + dc;
+            if (rr < 0 || rr >= SIDE || cc < 0 || cc >= SIDE) continue;
+            list.push(rr * SIDE + cc);
+          }
+        }
+        out[r * SIDE + c] = list;
+      }
+    }
+    return out;
+  }
+  var NB = { rook: neighbourLists(false), queen: neighbourLists(true) };
+
+  // ---------------------------------------------------------------- statistic
+  // Moran's I with binary contiguity weights.
+  //   I = (n / S0) * ( SUM_i SUM_j w_ij (x_i - xbar)(x_j - xbar) ) / SUM_i (x_i - xbar)^2
+  // Undefined when every square is the same colour: the denominator is zero,
+  // because there is no variation to correlate. That is a real result, not a
+  // bug, and the interface says so.
+  function moransI(x, nb) {
+    var n = x.length, i, j, k, sum = 0, mean, di, num = 0, den = 0, s0 = 0, list;
+    for (i = 0; i < n; i++) sum += x[i];
+    mean = sum / n;
+    for (i = 0; i < n; i++) {
+      di = x[i] - mean;
+      den += di * di;
+      list = nb[i];
+      for (k = 0; k < list.length; k++) {
+        j = list[k];
+        num += di * (x[j] - mean);
+        s0 += 1;
+      }
+    }
+    if (den === 0) return null;
+    return (n / s0) * (num / den);
+  }
+
+  function pairStats(x, nb) {
+    var i, k, j, same = 0, total = 0, list;
+    for (i = 0; i < x.length; i++) {
+      list = nb[i];
+      for (k = 0; k < list.length; k++) {
+        j = list[k];
+        if (j > i) { total++; if (x[i] === x[j]) same++; }
+      }
+    }
+    return { same: same, total: total };
+  }
+
+  // ---------------------------------------------------------------- url state
+  function encode(x) {
+    var bytes = new Uint8Array(Math.ceil(N / 8)), i, s = "";
+    for (i = 0; i < N; i++) if (x[i]) bytes[i >> 3] |= 1 << (i & 7);
+    for (i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function decode(str) {
+    try {
+      var s = atob(str.replace(/-/g, "+").replace(/_/g, "/")), g = new Uint8Array(N), i;
+      if (s.length < Math.ceil(N / 8)) return null;
+      for (i = 0; i < N; i++) g[i] = (s.charCodeAt(i >> 3) >> (i & 7)) & 1;
+      return g;
+    } catch (e) { return null; }
+  }
+
+  // ---------------------------------------------------------------- state
+  var params = new URLSearchParams(location.search);
+  var weights = params.get("w") === "queen" ? "queen" : "rook";
+  var present = params.get("present") === "1";
+  var opening = PRESETS[5].make();              // half and half: a clear positive case
+  var grid = decode(params.get("g") || "") || opening;
+  var focusIndex = 0;
+
+  // ---------------------------------------------------------------- dom
+  var gridEl = document.getElementById("grid");
+  var cells = new Array(N);
+  var moranEl = document.getElementById("moran");
+  var markerEl = document.getElementById("marker");
+  var verdictEl = document.getElementById("verdict");
+  var pairsEl = document.getElementById("pairs");
+  var countsEl = document.getElementById("counts");
+  var liveEl = document.getElementById("live");
+  var rookBtn = document.getElementById("rook");
+  var queenBtn = document.getElementById("queen");
+  var presetsEl = document.getElementById("presets");
+  var presentBtn = document.getElementById("present");
+
+  function cellLabel(i) {
+    var r = Math.floor(i / SIDE) + 1, c = (i % SIDE) + 1;
+    return "Row " + r + ", column " + c;
+  }
+
+  for (var i = 0; i < N; i++) {
+    var b = document.createElement("button");
+    b.className = "cell";
+    b.type = "button";
+    b.setAttribute("role", "gridcell");
+    b.setAttribute("aria-label", cellLabel(i));
+    b.setAttribute("aria-pressed", "false");
+    b.tabIndex = -1;
+    b.dataset.i = i;
+    gridEl.appendChild(b);
+    cells[i] = b;
+  }
+  cells[0].tabIndex = 0;
+
+  PRESETS.forEach(function (p) {
+    var b = document.createElement("button");
+    b.className = "act";
+    b.type = "button";
+    b.textContent = p.label;
+    b.addEventListener("click", function () {
+      grid = p.make();
+      render();
+      liveEl.textContent = "Loaded pattern: " + p.label + ".";
+    });
+    presetsEl.appendChild(b);
+  });
+
+  // ---------------------------------------------------------------- rendering
+  function fmt(v) {
+    var s = v.toFixed(2);
+    if (s === "-0.00") s = "0.00";
+    return (v > 0 && s !== "0.00" ? "+" : "") + s;
+  }
+
+  function describe(I) {
+    if (I > 0.3) return "Grey squares sit next to grey, white next to white. The pattern is clustered.";
+    if (I > 0.05) return "Neighbouring squares are a little more alike than unlike.";
+    if (I >= -0.05) return "Neighbouring squares are no more alike than unlike. Look at the grid: a clear pattern can still score zero.";
+    if (I >= -0.3) return "Neighbouring squares are a little more unlike than alike.";
+    return "Grey squares sit next to white ones. The pattern alternates.";
+  }
+
+  function render() {
+    var nb = NB[weights], i;
+    for (i = 0; i < N; i++) {
+      var on = grid[i] === 1;
+      cells[i].setAttribute("aria-pressed", on ? "true" : "false");
+      cells[i].setAttribute("aria-label", cellLabel(i) + ", " + (on ? "grey" : "white"));
+    }
+
+    var I = moransI(grid, nb);
+    var greys = 0;
+    for (i = 0; i < N; i++) greys += grid[i];
+
+    if (I === null) {
+      moranEl.textContent = "—";
+      verdictEl.innerHTML = '<span class="undefined-note">Every square is the same colour, ' +
+        'so there is nothing to compare. Moran&rsquo;s I cannot be worked out.</span>';
+      markerEl.style.left = "50%";
+    } else {
+      moranEl.textContent = fmt(I);
+      verdictEl.textContent = describe(I);
+      var clamped = Math.max(-1, Math.min(1, I));
+      markerEl.style.left = ((clamped + 1) / 2 * 100).toFixed(1) + "%";
+    }
+
+    var ps = pairStats(grid, nb);
+    var pct = ps.total ? Math.round(100 * ps.same / ps.total) : 0;
+    pairsEl.textContent = pct + " out of every 100 touching pairs are the same colour " +
+      "(" + ps.same + " of " + ps.total + ").";
+    countsEl.textContent = greys + " squares are grey, " + (N - greys) + " are white.";
+
+    liveEl.textContent = (I === null
+      ? "Every square is the same colour. Moran's I is undefined."
+      : "Moran's I is " + fmt(I) + ". " + describe(I)) + " " + pct + " per cent of touching pairs match.";
+
+    var p = new URLSearchParams();
+    p.set("g", encode(grid));
+    if (weights === "queen") p.set("w", "queen");
+    if (present) p.set("present", "1");
+    history.replaceState(null, "", location.pathname + "?" + p.toString());
+  }
+
+  // ---------------------------------------------------------------- events
+  function toggle(i) {
+    grid[i] = grid[i] ? 0 : 1;
+    render();
+  }
+
+  gridEl.addEventListener("click", function (e) {
+    var t = e.target.closest(".cell");
+    if (t) toggle(+t.dataset.i);
+  });
+
+  gridEl.addEventListener("keydown", function (e) {
+    var t = e.target.closest(".cell");
+    if (!t) return;
+    var i = +t.dataset.i, r = Math.floor(i / SIDE), c = i % SIDE, moved = true;
+    switch (e.key) {
+      case "ArrowUp":    r = Math.max(0, r - 1); break;
+      case "ArrowDown":  r = Math.min(SIDE - 1, r + 1); break;
+      case "ArrowLeft":  c = Math.max(0, c - 1); break;
+      case "ArrowRight": c = Math.min(SIDE - 1, c + 1); break;
+      case "Home":       c = 0; break;
+      case "End":        c = SIDE - 1; break;
+      default: moved = false;
+    }
+    if (!moved) return;
+    e.preventDefault();
+    var next = r * SIDE + c;
+    cells[focusIndex].tabIndex = -1;
+    focusIndex = next;
+    cells[next].tabIndex = 0;
+    cells[next].focus();
+  });
+
+  gridEl.addEventListener("focusin", function (e) {
+    var t = e.target.closest(".cell");
+    if (!t) return;
+    cells[focusIndex].tabIndex = -1;
+    focusIndex = +t.dataset.i;
+    t.tabIndex = 0;
+  });
+
+  function setWeights(w) {
+    weights = w;
+    rookBtn.setAttribute("aria-pressed", w === "rook" ? "true" : "false");
+    queenBtn.setAttribute("aria-pressed", w === "queen" ? "true" : "false");
+    render();
+  }
+  rookBtn.addEventListener("click", function () { setWeights("rook"); });
+  queenBtn.addEventListener("click", function () { setWeights("queen"); });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    grid = PRESETS[5].make();
+    setWeights("rook");
+    liveEl.textContent = "Reset to the starting pattern.";
+  });
+
+  function setPresent(on) {
+    present = on;
+    document.body.dataset.present = on ? "1" : "0";
+    presentBtn.textContent = on ? "Normal size" : "Big screen";
+    presentBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    render();
+  }
+  presentBtn.addEventListener("click", function () { setPresent(!present); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "p" && !e.metaKey && !e.ctrlKey && !e.altKey &&
+        document.activeElement.tagName !== "INPUT") setPresent(!present);
+  });
+
+  // ---------------------------------------------------------------- go
+  setWeights(weights);
+  setPresent(present);
+})();
+</script>
+</body>
+</html>

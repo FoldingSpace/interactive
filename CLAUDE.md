@@ -28,6 +28,7 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 - `docs/attributions.md` — register of every borrowed dataset, basemap, image, and library.
 - `docs/review.md` — the passes a widget must survive before it goes in front of students.
 - `docs/deployment.md` — how the repository is published, and the credential setup.
+- `docs/widgets/` — one file per widget: what it teaches, how it works, its review record.
 
 ## Non-negotiables
 

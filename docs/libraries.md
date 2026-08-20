@@ -4,8 +4,8 @@ What we use, what worked, what did not, and what is worth trying. Update this ev
 a library earns or loses a place. Licences below are recorded from prior knowledge and
 must be checked against the project's own repository before anything ships publicly.
 
-Started 2026-08-19. Nothing has been built yet, so the "in use" table is empty and
-everything below it is a candidate.
+Started 2026-08-19. One widget built so far, and it needed no library, so the "in use"
+table is still empty and everything below it remains a candidate.
 
 ---
 
@@ -13,7 +13,7 @@ everything below it is a candidate.
 
 | Library | Version | What we use it for | Notes |
 |---|---|---|---|
-| _(nothing yet)_ | | | |
+| _(none)_ | | | Spatial autocorrelation needed no dependency at all. Worth trying that first each time. |
 
 ## Ruled out
 

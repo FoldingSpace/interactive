@@ -1,7 +1,8 @@
 # Review before shipping
 
 Four passes. A widget is not finished until it has been through all of them. Record the
-result in the widget's own folder as `REVIEW.md` so we can see what was checked and when.
+result as a section of the widget's own file in `docs/widgets/` so we can see what was
+checked and when.
 
 The passes are ordered so that the expensive one comes first. There is no point polishing
 the contrast on a widget that teaches the wrong thing.
