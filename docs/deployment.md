@@ -122,6 +122,11 @@ tokens, not to SSH deploy keys.
 **`git` 2.16 has no `git init -b`.** Use `git init` then
 `git symbolic-ref HEAD refs/heads/main`.
 
+**`[hidden]` loses to any author `display` rule.** An element styled
+`display: grid` or `display: flex` ignores the `hidden` attribute, because the browser's
+`[hidden] { display: none }` is a user-agent style and author styles outrank it. Add an
+explicit `[hidden] { display: none }` for any element you both style and hide.
+
 **CSS specificity beats media queries.** A rule written as `body[data-present="1"] #grid`
 outranks `#grid` inside a media query, no matter what the media query says, and a stale
 rule of that shape survived a layout rewrite and forced a grid to 435 px inside a 282 px

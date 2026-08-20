@@ -18,7 +18,7 @@ rather than a fixed choice between two options.
 
 ## What it is
 
-A 15 by 15 grid of squares, each either grey (1) or white (0). Pressing a square flips it,
+A 15 by 15 grid of squares, each either black (1) or white (0). Pressing a square flips it,
 and with a mouse you can drag to keep painting. Beside it is a second, smaller grid: the
 **weights kernel**, 5 by 5, showing what counts as a neighbour of the square at its centre
 and by how much. Both are editable and everything recalculates on every change. Ten
@@ -26,6 +26,38 @@ patterns and six kernels load from buttons.
 
 The face of the widget carries very little text: the number, its scale, a one or two word
 verdict, one short line, and the controls. Everything else sits behind the "?" button.
+
+## Naming and colour
+
+The headline reads **Global Moran's I**, so that it names itself against the Local
+Moran's I beside it rather than leaving a student to infer the contrast.
+
+**Filled squares are black, and the rules between them are grey.** They began as grey
+squares with black rules, which left the pattern lighter on the page than the cluster map
+beside it — wrong, since the pattern is the thing being explained. Black cells on white
+carry more ink and the pair now balances. Measured: black against white 17.8:1, the grey
+rule 3.45:1 against white and 5.14:1 against black, all clear of the 3:1 needed for a
+graphical distinction.
+
+The cluster map's internal rules are **white**, not grey. A grey rule measured 1.16:1
+against saturated red, so regions blurred into solid blocks and cells could not be matched
+one-to-one against the pattern beside them. White is also how cluster maps are normally
+drawn. The kernel keeps dark rules, because its cells are shaded greys and a grey rule
+would vanish among them.
+
+### Clustered, random, dispersed
+
+The scale reads **−1 dispersed · 0 random · +1 clustered**, which is the standard
+vocabulary — it is what ArcGIS reports and what the textbooks use. Two traps come with it,
+and both are addressed in the "?" panel rather than left to catch students out:
+
+**Dispersed does not mean random.** A random scatter scores near zero, not below it. Below
+zero means the squares take turns, which is a strong pattern of its own.
+
+**Zero does not prove random.** It means the measure cannot tell this pattern from a random
+one, which is not the same claim. The Stripes preset scores exactly zero and is obviously
+not random. This is the one place where the widget's own label and its own evidence pull
+against each other, so the panel names the tension and points at the preset that shows it.
 
 ## The statistic
 
@@ -267,20 +299,20 @@ quadrants, with the conventional palette:
 
 | Quadrant | Meaning here | Colour |
 |---|---|---|
-| High–high | grey square among grey | red `#ff0000` |
+| High–high | black square among black | red `#ff0000` |
 | Low–low | white among white | blue `#0000ff` |
-| High–low | grey among white | pale red `#f4ada8` |
-| Low–high | white among grey | pale blue `#a7adf9` |
+| High–low | black among white | pale red `#f4ada8` |
+| Low–high | white among black | pale blue `#a7adf9` |
 | not significant | — | light grey `#eeeeee` |
 
 Binary data makes the quadrants unusually concrete: `z` is above the mean exactly when the
-square is grey, so **high means grey and low means white**, and the four categories read as
-plain descriptions rather than jargon. A square whose lag is exactly zero is neither, and
+square is black, so **high means black and low means white**, and the four categories read
+as plain descriptions rather than jargon. A square whose lag is exactly zero is neither, and
 is drawn neutral; this is possible but rare.
 
 Verified counts, matched against numpy:
 
-| Pattern / kernel | grey in grey | white in white | grey in white | white in grey |
+| Pattern / kernel | black in black | white in white | black in white | white in black |
 |---|---|---|---|---|
 | Patches / rook | 87 | 103 | 26 | 9 |
 | Patches / queen | 89 | 101 | 24 | 11 |
@@ -571,6 +603,33 @@ out. Checkerboard under rook becomes an entirely pale map: 225 outliers, no clus
 The legend's technical terms are hidden in presentation mode, because the wrapped labels
 made it 90 px tall and pushed the pattern buttons off screen, and nobody reads
 "high-high" in small type from the back of a room.
+
+**Revised 2026-08-20, sixth pass: weight and wording.** Filled squares went from grey to
+black with grey rules, so the pattern stops sitting lower in the page's visual hierarchy
+than the map explaining it. The headline became Global Moran's I. The scale gained the
+standard clustered / random / dispersed vocabulary, with both of its traps written into
+the "?" panel. The cluster map's rules went white, after measuring a grey rule at 1.16:1
+against red.
+
+Presentation mode needed rebalancing again: the significance control moved to the kernel
+column and the scale multiplier came down to 1.15. It now fits 1280 × 800 exactly, with
+nothing clipped. **That is the binding case, not a projector** — a 1920 × 1080 display has
+half again as much vertical room, and the sizes are in `vh`. If this widget gains anything
+more, the laptop-mirroring-a-projector case is what will break first.
+
+The readout card is aligned to the **tops of the grids**, not to their captions, by an
+`aria-hidden` spacer carrying the caption's own class — so it tracks any change to caption
+size automatically — with a negative margin cancelling the difference between the readout's
+column gap and the gap beneath a caption. Presentation mode uses a tighter gap and needs
+its own compensation.
+
+Two more CSS traps, of the same family as the last: `.key { display: grid }` is an author
+style and outranks the browser's `[hidden] { display: none }`, so the quadrant legend
+stayed visible in the other view until an explicit `.key[hidden]` rule was added. And a
+rule inside a media query still loses to an identical-specificity rule written later in
+the file: media queries add no specificity, so `.spacer { display: none }` further down
+beat `.spacer { display: block }` in the wide-screen block until the latter was written
+`.readout .spacer`.
 
 **Not yet done:** a real projector in a lit room, and a compressed recording. Those need
 the lecture machine.
