@@ -111,7 +111,39 @@ in one tap.
 Deep-linking: the current configuration should be expressible in the URL, so a
 particular case can be handed out or put on a slide.
 
-## 5. Content and tools
+## 5. Examples that isolate one thing
+
+A widget teaches by comparison: this case against that one. **Whatever is not being taught
+must be held constant between them**, or students will attribute the difference to the
+wrong cause, and the widget will have taught something false with more conviction than any
+sentence could.
+
+The case that produced this rule: the spatial autocorrelation grid compares a scattered
+pattern with a clustered one. Generated naively, the two also differ in how much grey they
+contain, and a student cannot tell which difference is doing the work. Fixing the number
+of grey squares at 113 in both makes arrangement the only thing that changed, so +0.04
+against +0.59 can mean one thing and one thing only. Same amount of grey, different
+arrangement, different answer.
+
+So when building the presets, defaults, and ranges for a widget, ask what varies between
+the cases a student will actually compare, and pin everything that is not the lesson.
+This usually means generating examples under a constraint rather than taking whatever a
+sampling procedure hands you.
+
+Two habits follow:
+
+**Fixed seeds, always.** Anything random uses a seed written into the code, never
+`Math.random()`. A student's phone in the third row and the projector at the front must
+show the same example, or the discussion falls apart. It also means a value quoted in a
+lecture is still true next year.
+
+**Defaults and ranges are claims.** The opening state says "this is what this normally
+looks like", and the ends of a slider say "this is how far this goes". Both are read as
+assertions about the world whether or not they were meant that way. Choose them as
+carefully as you would choose a sentence, and check what the extremes actually show: if a
+range ends somewhere degenerate or misleading, change the range.
+
+## 6. Content and tools
 
 The subject is cartography and GIS, which means the browser has to do real spatial work:
 projections, tiling, raster handling, spatial statistics, symbolisation. That is a
@@ -124,7 +156,7 @@ WebAssembly ports of the desktop tools; then writing it ourselves. Every depende
 pinned to a version and vendored or loaded from a stable source, so a widget used in a
 lecture in 2029 still runs.
 
-## 6. Text
+## 7. Text
 
 ### How much
 
@@ -170,7 +202,7 @@ Note: the `luke-david-style` voice skill is for scholarly prose written as Luke 
 David. Student-facing interface text is a different register and should not go through
 it. Repository documentation and lecture prose written in Luke's own voice may.
 
-## 7. Accessibility
+## 8. Accessibility
 
 Treat WCAG 2.1 AA as the floor, and go past it where a classroom makes it easy.
 
@@ -204,7 +236,7 @@ Note that a projector in a lit room usually favours dark marks on a light ground
 is the opposite of what many students set on their phones. If a widget offers both, it
 opens in the version that projects well.
 
-## 8. Openness and attribution
+## 9. Openness and attribution
 
 Everything we ship is open, and everything borrowed is credited.
 
@@ -218,7 +250,7 @@ Everything we ship is open, and everything borrowed is credited.
 - Our own code is MIT and our own text and figures are CC BY 4.0, so anyone can pick a
   widget up and adapt it. Anything we add must be compatible with that.
 
-## 9. Review before shipping
+## 10. Review before shipping
 
 No widget goes in front of students without the passes described in `docs/review.md`.
 The pedagogical critique is the one that can send the work back for redesign, not just

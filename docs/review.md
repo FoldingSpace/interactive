@@ -28,6 +28,12 @@ first three actions. Novices poke at the biggest control and drag it to the extr
 What do the extremes show? If the extreme cases are degenerate or misleading, fix the
 ranges.
 
+**Do the cases a student will compare differ in only the thing being taught?** Take the
+presets and defaults two at a time and name every way they differ. If two cases differ in
+more than the lesson, a student cannot tell which difference produced the result, and the
+widget will teach the wrong cause convincingly. This is `principles.md` section 5, and it
+is the failure that is hardest to spot once you already know what the widget is for.
+
 **Where can a student form a wrong idea?** Name the specific misconception the widget
 might create or reinforce. Defaults, ranges, and colour choices all carry implications
 that students read as claims.

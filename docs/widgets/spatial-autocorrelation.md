@@ -107,10 +107,10 @@ given number of passes. Rank all 225 cells by smoothed value, descending, ties b
 ascending index, and make the top 113 grey.
 
 Ranking rather than thresholding fixes the number of grey squares at 113, the same as the
-checkerboard and near enough the random patterns. **This is the point**: moving between
-Random 1 and Patches changes the arrangement while holding the amount of grey almost
-constant, so a student can see that autocorrelation is about arrangement, not about how
-much of each colour there is.
+checkerboard and near enough the random patterns. **This is the point**, and it is now `principles.md`
+section 5: moving between Random 1 and Patches changes the arrangement while holding the
+amount of grey almost constant, so a student can see that autocorrelation is about
+arrangement, not about how much of each colour there is.
 
 Both the sort and the smoothing must match exactly or the pattern differs. The comparator
 is `f[b] - f[a] || a - b`, and the mean is a plain running sum divided by the count — not
@@ -250,7 +250,7 @@ pattern buttons at 1280×800; fixed before release.
 **Revised 2026-08-19, second pass.** Three changes on instruction. On-screen text was cut
 hard — the intro paragraph, the sentence-long verdicts, and the footer all moved behind a
 "?" disclosure, leaving the number, the scale, a one or two word verdict, and one short
-line. The rule behind this is now in `principles.md` section 6. Drag-to-paint was added.
+line. The rule behind this is now in `principles.md` section 7. Drag-to-paint was added.
 Two patchy presets were added, which give the widget its first patterns that look like
 real data rather than geometry, and which isolate arrangement from density.
 
