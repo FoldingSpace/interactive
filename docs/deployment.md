@@ -80,6 +80,22 @@ so only `web/` is being served.
 
 Deploys run on every push to `main`, and can be run by hand from the Actions tab.
 
+## Working on it locally
+
+The widgets are static files, so any local server will do:
+
+```
+python3 -m http.server 8791 --directory ~/teaching-interactive/github/web
+```
+
+Then open `http://localhost:8791/<widget>/`. Do not use `file://`: `history.replaceState`,
+which is how the configuration lives in the URL, is unreliable there, and Blob workers are
+blocked in some browsers.
+
+If Claude Code is driving the browser, the preview server is configured in
+`.claude/launch.json` — note that it is read from the **primary** working directory the
+session was launched in, not from this repository.
+
 ## Things that bit us
 
 **GitHub Pages cannot serve an arbitrary subfolder from a branch.** Root or `docs/` only.
@@ -102,3 +118,12 @@ entries remain in the file and may yet cause a similar warning.
 
 **Deploy keys can push workflow files.** The `workflow` scope restriction applies to
 tokens, not to SSH deploy keys.
+
+**`git` 2.16 has no `git init -b`.** Use `git init` then
+`git symbolic-ref HEAD refs/heads/main`.
+
+**CSS specificity beats media queries.** A rule written as `body[data-present="1"] #grid`
+outranks `#grid` inside a media query, no matter what the media query says, and a stale
+rule of that shape survived a layout rewrite and forced a grid to 435 px inside a 282 px
+wrapper. When a layout misbehaves after a rewrite, grep for old selectors on the same
+element before anything else.

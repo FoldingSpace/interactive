@@ -4,8 +4,8 @@ What we use, what worked, what did not, and what is worth trying. Update this ev
 a library earns or loses a place. Licences below are recorded from prior knowledge and
 must be checked against the project's own repository before anything ships publicly.
 
-Started 2026-08-19. One widget built so far, and it needed no library, so the "in use"
-table is still empty and everything below it remains a candidate.
+Started 2026-08-19. One widget built so far, and it needed no library at all, so the
+"in use" table is still empty and everything below it remains a candidate.
 
 ---
 
@@ -15,11 +15,32 @@ table is still empty and everything below it remains a candidate.
 |---|---|---|---|
 | _(none)_ | | | Spatial autocorrelation needed no dependency at all. Worth trying that first each time. |
 
+## Platform features we do rely on
+
+No libraries, but the widgets are not written in 2005 either. These are the browser
+features the first widget leans on, all of them long-standing and universally supported:
+
+| Feature | Used for |
+|---|---|
+| `Worker` from a `Blob` URL | heavy computation off the main thread, without a second file |
+| Typed arrays | `Int32Array`, `Float64Array` in hot loops |
+| CSS grid, `grid-template-areas` | the layout, including the presentation rearrangement |
+| Pointer events, `setPointerCapture` | drag-to-paint, with mouse and touch distinguished |
+| `aspect-ratio`, `min()` in CSS | square grids that size themselves to the viewport |
+| `history.replaceState`, `URLSearchParams` | configuration in the URL |
+| `prefers-color-scheme`, `prefers-reduced-motion` | respecting the reader's settings |
+
+The worker trick is worth remembering: put the worker's source in a
+`<script type="javascript/worker">` tag, read its `textContent`, and construct a `Blob`
+URL. The page stays a single self-contained file, there is one copy of the code, and if
+`Worker` is unavailable the same source can be compiled on the main thread with
+`new Function`.
+
 ## Ruled out
 
 | Library | Why | Date |
 |---|---|---|
-| _(nothing yet)_ | | |
+| Any dense matrix library | Considered for the permutation test in the spatial autocorrelation widget. It would have been *slower*: the weights are sparse, about 4,800 non-zeros in a 225 × 225 matrix, and a dense routine does ten times the arithmetic to earn its vectorisation. The wins came from the algorithm and from exploiting binary data, neither of which a general library could have found. | 2026-08-19 |
 
 ---
 
@@ -95,6 +116,19 @@ The OSM tile servers are not for classroom load; read their usage policy before 
 anything at them.
 
 ---
+
+## What the first widget taught
+
+**Try it with nothing first.** Moran's I, local Moran's I, a permutation test,
+Benjamini-Hochberg, a seeded random number generator, a smoothed-field pattern generator,
+colour ramp interpolation and drag painting with line interpolation came to a few dozen
+lines each. Every one of them would have been more work to integrate as a dependency than
+to write. That will not hold for a real basemap, but it held for everything so far.
+
+**The cost that matters is rarely the arithmetic.** In the permutation test the bottleneck
+was the random number generator, not the multiply-adds, and the biggest single win in the
+whole widget came from not writing to DOM nodes whose value had not changed. Profile
+before reaching for anything.
 
 ## Things to test early
 

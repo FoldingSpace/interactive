@@ -9,10 +9,18 @@ install.
 
 **Live site: https://foldingspace.github.io/interactive/**
 
+## What is here
+
+- [**Spatial autocorrelation on a grid**](https://foldingspace.github.io/interactive/spatial-autocorrelation/)
+  — paint a 15 by 15 grid of grey and white squares and watch Moran's I respond. The
+  weights are an editable picture rather than a fixed choice, and a second grid shows
+  where the global number comes from, square by square, with an optional test against
+  chance.
+
 ## How they are built
 
-Static HTML, CSS, JavaScript, and WebAssembly. No server, no accounts, no build step
-the browser can see. Every widget opens with defaults already set and something already
+Static HTML, CSS and JavaScript. **No libraries, no build step, no network calls after
+the page loads** — each widget is a single self-contained file. No server, no accounts. Every widget opens with defaults already set and something already
 drawn, works on a phone and on a projector, can be embedded in an `iframe`, and can be
 linked by a plain URL that carries its configuration.
 

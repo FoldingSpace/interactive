@@ -294,7 +294,7 @@ is a cluster**, so the map is entirely pale. Nothing sits with its own kind.
 you can see. ColorBrewer PuOr, symmetric and **centred at zero**, clamped at ±1.5.
 
 **Neither view carries a second cue beyond colour.** This is a deliberate exception to
-`principles.md` section 8. In the cluster view, red against blue survives the common forms
+`principles.md` section 9. In the cluster view, red against blue survives the common forms
 of colour vision deficiency reasonably well, but strong against pale — cluster against
 outlier — does not survive greyscale or a compressed recording. Every cell's `aria-label`
 names its quadrant and its value, which is the non-visual route. If it proves a problem in
@@ -509,7 +509,7 @@ pattern buttons at 1280×800; fixed before release.
 **Revised 2026-08-19, second pass.** Three changes on instruction. On-screen text was cut
 hard — the intro paragraph, the sentence-long verdicts, and the footer all moved behind a
 "?" disclosure, leaving the number, the scale, a one or two word verdict, and one short
-line. The rule behind this is now in `principles.md` section 7. Drag-to-paint was added.
+line. The rule behind this is now in `principles.md` section 8. Drag-to-paint was added.
 Two patchy presets were added, which give the widget its first patterns that look like
 real data rather than geometry, and which isolate arrangement from density.
 

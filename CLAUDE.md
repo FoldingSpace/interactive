@@ -41,10 +41,13 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 3. It opens showing something. No blank canvas, no "click here to begin".
 4. Every widget is embeddable in an `<iframe>` and reachable by a plain URL that can be
    pasted into a PowerPoint slide.
-5. Student-facing text obeys `~/claude scratch/anti-ai-writing-style.md` and is written
-   for readers with little technical background, many of whom read English as a second
-   language.
-6. Nothing ships without going through `docs/review.md`.
+5. Student-facing text obeys `~/claude scratch/anti-ai-writing-style.md`, is written for
+   readers with little technical background and for readers of English as a second
+   language, and there is as little of it on screen as the widget can manage.
+6. Try it with no dependency first. So far nothing has needed one.
+7. Where the method fails, say so on screen. A blank result reads as a fact about the
+   data when it is a fact about the method.
+8. Nothing ships without going through `docs/review.md`, including its correctness pass.
 
 ## Working notes
 
@@ -52,3 +55,8 @@ short: they become the URL, and the URL goes on slides and into QR codes.
   write down which and why. That file is the point of not relearning this each term.
 - Every external thing gets a line in `docs/attributions.md` at the moment it is added,
   not later.
+- Record verified numbers in the widget's file in `docs/widgets/`, so a rebuild has
+  something to fail against. Reproducing a known case is necessary and never sufficient:
+  ask what bug would pass the test you just ran.
+- Measure rather than eyeball, for both layout and speed. Most of the real defects found
+  so far were invisible until something was measured.

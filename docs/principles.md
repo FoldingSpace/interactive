@@ -108,6 +108,17 @@ Changes are immediate and visible. Something on screen must move when a control 
 Every widget has a reset. A student who has made a mess gets back to the opening state
 in one tap.
 
+**It must stay responsive while being used.** A control that stutters while it is being
+dragged teaches that the thing is fragile. Two rules serve this. Anything expensive goes
+off the main thread, into a worker, so the interface never waits for it; and the cheap
+result is drawn immediately while the expensive one arrives when it is ready. And redraw
+only what changed — rewriting every cell of a grid on every frame is usually the cost, not
+the arithmetic.
+
+Measure this rather than assume it. In the first widget, moving the heavy computation to a
+worker made it *slower* until the algorithm was fixed, and the single largest win came from
+not touching DOM nodes whose value had not changed.
+
 Deep-linking: the current configuration should be expressible in the URL, so a
 particular case can be handed out or put on a slide.
 
@@ -143,20 +154,58 @@ assertions about the world whether or not they were meant that way. Choose them 
 carefully as you would choose a sentence, and check what the extremes actually show: if a
 range ends somewhere degenerate or misleading, change the range.
 
-## 6. Content and tools
+## 6. Show what the method cannot do
+
+Every method has a blind spot, and a widget is the best place a student will ever meet it,
+because they can watch it happen instead of being told. **When a method fails, silence is
+the wrong answer.** A blank result reads as a statement about the data when it is a
+statement about the method, and a student who draws that conclusion has learned something
+false with the widget's authority behind it.
+
+Three of these turned up in the first widget, and each one became a preset rather than a
+paragraph:
+
+**A structure the measure cannot see.** Stripes score exactly zero on Moran's I under
+sides-only weights. The pattern is unmistakable; the number says nothing. So the wording
+for a near-zero result says what the number reports and sends the reader back to the grid,
+rather than claiming the arrangement is random.
+
+**A distinction the measure discards.** Half of the queen's ring, pointing one way, gives
+exactly the same answer as the whole ring, because only the symmetric part of the weights
+reaches the arithmetic. A kernel that visibly points east, and a number that does not move.
+
+**A question the data cannot answer.** With four binary neighbours the smallest possible
+p-value is about 0.042, so under those weights nothing can ever pass a corrected
+significance test, whatever the pattern. Instead of an empty map, the widget reports the
+smallest p-value reached and says a wider kernel gives finer ones.
+
+The rule that falls out: **when a result is empty, undefined, or unmoved, say why on
+screen.** Not in the notes, not in the lecture — on screen, at the moment it happens. It
+costs a line and it converts the widget's worst moment into its best one.
+
+The related habit is to build the failing case into the presets deliberately, so it can be
+reached in one click and demonstrated on purpose rather than stumbled into.
+
+## 7. Content and tools
 
 The subject is cartography and GIS, which means the browser has to do real spatial work:
 projections, tiling, raster handling, spatial statistics, symbolisation. That is a
 constraint on the JavaScript and WebAssembly we can lean on, and it is the reason
 `docs/libraries.md` exists. Keep it current.
 
-Preference order when choosing a dependency: something we have already used here and
-that worked; then a small, well-maintained open library with a clear licence; then
+**Try it with no dependency first.** The first widget here needed none: the statistics,
+the seeded random numbers, the colour interpolation, the drag painting and the worker are
+all a few dozen lines each, and a library for any of them would have been more code to
+integrate than to write. A widget with no dependencies is also a widget that still runs in
+2031, which matters when a URL is printed on a slide.
+
+Preference order when a dependency is genuinely needed: something we have already used here
+and that worked; then a small, well-maintained open library with a clear licence; then
 WebAssembly ports of the desktop tools; then writing it ourselves. Every dependency is
 pinned to a version and vendored or loaded from a stable source, so a widget used in a
 lecture in 2029 still runs.
 
-## 7. Text
+## 8. Text
 
 ### How much
 
@@ -202,7 +251,7 @@ Note: the `luke-david-style` voice skill is for scholarly prose written as Luke 
 David. Student-facing interface text is a different register and should not go through
 it. Repository documentation and lecture prose written in Luke's own voice may.
 
-## 8. Accessibility
+## 9. Accessibility
 
 Treat WCAG 2.1 AA as the floor, and go past it where a classroom makes it easy.
 
@@ -236,7 +285,7 @@ Note that a projector in a lit room usually favours dark marks on a light ground
 is the opposite of what many students set on their phones. If a widget offers both, it
 opens in the version that projects well.
 
-## 9. Openness and attribution
+## 10. Openness and attribution
 
 Everything we ship is open, and everything borrowed is credited.
 
@@ -250,7 +299,7 @@ Everything we ship is open, and everything borrowed is credited.
 - Our own code is MIT and our own text and figures are CC BY 4.0, so anyone can pick a
   widget up and adapt it. Anything we add must be compatible with that.
 
-## 10. Review before shipping
+## 11. Review before shipping
 
 No widget goes in front of students without the passes described in `docs/review.md`.
 The pedagogical critique is the one that can send the work back for redesign, not just
