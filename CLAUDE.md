@@ -10,10 +10,15 @@ anything outside it is local-only and never pushed.
 ```
 CLAUDE.md      this file
 docs/          principles, libraries, attributions, review — documentation for us
+  widgets/     one file per widget: what it teaches, the verified numbers, the review record
+template/      a working skeleton to copy when starting a widget; not published
 web/           the published site
-  shared/      stylesheets and scripts common to several widgets
+  index.html   the list of widgets
   <widget>/    one folder per widget, named for what it shows
 ```
+
+There is no `web/shared/`. Each widget is a single self-contained file, and shared code
+waits until a second widget needs the same thing — see `docs/widget-pattern.md`.
 
 Widgets are named for their subject, not for a course. A widget only carries a
 course label when it is genuinely specific to one course. Keep the folder names
@@ -28,16 +33,17 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 - `docs/attributions.md` — register of every borrowed dataset, basemap, image, and library.
 - `docs/review.md` — the passes a widget must survive before it goes in front of students.
 - `docs/deployment.md` — how the repository is published, and the credential setup.
+- `docs/widget-pattern.md` — how a widget is put together, and what to do when starting one.
 - `docs/widgets/` — one file per widget: what it teaches, how it works, its review record.
 
 ## Non-negotiables
 
 1. Static files only. Everything runs from GitHub Pages with no server, no build step
    the browser can see, and no software a student has to install.
-2. Two layouts from one file: a touch layout and a desktop layout, split on pointer
-   type rather than width. The desktop layout serves both a laptop at reading distance
-   and a projector seen from the back, so every widget has a presentation mode reached
-   by `?present=1`.
+2. Two layouts from one file: a touch layout and a desktop layout. Width decides the
+   column count; pointer type decides control shape and target size. The desktop layout
+   serves both a laptop at reading distance and a projector seen from the back, so every
+   widget has a presentation mode reached by `?present=1`.
 3. It opens showing something, and the opening state is not a dead end — every control a
    student might reach for must lead somewhere from the default.
 4. Every widget is embeddable in an `<iframe>` and reachable by a plain URL that can be
@@ -58,11 +64,18 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 
 ## Where things stand
 
-One widget, deployed and live:
+One widget is deployed and live:
 [spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/).
 Its file in `docs/widgets/` carries the verified numbers, the review record, the open
 threads, and a "picking this up again" section. **Read that before changing it** — the
 recorded values are the regression suite.
+
+The rest of the repository is now set up for more widgets rather than for that one.
+`template/` is a working skeleton to copy; `docs/widget-pattern.md` says what to keep and
+what changes when a widget needs a map, a data file, or an animation instead of pure
+computation. Everything the first widget established is a starting point for the second,
+not a settled result — the rules that came out of one build should be expected to bend on
+the next, and the bending should be written down.
 
 Repository is `FoldingSpace/interactive`, pushed over an SSH deploy key; see
 `docs/deployment.md` for the credential setup and the local preview command.

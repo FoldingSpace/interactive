@@ -7,6 +7,14 @@ must be checked against the project's own repository before anything ships publi
 Started 2026-08-19. One widget built so far, and it needed no library at all, so the
 "in use" table is still empty and everything below it remains a candidate.
 
+The empty table is a result about one kind of widget, not about the repository. A widget
+that computes something over made-up data has nothing to import. A widget that draws a
+real basemap, reprojects real coordinates, or queries a real file almost certainly does,
+and the first one that does will change two claims made elsewhere: that no widget needs a
+dependency, and that no widget makes a network call after it loads. Change the claims when
+that happens rather than contorting the widget to keep them true. See section 13 of
+`principles.md` and `widget-pattern.md`.
+
 ---
 
 ## In use
@@ -141,6 +149,20 @@ rather than reimplementing it matters; see the correctness pass in `review.md`.
 **Python with numpy** for independent recomputation of every statistic, by a different
 route from the widget's own — matrix algebra against its loops. This is what has caught
 things, and it is worth the small cost of writing the check twice.
+
+## What each sort of widget is likely to need
+
+A rough map, to be corrected as widgets get built. The point is to know before starting
+which of the project's habits are about to be tested.
+
+| Sort | Likely dependencies | What to watch |
+|---|---|---|
+| Computation on made-up data | none so far | Speed and exactness. Prefer a closed form; keep the main thread free. |
+| Maps and basemaps | MapLibre, PMTiles | Network calls after load, tile licensing, default styles that fail on a projector. |
+| Projections and geometry | proj4js, turf, d3-geo | Which definition of a projection is being used, and whether it matches what students are taught. |
+| Data-backed | possibly none; DuckDB-WASM only if genuinely large | File size over classroom wifi and phone data. Licence and provenance of the extract. |
+| Charts and non-map graphics | none, or d3 pieces | A whole charting library is rarely worth it for one figure that has to be legible from the back of a room. |
+| Time and animation | none | `prefers-reduced-motion`, and never letting motion carry a cue on its own. |
 
 ## Things to test early
 

@@ -92,9 +92,18 @@ Then open `http://localhost:8791/<widget>/`. Do not use `file://`: `history.repl
 which is how the configuration lives in the URL, is unreliable there, and Blob workers are
 blocked in some browsers.
 
-If Claude Code is driving the browser, the preview server is configured in
-`.claude/launch.json` — note that it is read from the **primary** working directory the
-session was launched in, not from this repository.
+`template/` sits outside `web/`, so it is not published and the server above cannot reach
+it. To look at it, serve the repository root instead:
+
+```
+python3 -m http.server 8792 --directory ~/teaching-interactive/github
+```
+
+and open `http://localhost:8792/template/`.
+
+If Claude Code is driving the browser, both servers are configured in
+`.claude/launch.json` as `widgets` and `repo` — note that the file is read from the
+**primary** working directory the session was launched in, not from this repository.
 
 ## Things that bit us
 

@@ -192,6 +192,21 @@ a particular configuration restores that configuration.
 
 ---
 
+## Before the push
+
+Three things that are not a pass but are part of shipping, and all three have been
+forgotten at least once.
+
+The widget is listed on `web/index.html` with a one-line description. A widget missing
+from the front page is reachable only by people who were handed the URL.
+
+Its file exists in `docs/widgets/` and has the five required parts listed in
+`docs/widgets/README.md`, the verified numbers among them.
+
+If a bug was fixed in the widget, `template/` was checked for the same bug. Copying is
+what keeps the widgets independent, and it is also what lets one mistake live in several
+places.
+
 ## Sign-off
 
 ```

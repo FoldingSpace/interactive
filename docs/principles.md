@@ -76,10 +76,17 @@ CSS as B — the machine cannot tell the difference, and no media query will sep
 Projector gamma crushes dark tones and washes out light ones; video compression destroys
 thin lines, small text, and low-contrast edges.
 
-So: two layouts, not three. A touch layout and a desktop layout, split on pointer type
-and width, not on width alone. Use `pointer: coarse` and `hover: none` to detect the
-touch case rather than guessing from the viewport, since a narrow desktop window is not a
-phone and a tablet is not a laptop.
+So: two layouts, not three. A touch layout and a desktop layout, and the split is not one
+query. Width decides the column count, because whether two panels fit side by side is a
+question about width. Pointer type decides control shape and target size, because whether
+a slider is usable is a question about the pointer, and a narrow desktop window is not a
+phone. Ask `pointer: coarse` and `hover: none` for the second of those, never for the
+first.
+
+The first widget sizes its targets for touch in both layouts rather than only under
+`pointer: coarse`. That is simpler, it costs a mouse user nothing, and it means the touch
+query is left for the cases that genuinely need a different control rather than a bigger
+one.
 
 **The hard part is that B and C share their CSS.** Sizing that reads from fifteen metres
 looks absurd on a laptop at sixty centimetres, and sizing that is right on a laptop
@@ -378,14 +385,44 @@ No widget goes in front of students without the passes described in `docs/review
 The pedagogical critique is the one that can send the work back for redesign, not just
 for polish.
 
+## 13. One repository, many widgets
+
+The widgets are meant to feel like one family and to be maintainable one at a time. Those
+two goals pull against each other, and the resolution is that the family resemblance comes
+from shared *conventions*, copied, rather than shared *code*, imported.
+
+Each widget stays a single self-contained file. That is what keeps it embeddable, linkable,
+and independent of anything else in the repository, and it is what makes it safe to leave
+a widget untouched for a year. `template/` holds a working skeleton with the machinery
+every widget needs, and starting a widget means copying it. `docs/widget-pattern.md` says
+what to keep and what to replace.
+
+**A shared file waits for the second widget that needs it, and usually for the third.**
+Duplication between two files is visible and cheap. A shared file is a thing that can break
+a page nobody is currently looking at, and its cost lands later, on whoever is not
+expecting it. When something is finally shared, every widget depending on it has to
+re-pass the verified numbers in its own file before the change goes out.
+
+**Expect the rules to bend on the next widget, and write down the bending.** The first
+widget was pure computation, so it needed no libraries, made no network calls after load,
+and could be checked exactly. A widget with a basemap breaks at least two of those, and the
+honest response is to change the claim, not to work around it to keep the claim true. What
+generalises from one build is a way of working — measure, check by an independent route,
+say what the method cannot do. What does not generalise is any particular answer.
+
+**A widget that is not on the front page does not exist.** `web/index.html` is the only
+route in for anyone who was not handed a URL, and it is part of shipping, not a follow-up.
+
 ---
 
 ## Open questions
 
-- How much lives in `web/shared/`. A common stylesheet and a common set of controls
-  is cheaper to maintain and makes the widgets feel like one family, but it couples
-  them, so a change to shared code means rechecking everything. Decide after the
-  second widget, not before the first.
+- **How the widgets should be grouped once there are more than a handful.** The front page
+  is a flat list, which stops working somewhere around eight. By topic, by course, by what
+  kind of thing they do — all defensible, none obviously right, and it does not have to be
+  settled until the list is long enough to be annoying.
+- Whether the template earns being more than a copy. See section 13: the answer stays no
+  until a second widget wants the same code, and the decision belongs to whoever builds it.
 - Whether widgets should record anything (a student's answers, a saved configuration).
   Anything stored raises privacy questions and a FIPPA question at UBC. Default for now:
   store nothing, keep state in the URL only.

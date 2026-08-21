@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Widget skeleton</title>
+<!--
+  A working skeleton. Copy this folder to web/<widget-name>/ and replace the parts
+  marked REPLACE. What is here is not decoration: it is the machinery every widget in
+  this repository is required to have, already wired up and already tested.
+
+  Keep:  the colour tokens and dark mode, the --ui scale, presentation mode, the (i)
+         panel handler, the live region, URL state, the credit line.
+  Replace: the title, the intro, the stage, the readout, the controls, the (i) text.
+  Delete: anything you genuinely do not need. An unused control is worse than none.
+
+  See docs/widget-pattern.md for what each piece is for and what usually goes wrong.
+-->
+<style>
+:root {
+  /* Presentation mode multiplies this. Every size below goes through calc(). */
+  --ui: 1;
+  --ink: #16181d;
+  --ink-soft: #545a63;
+  --page: #ffffff;
+  --panel: #f2f3f5;
+  --edge: #848b95;
+  --focus: #0b57d0;
+  --mark: #16181d;      /* REPLACE: the widget's own colours go here, not inline */
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
+    --panel: #1e2128; --edge: #6e7682; --focus: #7cacff; --mark: #e9ecf1;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: calc(1rem * var(--ui));
+  line-height: 1.45;
+}
+body[data-present="1"] { --ui: 1.15; }
+
+.wrap {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: calc(1rem * var(--ui)) calc(0.9rem * var(--ui)) calc(2rem * var(--ui));
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.9rem * var(--ui));
+}
+h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
+.intro { margin: 0; color: var(--ink-soft); max-width: 42em; }
+/* Nobody at the back of a room reads the intro. */
+body[data-present="1"] .intro { display: none; }
+
+/* ---- layout ------------------------------------------------------------
+   Narrow: one column, stacked, controls last so the thumb reaches them.
+   Wide: side by side. Width decides the column count, because that is what
+   the question "do these fit beside each other" actually depends on.
+   Pointer type decides control shape and target size — see the block below. */
+.main { display: grid; gap: calc(0.9rem * var(--ui)); grid-template-areas: "stage" "readout" "controls"; }
+.stage    { grid-area: stage; }
+.readout  { grid-area: readout; }
+.controls { grid-area: controls; }
+
+@media (min-width: 56rem) {
+  .main {
+    grid-template-areas: "stage readout controls";
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+
+/* ---- stage: REPLACE all of this with the widget itself ---- */
+.dots {
+  display: flex; flex-wrap: wrap; gap: calc(0.5rem * var(--ui));
+  border: 1px solid var(--edge); border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.9rem * var(--ui)); min-height: calc(6rem * var(--ui));
+  align-content: flex-start;
+}
+.dot { width: calc(1.6rem * var(--ui)); height: calc(1.6rem * var(--ui)); border-radius: 50%; background: var(--mark); }
+
+/* ---- readout ---- */
+.stat {
+  background: var(--panel); border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.6rem * var(--ui)) calc(0.8rem * var(--ui));
+}
+.label { color: var(--ink-soft); font-size: calc(0.9rem * var(--ui)); }
+/* Big enough to read from the back. This is the number the lecture is about. */
+.big { font-size: calc(2.4rem * var(--ui)); font-weight: 650; line-height: 1.05; font-variant-numeric: tabular-nums; }
+
+/* ---- controls ---- */
+fieldset { border: 1px solid var(--edge); border-radius: calc(0.5rem * var(--ui)); margin: 0; padding: calc(0.6rem * var(--ui)) calc(0.8rem * var(--ui)) calc(0.8rem * var(--ui)); }
+legend { padding: 0 calc(0.3rem * var(--ui)); color: var(--ink-soft); font-size: calc(0.9rem * var(--ui)); }
+.row { display: flex; flex-wrap: wrap; gap: calc(0.4rem * var(--ui)); }
+.act, .preset {
+  font: inherit; font-size: calc(0.95rem * var(--ui));
+  min-height: calc(2.6rem * var(--ui));
+  padding: calc(0.35rem * var(--ui)) calc(0.7rem * var(--ui));
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: calc(0.4rem * var(--ui));
+  background: var(--page); color: var(--ink); cursor: pointer;
+}
+.preset[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+/* Touch: bigger targets. A narrow desktop window is not a phone, so this asks about the
+   pointer, not about the viewport.
+   This block must come AFTER the .act/.preset sizes above. A media query adds no
+   specificity, so an identical-specificity rule later in the file beats it. That has
+   caused real bugs here more than once; see docs/deployment.md. */
+@media (pointer: coarse) {
+  .act, .preset { min-height: 44px; }
+}
+.act:focus-visible, .preset:focus-visible, .info:focus-visible, input:focus-visible {
+  outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px;
+}
+input[type="range"] { width: 100%; accent-color: var(--focus); }
+
+/* ---- the (i) explanation ---- */
+.info {
+  font: inherit; font-size: calc(0.8rem * var(--ui)); font-style: italic; font-weight: 700;
+  line-height: 1;
+  /* 24px is the smallest a target may be. Primary controls are 44; these sit inline
+     in a legend, where 44 would overlap the row beneath. */
+  width: calc(1.55rem * var(--ui)); height: calc(1.55rem * var(--ui));
+  min-width: 24px; min-height: 24px;
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: 50%;
+  background: transparent; color: var(--ink-soft); cursor: pointer;
+}
+.info[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.help-panel {
+  background: var(--panel); border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.9rem * var(--ui)) calc(0.7rem * var(--ui));
+  font-size: calc(0.95rem * var(--ui));
+  margin-top: calc(0.5rem * var(--ui));
+}
+.help-panel p { margin: calc(0.6rem * var(--ui)) 0 0; }
+.refs b { color: var(--ink); font-weight: 600; }
+
+footer { color: var(--ink-soft); font-size: calc(0.85rem * var(--ui)); border-top: 1px solid var(--edge); padding-top: calc(0.6rem * var(--ui)); }
+footer a { color: inherit; }
+body[data-present="1"] footer { display: none; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Widget skeleton</h1>
+  <!-- REPLACE. One sentence. What you can do, and what to watch. -->
+  <p class="intro">Move the slider and watch the count change. Replace this page with
+     something that teaches an idea.</p>
+
+  <div class="main">
+
+    <!-- REPLACE: the thing being shown -->
+    <div class="stage">
+      <div class="dots" id="dots" aria-hidden="true"></div>
+    </div>
+
+    <!-- REPLACE: the number the widget is about -->
+    <div class="readout">
+      <div class="stat">
+        <div class="label">How many</div>
+        <div class="big" id="count">0</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <fieldset>
+        <legend>How many
+          <button class="info" data-info="info-count" aria-expanded="false"
+                  aria-controls="info-count" title="What does this change?">i</button>
+        </legend>
+        <label class="visually-hidden" for="n">How many</label>
+        <input type="range" id="n" min="0" max="24" step="1" value="8">
+        <div class="row" role="group" aria-label="Presets">
+          <button class="preset" data-n="0">None</button>
+          <button class="preset" data-n="8">Some</button>
+          <button class="preset" data-n="24">Many</button>
+        </div>
+        <!-- Every control embodying a choice carries one of these. Where it cites,
+             the sources are checked adversarially first. Where nothing verified is
+             worth citing, it cites nothing — an empty "For more" is not a placeholder
+             to fill in later. -->
+        <div class="help-panel" id="info-count" hidden>
+          <p>REPLACE. Say what the control changes and why the choice is not obvious.
+             Write for someone with no background in this. Keep the reasoning; drop the
+             jargon.</p>
+          <p class="refs"><b>For more, see:</b> nothing yet — delete this line rather
+             than shipping an unchecked citation.</p>
+        </div>
+      </fieldset>
+
+      <div class="row" style="margin-top: calc(0.6rem * var(--ui))">
+        <button class="act" id="reset">Reset</button>
+        <button class="act" id="present" aria-pressed="false">Big screen</button>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Made by Luke Bergmann with Claude.
+       <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
+  </footer>
+
+  <!-- Screen readers get told what changed; the visual change alone is not enough. -->
+  <p class="visually-hidden" id="live" aria-live="polite"></p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- state from the URL, so a link carries a configuration ----------------
+  var params = new URLSearchParams(location.search);
+  var n = parseInt(params.get("n"), 10);
+  if (!(n >= 0 && n <= 24)) n = 8;              // REPLACE: your own parameters
+  var present = params.get("present") === "1";
+
+  var dotsEl = document.getElementById("dots");
+  var countEl = document.getElementById("count");
+  var slider = document.getElementById("n");
+  var liveEl = document.getElementById("live");
+  var presentBtn = document.getElementById("present");
+
+  function writeURL() {
+    var p = new URLSearchParams();
+    if (n !== 8) p.set("n", String(n));
+    if (present) p.set("present", "1");
+    var q = p.toString();
+    history.replaceState(null, "", location.pathname + (q ? "?" + q : ""));
+  }
+
+  // ---- render: one function, called after every change ----------------------
+  function render() {
+    dotsEl.textContent = "";
+    for (var i = 0; i < n; i++) {
+      var d = document.createElement("div");
+      d.className = "dot";
+      dotsEl.appendChild(d);
+    }
+    countEl.textContent = String(n);
+    slider.value = String(n);
+    document.querySelectorAll(".preset").forEach(function (b) {
+      b.setAttribute("aria-pressed", Number(b.dataset.n) === n ? "true" : "false");
+    });
+    writeURL();
+  }
+
+  function setN(v, announce) {
+    n = v;
+    render();
+    if (announce) liveEl.textContent = "Now " + n + ".";
+  }
+
+  slider.addEventListener("input", function () { setN(Number(slider.value), false); });
+  slider.addEventListener("change", function () { liveEl.textContent = "Now " + n + "."; });
+  document.querySelectorAll(".preset").forEach(function (b) {
+    b.addEventListener("click", function () { setN(Number(b.dataset.n), true); });
+  });
+  document.getElementById("reset").addEventListener("click", function () { setN(8, true); });
+
+  // ---- presentation mode ----------------------------------------------------
+  function setPresent(on) {
+    present = on;
+    document.body.dataset.present = on ? "1" : "0";
+    presentBtn.textContent = on ? "Normal size" : "Big screen";
+    presentBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    render();
+  }
+  presentBtn.addEventListener("click", function () { setPresent(!present); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "p" && !e.metaKey && !e.ctrlKey && !e.altKey &&
+        document.activeElement.tagName !== "INPUT") setPresent(!present);
+  });
+
+  // ---- one handler for every (i) panel on the page --------------------------
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-info]");
+    if (!b) return;
+    var panel = document.getElementById(b.dataset.info);
+    if (!panel) return;
+    var open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", open ? "false" : "true");
+    panel.hidden = open;
+  });
+
+  // ---- go: the page opens showing something ---------------------------------
+  setPresent(present);
+  render();
+})();
+</script>
+</body>
+</html>

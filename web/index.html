@@ -5,31 +5,74 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Interactive widgets</title>
 <style>
-  :root { color-scheme: light dark; }
+  :root {
+    --ink: #16181d;
+    --ink-soft: #545a63;
+    --page: #ffffff;
+    --panel: #f7f8f9;
+    --edge: #c3c8cf;
+    --focus: #0b57d0;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
+      --panel: #1b1e24; --edge: #3a4049; --focus: #7cacff;
+    }
+  }
+  * { box-sizing: border-box; }
   body {
-    font-family: system-ui, sans-serif;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     font-size: 1.0625rem;
     line-height: 1.55;
-    max-width: 36rem;
+    background: var(--page);
+    color: var(--ink);
+    max-width: 54rem;
     margin: 0 auto;
     padding: 2.5rem 1.25rem 4rem;
   }
   h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
-  p.lede { margin-top: 0; }
-  footer { margin-top: 3rem; font-size: 0.9rem; }
-  ul { padding-left: 1.1rem; }
-  li { margin-bottom: 0.6rem; }
-  a { color: inherit; }
+  p.lede { margin-top: 0; color: var(--ink-soft); max-width: 40em; }
+
+  /* One column on a phone, more when there is room. Adding a widget means adding a
+     card; nothing here needs changing for the fifth or the twentieth. */
+  .cards {
+    list-style: none; padding: 0; margin: 2rem 0 0;
+    display: grid; gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  }
+  .cards a {
+    display: block; height: 100%;
+    padding: 1rem 1.1rem 1.1rem;
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 0.6rem;
+    color: inherit;
+    text-decoration: none;
+  }
+  .cards a:hover { border-color: var(--ink-soft); }
+  .cards a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .cards h2 { font-size: 1.0625rem; margin: 0 0 0.3rem; text-decoration: underline; text-underline-offset: 2px; }
+  .cards p { margin: 0; color: var(--ink-soft); font-size: 0.97rem; }
+
+  footer { margin-top: 3rem; font-size: 0.9rem; color: var(--ink-soft); border-top: 1px solid var(--edge); padding-top: 1rem; }
+  footer a { color: inherit; }
 </style>
 </head>
 <body>
   <h1>Interactive widgets</h1>
   <p class="lede">Small pages that show one idea from cartography or geographic
-     information science, and let you change something to see what happens.</p>
+     information science, and let you change something to see what happens. They run in a
+     browser with nothing to install, on a phone or on a projector.</p>
 
-  <ul>
-    <li><a href="spatial-autocorrelation/">Spatial autocorrelation on a grid</a> —
-        flip squares between grey and white and watch Moran&rsquo;s I change.</li>
+  <ul class="cards">
+    <li>
+      <a href="spatial-autocorrelation/">
+        <h2>Spatial autocorrelation on a grid</h2>
+        <p>Paint black and white squares, choose which neighbours count, and watch
+           Moran&rsquo;s I respond — globally and square by square.</p>
+      </a>
+    </li>
   </ul>
 
   <footer>

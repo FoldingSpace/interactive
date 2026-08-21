@@ -20,10 +20,15 @@ install.
 
 ## How they are built
 
-Static HTML, CSS and JavaScript. **No libraries, no build step, no network calls after
-the page loads** — each widget is a single self-contained file. No server, no accounts. Every widget opens with defaults already set and something already
-drawn, works on a phone and on a projector, can be embedded in an `iframe`, and can be
-linked by a plain URL that carries its configuration.
+Static HTML, CSS and JavaScript. Every widget so far is a single self-contained file with
+**no libraries, no build step, and no network calls after the page loads**. No server, no
+accounts. Every widget opens with defaults already set and something already drawn, works
+on a phone and on a projector, can be embedded in an `iframe`, and can be linked by a
+plain URL that carries its configuration.
+
+A new widget starts by copying `template/`, a working skeleton that already meets several
+of those requirements. What to keep and what to replace is in
+[docs/widget-pattern.md](docs/widget-pattern.md).
 
 The rules we hold ourselves to are written down in [docs/principles.md](docs/principles.md),
 and nothing goes out without the checks in [docs/review.md](docs/review.md).
@@ -37,6 +42,7 @@ and nothing goes out without the checks in [docs/review.md](docs/review.md).
 | [docs/attributions.md](docs/attributions.md) | Every borrowed dataset, basemap, and library |
 | [docs/review.md](docs/review.md) | The passes a widget must survive before release |
 | [docs/deployment.md](docs/deployment.md) | How this repository is published, and why |
+| [docs/widget-pattern.md](docs/widget-pattern.md) | How a widget is put together, and how to start a new one |
 | [docs/widgets/](docs/widgets/) | One file per widget: what it teaches, how it works, the verified numbers, and its review record |
 
 ## Who made it
