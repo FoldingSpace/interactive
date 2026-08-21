@@ -12,10 +12,11 @@ install.
 ## What is here
 
 - [**Spatial autocorrelation on a grid**](https://foldingspace.github.io/interactive/spatial-autocorrelation/)
-  — paint a 15 by 15 grid of grey and white squares and watch Moran's I respond. The
-  weights are an editable picture rather than a fixed choice, and a second grid shows
-  where the global number comes from, square by square, with an optional test against
-  chance.
+  — paint a grid of black and white squares and watch Moran's I respond. The weights are an
+  editable picture rather than a fixed choice; a second grid shows where the global number
+  comes from, square by square; and an optional test against chance can be run corrected or
+  uncorrected, so the cost of asking hundreds of questions at once is visible rather than
+  asserted.
 
 ## How they are built
 

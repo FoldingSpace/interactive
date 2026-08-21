@@ -56,6 +56,17 @@ short: they become the URL, and the URL goes on slides and into QR codes.
    Unconfirmable citations are removed, not hedged.
 10. Nothing ships without going through `docs/review.md`, including its correctness pass.
 
+## Where things stand
+
+One widget, deployed and live:
+[spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/).
+Its file in `docs/widgets/` carries the verified numbers, the review record, the open
+threads, and a "picking this up again" section. **Read that before changing it** — the
+recorded values are the regression suite.
+
+Repository is `FoldingSpace/interactive`, pushed over an SSH deploy key; see
+`docs/deployment.md` for the credential setup and the local preview command.
+
 ## Working notes
 
 - Keep `docs/libraries.md` current. Every time a library works, fails, or is ruled out,
@@ -73,3 +84,5 @@ short: they become the URL, and the URL goes on slides and into QR codes.
   measured, and one control turned out to teach the opposite of its design intent.
 - Documentation makes claims that go stale exactly like code. When a feature changes,
   grep the docs for the numbers and the words "every", "always" and "all".
+- Prefer an exact answer to a simulated one wherever a closed form exists, and know the
+  floor of what a simulation can resolve. See `principles.md` section 7.

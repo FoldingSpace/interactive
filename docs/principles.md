@@ -201,6 +201,20 @@ projections, tiling, raster handling, spatial statistics, symbolisation. That is
 constraint on the JavaScript and WebAssembly we can lean on, and it is the reason
 `docs/libraries.md` exists. Keep it current.
 
+**Prefer the exact answer to the simulated one.** Where a quantity has a closed form,
+compute it; simulate only where it does not. A simulation is an approximation carrying its
+own error, and that error can exceed what it is estimating: in the first widget, 999
+permutations reported a smallest p-value of 0.040 where the smallest genuinely attainable
+was 0.0587, so the simulation was inventing extremes that cannot occur and the widget was
+reporting them as findings.
+
+Two things worth keeping apart, because they are routinely conflated. **Simulation error**
+is noise from a finite number of trials and shrinks as you run more. **Discreteness** is
+structural — with four binary neighbours there are five possible outcomes and therefore
+fifteen possible p-values, whether you run 999 trials or ten million. More simulation fixes
+the first and does nothing for the second, and pushed at a problem of the second kind it
+manufactures the appearance of resolution instead of the thing itself.
+
 **Try it with no dependency first.** The first widget here needed none: the statistics,
 the seeded random numbers, the colour interpolation, the drag painting and the worker are
 all a few dozen lines each, and a library for any of them would have been more code to
@@ -375,3 +389,9 @@ for polish.
 - Whether widgets should record anything (a student's answers, a saved configuration).
   Anything stored raises privacy questions and a FIPPA question at UBC. Default for now:
   store nothing, keep state in the URL only.
+- **How to show that a cutoff is a choice.** Every spatial weighting in use draws a hard
+  line and treats everything beyond it as unrelated, which nobody really defends — Tobler's
+  line is that near things are *more* related, not that far things are unrelated. The
+  autocorrelation widget shows that *where* the line falls changes the answer, but not what
+  happens as it recedes. Letting a neighbourhood grow without limit, and watching the
+  number as it does, is the experiment. Not yet run; see that widget's file.

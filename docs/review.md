@@ -103,6 +103,13 @@ reimplementing, verify generated inputs by executing.
 **Derive one case by hand.** Slow, and worth it once per statistic. It is the only check
 that tests your understanding rather than your code.
 
+**Ask whether a closed form exists before reaching for a simulation.** If one does, it is
+both the better implementation and the better check — exact, instant, and free of the
+error a simulation carries. "Simulation is used because closed forms are hard" is true of
+some cases and assumed of many more; test it rather than inherit it. Where a simulation is
+genuinely needed, know the floor of what it can resolve, and never report a value below
+that floor as a finding.
+
 Record the resulting values in the widget's file in `docs/widgets/`, so a future rebuild
 has something to fail against.
 

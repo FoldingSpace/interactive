@@ -876,16 +876,52 @@ beat `.spacer { display: block }` in the wide-screen block until the latter was 
 **Not yet done:** a real projector in a lit room, and a compressed recording. Those need
 the lecture machine.
 
-## Known limits
+## Known limits and open threads
 
-- No significance test. A permutation-based reference distribution would let students see
-  what "significant" means, and is the obvious next addition.
-- No option to change grid size.
-- Weights are binary, not row standardised. Row standardisation changes the numbers and is
-  worth a future control.
-- Weights are not row standardised, and there is no control to switch. That choice is
-  itself a teachable one and could become a further preset or toggle.
-- The kernel is fixed at 5 by 5, so decay beyond two cells cannot be expressed.
-- Dragging to paint works with a mouse or pen but not by touch, for the scrolling reason
-  above. A press-and-hold to arm the brush would be one way round it if it turns out to
-  matter.
+Two are stale entries removed: there **is** a significance test, and the grid size **is** a
+control. What remains:
+
+**The cutoff is arbitrary, and the widget cannot show that it is.** Every kernel here draws
+a hard line — everything within two squares counts, everything beyond counts nothing — and
+that step function is a convenience, not a claim anyone defends. Tobler's line is that near
+things are *more* related, not that distant things are unrelated. A student can already see
+that where the line falls changes the answer (checkerboard reads −1.00 under rook and −0.03
+under queen), but not what happens as the line recedes.
+
+**The obvious experiment, not yet run:** let the neighbourhood grow — a larger kernel, or an
+"everything, weighted by 1/d²" option with no cutoff at all — and watch the number as it
+does. The expectation is that it drifts toward zero as distant unrelated pairs swamp the
+near ones, which would itself be the argument for having a cutoff. That is a guess and
+should be computed before it is written down anywhere a student can read it. Note that
+a complete weights matrix is a modelling choice, not a null: the null here is spatial
+randomness, and the weights never enter it.
+
+**Weights are not row standardised, and there is no control to switch.** Standardising
+changes every number — stripes stops being exactly zero — and that trade is itself
+teachable. A toggle would make it visible.
+
+**The kernel is fixed at 5 by 5**, so no decay beyond two squares can be expressed. This is
+the same limitation as the cutoff point above, seen from the implementation side.
+
+**Dragging to paint is mouse and pen only.** On touch the grid fills the display and
+capturing drags would take away scrolling. A press-and-hold to arm the brush would be one
+way round it if it turns out to matter.
+
+**Not yet checked against a real projector in a lit room**, or in a compressed recording.
+Those need the lecture machine.
+
+## Picking this up again
+
+Everything is deployed at
+https://foldingspace.github.io/interactive/spatial-autocorrelation/ and the repository is
+`FoldingSpace/interactive`, pushed over the deploy key described in `deployment.md`.
+
+The verified numbers in this file are the regression suite. Reproduce them before trusting
+any change: the exact values (checkerboard −1.0000, stripes 0.0000 under rook at both
+extents), the kernel × pattern table, the quadrant counts, and the exact p-values (rook 0,
+queen 148, even 166 on the default grid).
+
+Local preview: `python3 -m http.server 8791 --directory web`, then
+`http://localhost:8791/spatial-autocorrelation/`. Verify statistics in Python with numpy by
+a different route from the widget's own; verify anything involving the random generator by
+running the widget's actual source in Node, never a reimplementation.
