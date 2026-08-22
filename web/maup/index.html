@@ -339,6 +339,34 @@ body[data-present="1"] .stakes {
   margin: 0; color: var(--ink-soft); font-size: calc(0.85rem * var(--ui)); max-width: 46em;
 }
 body[data-present="1"] .selfnote { display: none; }
+
+/* ---- the way in ----
+   Shown on a bare URL only. Any query string means someone is being sent to a particular
+   state — a link from a slide, an iframe, a shared configuration — and they should land on
+   it. The page behind is already live and drawn, so nothing here is a dead end. */
+.splash {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(1rem * var(--ui));
+  background: color-mix(in srgb, var(--page) 88%, transparent);
+  backdrop-filter: blur(2px);
+}
+.splash[hidden] { display: none; }
+.splash-card {
+  max-width: 34rem; max-height: 100%; overflow-y: auto;
+  background: var(--page);
+  border: calc(2px * var(--ui)) solid var(--ink);
+  border-radius: calc(0.6rem * var(--ui));
+  padding: calc(1.2rem * var(--ui)) calc(1.4rem * var(--ui)) calc(1.1rem * var(--ui));
+}
+.splash-card h2 {
+  margin: 0 0 calc(0.7rem * var(--ui));
+  font-size: calc(1.25rem * var(--ui)); font-weight: 650; line-height: 1.25;
+}
+.splash-card p { margin: 0 0 calc(0.7rem * var(--ui)); font-size: calc(1rem * var(--ui)); }
+.splash-ask { font-weight: 600; }
+.splash-go { margin-top: calc(0.2rem * var(--ui)); font-size: calc(1rem * var(--ui)); }
+@media (prefers-reduced-motion: reduce) { .splash { backdrop-filter: none; } }
 footer { color: var(--ink-soft); font-size: calc(0.82rem * var(--ui)); border-top: 1px solid var(--edge); padding-top: calc(0.55rem * var(--ui)); }
 footer a { color: inherit; }
 body[data-present="1"] footer { display: none; }
@@ -350,6 +378,24 @@ body[data-present="1"] footer { display: none; }
 </style>
 </head>
 <body>
+
+<div class="splash" id="splash" role="dialog" aria-modal="true" aria-labelledby="splash-h" hidden>
+  <div class="splash-card">
+    <h2 id="splash-h">A map is never a view from nowhere</h2>
+    <p>Someone chose the areas. The areas decide what can be seen.</p>
+    <p>Here the police records stay fixed and everything else moves. Cut Vancouver into 996
+       pieces, or into 118. Shift the boundaries without changing how many there are. Change
+       what counts as a neighbour. Each one changes the answer, and none of them is in the
+       data. Geographers call this the modifiable areal unit problem.</p>
+    <p>The records are a standpoint too. They mark where officers were, what someone
+       reported, and how it was written down. A crime map describes a city and also shapes
+       what can be said about it.</p>
+    <p class="splash-ask">Two questions, then. What does the model say? And what had to
+       happen for these numbers to exist?</p>
+    <button class="act splash-go" id="splash-go">Start</button>
+  </div>
+</div>
+
 <div class="wrap">
 
   <h1>Drawing the lines: the same city, different areas</h1>
@@ -1708,6 +1754,27 @@ body[data-present="1"] footer { display: none; }
   buildMaps();
   setPresent(present);
   render();
+
+
+  // ---- the way in ---------------------------------------------------------
+  // A bare URL gets the framing first. Anything with a query string is someone being sent
+  // somewhere specific, so it goes straight through.
+  (function () {
+    var el = document.getElementById("splash");
+    if (location.search) return;
+    el.hidden = false;
+    var go = document.getElementById("splash-go");
+    go.focus();
+    function close() {
+      el.hidden = true;
+      document.getElementById("zonebtns").querySelector(".opt").focus();
+    }
+    go.addEventListener("click", close);
+    el.addEventListener("click", function (e) { if (e.target === el) close(); });
+    document.addEventListener("keydown", function (e) {
+      if (!el.hidden && e.key === "Escape") close();
+    });
+  })();
 
   window.MAUP_TEST = { compute: compute, state: function () { return state; },
                        setZoning: function (z, s) { zoning = z; if (s) seed = s; render(); } };

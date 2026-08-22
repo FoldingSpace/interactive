@@ -192,6 +192,14 @@ a particular configuration restores that configuration.
 
 ---
 
+### What a reader sees with everything closed
+
+List it. Title, labels, any text not behind an (i), at every screen size and in presentation
+mode as well as normal. Then ask whether someone reading only that would know what the
+widget is about and why it matters. If the answer lives in an explanation panel, and
+presentation mode hides those panels, then the lecture version of the widget is missing its
+argument. See `principles.md` section 13.
+
 ## Before the push
 
 Three things that are not a pass but are part of shipping, and all three have been

@@ -105,6 +105,13 @@ Build it so one variable drives the scaling rather than a second stylesheet. Kee
 multiplier in a custom property applied through `calc()`. Settle the exact mechanism on
 the first widget and write it down here.
 
+**Presentation mode may drop controls. It may not drop the argument.** Building the MAUP
+widget, the (i) buttons were hidden on a projector to buy height, which put every critical
+claim behind a control that no longer existed. A lecture would have shown the statistics
+and none of the reasoning. Whatever a widget is *for* — the thing you would say if you had
+one sentence — belongs in the reading flow at every size, not in a panel and not in a
+footer. Cut secondary controls and explanatory detail instead.
+
 **Rules that hold in every context.** Never encode anything that matters in a one-pixel
 line, a small marker, or a subtle tint. Controls must be as legible as results: a student
 at the back needs to see which control moved and what value it now holds, so show current
@@ -385,7 +392,21 @@ No widget goes in front of students without the passes described in `docs/review
 The pedagogical critique is the one that can send the work back for redesign, not just
 for polish.
 
-## 13. One repository, many widgets
+## 13. What is at stake belongs on the face of the page
+
+A widget that teaches a method will be read as a widget about the method. If the point is
+partly about what the data is, who made it, and what it is used for, that has to be visible
+before anyone opens anything.
+
+Audit it by listing what a reader sees with every explanation closed, at every screen size.
+The MAUP widget failed that audit: the visible text was a title, a methods question, four
+control labels and two grey lines in the footer, and the city it was about was not named
+anywhere. The fix was about fifty words above the fold, in the reading flow.
+
+Fifty words is the budget. Section 8's rule still applies, and a paragraph of framing that
+nobody reads is worth less than three sentences that land.
+
+## 14. One repository, many widgets
 
 The widgets are meant to feel like one family and to be maintainable one at a time. Those
 two goals pull against each other, and the resolution is that the family resemblance comes
@@ -421,7 +442,7 @@ route in for anyone who was not handed a URL, and it is part of shipping, not a 
   is a flat list, which stops working somewhere around eight. By topic, by course, by what
   kind of thing they do — all defensible, none obviously right, and it does not have to be
   settled until the list is long enough to be annoying.
-- Whether the template earns being more than a copy. See section 13: the answer stays no
+- Whether the template earns being more than a copy. See section 14: the answer stays no
   until a second widget wants the same code, and the decision belongs to whoever builds it.
 - Whether widgets should record anything (a student's answers, a saved configuration).
   Anything stored raises privacy questions and a FIPPA question at UBC. Default for now:

@@ -64,6 +64,24 @@ become interchangeable objects in reductive categories, and space an invariant c
 system, describes this page too. It says so once, in a line, and the 996 smallest areas stay
 drawn under every grouping so what aggregation discards is never quite off the screen.
 
+### The way in
+
+A bare URL shows a splash first: 127 words on why the page exists, before any of it moves.
+It carries three things and one sentence each. That a map is a standpoint rather than a
+view from nowhere, and that whoever chose the areas chose what could be seen. That three
+choices here move the answer and none of them is in the data. And that the records are a
+standpoint too — they mark where officers were, what someone reported, how it was written
+down — so a crime map describes a city and also shapes what can be said about it. It ends
+with the two questions the page is built around: what does the model say, and what had to
+happen for these numbers to exist?
+
+Any query string skips it. A link from a slide, an `iframe` with a configuration, a shared
+state, `?present=1` — all of those are someone being sent somewhere specific, and they land
+on it. The page behind the splash is already drawn and live, so nothing about this makes the
+opening state a dead end. Escape closes it, and focus moves into the controls.
+
+Nothing is remembered between visits, because this repository stores nothing.
+
 ## The data
 
 996 dissemination areas with households, median household income, population, census tract,
@@ -340,6 +358,9 @@ being taught asks for them.
 within 2e-12; p-values checked against three closed forms. One error was caught in the
 documentation rather than the code: a spread of R<sup>2</sup> values was written down before
 it was computed, and the computed range is wider than the invented one.
+
+**Text — changes requested, and made twice.** The splash was written last, scanned clean
+against the anti-AI list, 127 words over 15 sentences averaging 8.5 words each.
 
 **Text — changes requested, and made.** Scanned against the anti-AI list, then read again
 for plainness, then audited for whether the stakes were actually on screen. They were not.

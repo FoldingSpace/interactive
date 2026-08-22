@@ -64,18 +64,22 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 
 ## Where things stand
 
-One widget is deployed and live:
-[spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/).
-Its file in `docs/widgets/` carries the verified numbers, the review record, the open
-threads, and a "picking this up again" section. **Read that before changing it** — the
-recorded values are the regression suite.
+Two widgets, deployed and live:
+[spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/)
+and [drawing the lines](https://foldingspace.github.io/interactive/maup/), which is about the
+modifiable areal unit problem using the data from GEOG 370's Lab 3. Each has a file in
+`docs/widgets/` carrying its verified numbers, review record, open threads and a "picking
+this up again" section. **Read that before changing either** — the recorded values are the
+regression suite.
 
-The rest of the repository is now set up for more widgets rather than for that one.
+The MAUP widget is deliberately not an answer key: it refuses the crime category the lab
+asks students to model. The lab worked through in full lives in `lab3-worked.md` in the
+**local** working folder, outside this repository, because that file is the answer key and
+this repository is public. Keep it that way.
+
 `template/` is a working skeleton to copy; `docs/widget-pattern.md` says what to keep and
 what changes when a widget needs a map, a data file, or an animation instead of pure
-computation. Everything the first widget established is a starting point for the second,
-not a settled result — the rules that came out of one build should be expected to bend on
-the next, and the bending should be written down.
+computation.
 
 Repository is `FoldingSpace/interactive`, pushed over an SSH deploy key; see
 `docs/deployment.md` for the credential setup and the local preview command.
@@ -99,3 +103,8 @@ Repository is `FoldingSpace/interactive`, pushed over an SSH deploy key; see
   grep the docs for the numbers and the words "every", "always" and "all".
 - Prefer an exact answer to a simulated one wherever a closed form exists, and know the
   floor of what a simulation can resolve. See `principles.md` section 7.
+- A citation is not checked until you have read the thing. An adversarial agent fabricated
+  a full set of verifications for this repository, complete with quotations and catalogue
+  records, and then retracted them. Get the paper.
+- What a widget is *for* goes in the reading flow, not behind an (i) and not in the footer.
+  Presentation mode hides (i) panels, so anything only in them is missing from every lecture.
