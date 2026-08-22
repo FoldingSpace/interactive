@@ -68,6 +68,30 @@ here is necessarily copyrightable in the first place.
   the category the course lab asks students to model, and shipping it would publish the
   answers.
 
+### Metro Vancouver Land Use 2016
+- Source: "Landuse 2016 - Code Description", Metro Vancouver Open Data Portal,
+  <https://open-data-portal-metrovancouver.hub.arcgis.com/>. Fetched from the ArcGIS
+  feature service by `tools/lab4-extract.py`.
+- Licence: Metro Vancouver Open Government Licence,
+  <https://open-data-portal-metrovancouver.hub.arcgis.com/pages/Open%20Government%20Licence>
+- Attribution required on screen: Metro Vancouver named as the source, and the licence
+  named. The footer does both and adds that the grouping into eight classes is ours.
+- Used in: `web/least-cost`
+- Added: 2026-08-21
+- Notes: not reprojected — it is published in NAD83 / UTM zone 10N (EPSG:26910), which is
+  the grid's own projection. Modified: clipped to a 220 x 190 window of 100 m cells and
+  the 29 land use codes grouped into 8 classes plus roads. That grouping is an editorial
+  choice, is listed in `docs/widgets/least-cost.md`, and the page says it is ours. Cells
+  are burned in a fixed order so the narrow and specific overwrite the broad — a school
+  inside a park should read as a school.
+
+### Deliberately not used: DMTI CanMap Route Logistics (Langley and Surrey)
+The GEOG 370 Lab 4 geodatabase is built on DMTI CanMap Route Logistics, Markham, Ontario:
+DMTI Spatial Inc. [2018]. DMTI data is licensed to institutions, not openly, so none of it
+is shipped or drawn. The `web/least-cost` widget uses Metro Vancouver's open land use
+instead. This is why the widget cannot reproduce the lab's own surface, and it turned out
+to be a better widget for it: Metro Vancouver has an agricultural class and DMTI does not.
+
 ### Deliberately not used: City boundary (DMTI, 2006)
 The Lab 3 geodatabase also contains a `City` layer credited to DMTI Spatial. DMTI data is
 licensed to institutions, not openly, so it is not shipped and not drawn. The city's
@@ -122,6 +146,19 @@ Checked 2026-08-20.
 | Benjamini, Y. & Hochberg, Y. (1995) "Controlling the False Discovery Rate." *JRSS B* 57(1): 289–300. | The false discovery rate and the step-up procedure. | Verified |
 | Caldas de Castro, M. & Singer, B.H. (2006) "Controlling the False Discovery Rate…" *Geographical Analysis* 38(2): 180–208. | FDR applied to local spatial statistics, and preferred to Bonferroni. | Verified |
 | Cliff, A.D. & Ord, J.K. (1981) *Spatial Processes: Models and Applications*. London: Pion. | The standard treatment of spatial weights, rook's-case and queen's-case contiguity among them, and of the distribution theory behind Moran's I. | Verified after two rounds. Not cited as the origin of the terminology — see below. |
+
+### Added 2026-08-21 for `web/least-cost`
+
+Checked 2026-08-21. Two of the four came back needing the *claim* changed rather than the
+citation — the third and worst failure mode in `principles.md` section 11, where the work is
+real and cited correctly and does not say what it was put next to.
+
+| Work | Cited for | Status |
+|---|---|---|
+| Goodchild, M.F. (1977) "An evaluation of lattice solutions to the problem of corridor location." *Environment and Planning A* 9(7): 727–738. | That a path found on a lattice does not converge on the continuous-space path, and that the difference depends on which moves the lattice permits. | Verified with correction. The check found the citation exact and the claim supported, but flagged that Goodchild compares several move sets rather than assuming eight, so the eight-neighbour case is an instance of his argument and not its premise. The panel was rewritten to separate our grid's eight directions from his general point. Abstract obtained independently from RePEc and from OpenAlex, agreeing word for word; the publisher page returns 403. |
+| Pinto, N. & Keitt, T.H. (2009) "Beyond the least-cost path: evaluating corridor redundancy using a graph-theoretic approach." *Landscape Ecology* 24(2): 253–266. | That standard analysis reports one path although alternatives of comparable cost exist; and the two-way accumulated-cost method (Conditional Minimum Transit Cost). | Verified. The strongest of the four: the claim is close to the article's own sentence, "only a single path is identified, even though alternative paths with comparable costs might exist." Checked against the full PDF, not metadata. |
+| Sieber, R. (2006) "Public participation geographic information systems: a literature review and framework." *Annals of the Association of American Geographers* 96(3): 491–507. | That whether a map widens a decision or only appears to is a long-running argument with its own literature, the "illusion of control" objection among its sharper forms. | Verified after correction. The claim first attached to it — that GIS opens a decision to the people affected — is the field's *contested* question, not Sieber's finding; she reports at length the objection that GIS "lends the illusion of control over decision making when actual control remains within the governing class." The widget now cites the argument rather than one side of it, and says so on screen. Checked against the full PDF. |
+| Elwood, S. (2006) "Critical issues in participatory GIS: deconstructions, reconstructions, and new research directions." *Transactions in GIS* 10(5): 693–708. | That participatory GIS carries its own unresolved problems of access, equity and whose knowledge is represented, so participation is not by itself a fix. | Verified. Access, equity and the representation of spatial knowledge are named in the abstract and framing them as persistent is the paper's thesis. Abstract via OpenAlex; Wiley returns 403. |
 
 ### What the check caught
 

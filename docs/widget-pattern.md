@@ -45,6 +45,25 @@ student gets is short and the link from a slide carries only what it changed.
 Announce changes in the live region. A student using a screen reader gets nothing from a
 redrawn grid.
 
+**If `render()` is batched into an animation frame, state can be one frame behind, and
+something will read it.** Batching is right — a brush stroke should never wait on a solve —
+but it means anything reading the result synchronously gets the previous frame's answer. In
+`least-cost` that filed the current cost table against the previous route, so two kept
+proposals showed identical statistics under visibly different numbers. Keep a `flush()` that
+does the work now, and call it wherever a settled answer is read rather than drawn. The same
+argument applies to a control's own `aria-valuenow`: redraw the control synchronously and let
+the expensive part wait.
+
+**Debounce the URL write.** `history.replaceState` on every frame of a drag is both wasteful
+and, in Safari, throttled — about a hundred calls in thirty seconds, after which it throws.
+A few seconds of painting reaches that. Write the URL a third of a second after things
+settle.
+
+**Anything overlaid on an interactive canvas must not be inside the element you measure
+against.** A drawing banner placed inside the map box made the box taller than the canvas,
+so a press near the top mapped to a negative row and silently did nothing. Put the chrome
+beside the canvas, not around it, and the pointer arithmetic stays one subtraction.
+
 ## What changes with the sort of widget
 
 The first widget was pure computation with no data and no dependencies. Most of what it

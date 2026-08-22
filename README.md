@@ -26,6 +26,14 @@ install.
   A spatial error model is there to deal with the clustered errors, and the page is candid
   about what dealing with them does not fix.
 
+- [**Least cost, whose cost?**](https://foldingspace.github.io/interactive/least-cost/)
+  — a power line has to reach a new plant, and the route it takes is decided by eight numbers
+  nobody measured. Set what it costs to cross farmland, houses, parks or water and the line
+  moves; draw a park where there was none and it moves again. Keep a route and it carries the
+  table that produced it, so a set of proposals can be compared with their reasons attached.
+  A near-tie control shades every route that would cost almost the same, because the single
+  confident line is the method's most misleading habit.
+
 ## How they are built
 
 Static HTML, CSS and JavaScript. Every widget so far is a single self-contained file with

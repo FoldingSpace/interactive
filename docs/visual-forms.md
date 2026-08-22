@@ -5,7 +5,7 @@ together (`widget-pattern.md`), and how it gets checked (`review.md`). This one 
 to draw, and it exists because the graphical decisions recur across widgets while the
 subjects do not.
 
-Written from two builds. Expect it to be wrong somewhere by the fourth.
+Written from three builds. Expect it to be wrong somewhere by the fifth.
 
 ---
 
@@ -97,6 +97,39 @@ commonest colour blindness, every time, and the scheme named in the widget's own
 
 For symbols carrying a sign, two colours is enough: one for above, one for below. A seven
 class ramp on top of a size encoding is two variables doing one job.
+
+**A categorical scheme with more than about six classes has to be searched, not chosen.**
+Nine land use classes were picked by eye once and six pairs collided under simulated
+deuteranopia, farmland against houses among them — the two largest classes on the map, half
+its area between them, at a colour distance of 20 and a lightness difference of 2. Simulate
+both deuteranopia and protanopia, score every pair on colour distance *and* lightness
+difference, and weight the pairs by how much ground each class covers: confusing two classes
+that are 1% of the map costs almost nothing, and confusing the two that are half of it costs
+everything. Then accept that a residual collision among the small classes is the price of
+nine categories, and give those classes a second cue — naming what is under the pointer does
+it.
+
+**Lightness is the cue that survives everything.** It survives both common forms of colour
+blindness, greyscale, a projector, and a compressed recording. If the big classes are spread
+across the lightness range, the map still works when the hue does not.
+
+**A pale fill against a pale track has no visible edge, and the edge is the value.** A bar
+chart coloured by category inherits whatever the category colour is, and measured, every
+fill in one widget sat between 1.11:1 and 2.04:1 against its track. The fix is to stop
+asking the fill to do two jobs: cap the end of the bar in the text colour, where it reads at
+15:1, and let the hue carry identity alone.
+
+**A page theme is not a map theme.** Dark mode should not invert cartography — pale land
+under dark routes is right in both themes, and flipping it makes the land unreadable. What
+does have to change is anything that has to pass a contrast ratio against the *page*: a
+route's line colour and its label colour are then two different values of the same hue, and
+they need separate variables.
+
+**To show a region without recolouring it, turn everything else down.** Washing a
+translucent tint over a set of cells fights whatever is underneath, and a tint that reads
+over pale farmland goes muddy over water. Fading the cells *outside* the region towards the
+page background leaves the region at full strength and its own colours, which is what a
+reader wants to look at anyway.
 
 **Contrast is measured, not eyeballed.** The 3:1 minimum for a graphical object applies to
 the line that shows where a pale area ends, which is easy to miss because the fill looks

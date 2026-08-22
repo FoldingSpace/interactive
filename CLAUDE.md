@@ -65,18 +65,23 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 
 ## Where things stand
 
-Two widgets, deployed and live:
-[spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/)
-and [drawing the lines](https://foldingspace.github.io/interactive/maup/), which is about the
-modifiable areal unit problem using the data from GEOG 370's Lab 3. Each has a file in
-`docs/widgets/` carrying its verified numbers, review record, open threads and a "picking
-this up again" section. **Read that before changing either** — the recorded values are the
-regression suite.
+Three widgets, deployed and live:
+[spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/);
+[drawing the lines](https://foldingspace.github.io/interactive/maup/), on the modifiable
+areal unit problem, from GEOG 370's Lab 3; and
+[least cost, whose cost?](https://foldingspace.github.io/interactive/least-cost/), on
+least-cost paths, from Lab 4. Each has a file in `docs/widgets/` carrying its verified
+numbers, review record, open threads and a "picking this up again" section. **Read that
+before changing one** — the recorded values are the regression suite.
 
-The MAUP widget is deliberately not an answer key: it refuses the crime category the lab
-asks students to model. The lab worked through in full lives in `lab3-worked.md` in the
-**local** working folder, outside this repository, because that file is the answer key and
-this repository is public. Keep it that way.
+Neither lab widget is an answer key, and each refuses in a different way. The MAUP widget
+refuses the crime category the lab asks students to model. The least-cost widget uses a
+different city, a different destination and a different classification — Metro Vancouver's
+open land use, which has an agricultural class where the lab's licensed DMTI data has none,
+so nothing a student does there can reproduce the lab's surface. Both labs are worked
+through in full in `lab3-worked.md` and `lab4-worked.md` in the **local** working folder,
+outside this repository, because those files are the answer keys and this repository is
+public. Keep it that way.
 
 `template/` is a working skeleton to copy; `docs/widget-pattern.md` says what to keep and
 what changes when a widget needs a map, a data file, or an animation instead of pure
@@ -119,3 +124,13 @@ Repository is `FoldingSpace/interactive`, pushed over an SSH deploy key; see
   was in the block before replacing it; a layout rewrite here deleted an entire stylesheet.
 - Duplicate rules are why a fix does not take. Two identical `.readout` declarations
   survived two attempts at the same bug.
+- An author `display` rule beats the browser's `[hidden]`, and it has caught three widgets
+  here. `template/` now declares `[hidden] { display: none !important; }` once, globally.
+- A palette of more than about six categories has to be searched under simulated colour
+  blindness, weighted by how much ground each class covers, not chosen by eye. See
+  `visual-forms.md`.
+- Batching a redraw into an animation frame means something will read state one frame
+  behind. Keep a `flush()` for wherever a settled answer is read rather than drawn.
+- Data licences decide what a widget can be. DMTI cannot be redistributed; going to Metro
+  Vancouver's open land use produced a *better* widget, because its classes include the
+  one the lab's own argument needs. Check the licence before the design, not after.

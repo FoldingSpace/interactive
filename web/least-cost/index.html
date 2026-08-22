@@ -1,0 +1,1233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Least cost, whose cost?</title>
+<style>
+:root {
+  --ui: 1;
+  --ink: #16181d;
+  --ink-soft: #545a63;
+  --page: #ffffff;
+  --panel: #f2f3f5;
+  --edge: #848b95;
+  --focus: #0b57d0;
+  --dim: #ffffff;              /* what unlit map cells fade towards */
+  /* Kept proposals: line colour, then the label colour that has to pass 4.5:1 on the
+     card. In light mode they are the same; measured, not eyeballed. */
+  --p1: #b83800; --p2: #5e3c99; --p3: #b0117a; --p4: #7a4a12; --p5: #00615c;
+  --p1t: #b83800; --p2t: #5e3c99; --p3t: #b0117a; --p4t: #7a4a12; --p5t: #00615c;
+  /* Land cover. Nine categories is more than a categorical scheme wants, so these were
+     searched rather than picked: simulated for deuteranopia and protanopia and scored on
+     the pairs that matter most, which are the pairs that cover the most ground. The five
+     classes covering more than a tenth of the map each separate from the others on
+     lightness as well as hue, so the map survives greyscale. Shops and roads remain close
+     under simulation; shops is 1.9% of the map, roads are thin lines, and both are named
+     when you point at them. Working: docs/widgets/least-cost.md.
+     Every colour here is also the swatch on its row of the chart, so the chart is the
+     legend, and the same values drive the bars and the miniature tables. */
+  --c1: #e2ddb4;  /* farmland */
+  --c2: #d3b8a6;  /* houses */
+  --c3: #cd7a6a;  /* shops and offices */
+  --c4: #b78bcb;  /* industry */
+  --c5: #5fb2d6;  /* schools and civic */
+  --c6: #8fb384;  /* parks and protected */
+  --c7: #c0cee9;  /* water */
+  --c8: #f3f2f0;  /* open land */
+  --c9: #7c7a76;  /* road and rail */
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
+    --panel: #1e2128; --edge: #6e7682; --focus: #7cacff; --dim: #14161a;
+    --p1t: #ff8b52; --p2t: #b9a0ff; --p3t: #ff85c8; --p4t: #d9a55c; --p5t: #5fd3c9;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: calc(1rem * var(--ui)); line-height: 1.45;
+}
+body[data-present="1"] { --ui: 1.15; }
+/* On a projector the map is what people are looking at, so it gets more of the height,
+   and the line under it that only a mouse can fill goes away. Route strokes are in the
+   viewBox's own units, so they thicken with the map without being told to. */
+body[data-present="1"] .mapbox,
+body[data-present="1"] .armbar { max-width: calc(70vh * 1.16); }
+body[data-present="1"] .probe { display: none; }
+
+.wrap {
+  max-width: 84rem; margin: 0 auto;
+  padding: calc(0.9rem * var(--ui)) calc(0.9rem * var(--ui)) calc(2rem * var(--ui));
+  display: flex; flex-direction: column; gap: calc(0.8rem * var(--ui));
+}
+h1 { font-size: calc(1.2rem * var(--ui)); margin: 0; font-weight: 650; }
+/* The framing stays at every size, including on a projector. It is what the widget is
+   for, and principles 13 says that never hides behind a control. */
+.intro { margin: 0; color: var(--ink); max-width: 52em; }
+
+.main { display: grid; gap: calc(0.9rem * var(--ui)); grid-template-areas: "stage" "chart"; }
+.stage { grid-area: stage; min-width: 0; }
+.chart { grid-area: chart; min-width: 0; }
+@media (min-width: 62rem) {
+  .main { grid-template-areas: "stage chart"; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+}
+
+/* ---- map ---------------------------------------------------------------- */
+.mapbox { max-width: calc(58vh * 1.16); margin-left: auto; margin-right: auto; position: relative; border: calc(2px * var(--ui)) solid var(--edge); border-radius: calc(0.4rem * var(--ui)); overflow: hidden; background: var(--panel); }
+.mapbox[data-armed="1"] { border-color: var(--focus); }
+.mapbox canvas, .mapbox svg { display: block; width: 100%; height: auto; }
+.mapbox canvas { image-rendering: pixelated; }
+.mapbox svg { position: absolute; inset: 0; }
+.mapbox:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
+.mapbox[data-armed="1"] { touch-action: none; cursor: crosshair; }
+
+[hidden] { display: none !important; }
+.armbar {
+  max-width: calc(58vh * 1.16); margin-left: auto; margin-right: auto;
+  border-radius: calc(0.4rem * var(--ui)) calc(0.4rem * var(--ui)) 0 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: calc(0.4rem * var(--ui));
+  background: var(--focus); color: #fff; padding: calc(0.35rem * var(--ui)) calc(0.6rem * var(--ui));
+  font-size: calc(0.92rem * var(--ui));
+}
+.armbar b { font-weight: 650; }
+.armbar .act { background: transparent; color: #fff; border-color: #fff; }
+
+.underline { display: flex; flex-wrap: wrap; gap: calc(0.2rem * var(--ui)) calc(0.9rem * var(--ui)); align-items: baseline; margin-top: calc(0.45rem * var(--ui)); }
+.big { font-size: calc(1.9rem * var(--ui)); font-weight: 650; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.label { color: var(--ink-soft); font-size: calc(0.9rem * var(--ui)); }
+.mix { color: var(--ink-soft); font-size: calc(0.92rem * var(--ui)); }
+.mix b { color: var(--ink); font-weight: 600; }
+.probe { color: var(--ink-soft); font-size: calc(0.92rem * var(--ui)); min-height: 1.45em; margin: calc(0.3rem * var(--ui)) 0; }
+
+/* ---- the chart of costs -------------------------------------------------- */
+fieldset { border: 1px solid var(--edge); border-radius: calc(0.5rem * var(--ui)); margin: 0; padding: calc(0.5rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.7rem * var(--ui)); }
+legend { padding: 0 calc(0.3rem * var(--ui)); color: var(--ink-soft); font-size: calc(0.9rem * var(--ui)); }
+
+.crow { display: grid; grid-template-columns: auto 1fr auto; gap: calc(0.4rem * var(--ui)); align-items: center; padding: calc(0.15rem * var(--ui)) 0; }
+.swatch {
+  display: inline-flex; align-items: center; gap: calc(0.35rem * var(--ui));
+  font: inherit; font-size: calc(0.93rem * var(--ui)); text-align: left;
+  background: transparent; color: var(--ink); cursor: pointer;
+  border: calc(2px * var(--ui)) solid transparent; border-radius: calc(0.3rem * var(--ui));
+  padding: calc(0.2rem * var(--ui)) calc(0.3rem * var(--ui));
+  min-height: calc(1.9rem * var(--ui)); width: calc(9.6rem * var(--ui));
+}
+.swatch i { width: calc(1.1rem * var(--ui)); height: calc(1.1rem * var(--ui)); flex: none; border: 1px solid var(--edge); border-radius: calc(0.2rem * var(--ui)); }
+.swatch[aria-pressed="true"] { border-color: var(--focus); background: var(--panel); font-weight: 650; }
+.bar {
+  position: relative; height: calc(1.5rem * var(--ui)); background: var(--panel);
+  border: 1px solid var(--edge); border-radius: calc(0.25rem * var(--ui));
+  cursor: ew-resize; touch-action: none; overflow: hidden;
+}
+.bar span { position: absolute; inset: 0 auto 0 0; display: block;
+  min-width: calc(0.3rem * var(--ui)); border-right: calc(3px * var(--ui)) solid var(--ink); }
+.bar u { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--edge); opacity: 0.7; }
+.bar:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
+.val { font-variant-numeric: tabular-nums; font-size: calc(0.95rem * var(--ui)); min-width: calc(2.6rem * var(--ui)); text-align: right; }
+.axis { display: flex; justify-content: space-between; color: var(--ink-soft); font-size: calc(0.8rem * var(--ui)); padding-left: calc(10rem * var(--ui)); padding-right: calc(2.8rem * var(--ui)); }
+
+@media (max-width: 34rem) {
+  .crow { grid-template-columns: 1fr auto; grid-template-areas: "name val" "bar bar"; }
+  .swatch { grid-area: name; width: auto; }
+  .val { grid-area: val; }
+  .bar { grid-area: bar; }
+  .axis { padding-left: 0; padding-right: 0; }
+}
+
+/* ---- buttons ------------------------------------------------------------- */
+.row { display: flex; flex-wrap: wrap; gap: calc(0.4rem * var(--ui)); }
+.act {
+  font: inherit; font-size: calc(0.93rem * var(--ui));
+  min-height: calc(2.4rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.7rem * var(--ui));
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: calc(0.4rem * var(--ui));
+  background: var(--page); color: var(--ink); cursor: pointer;
+}
+.act[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.act.go { border-color: var(--ink); font-weight: 650; }
+.act:disabled { opacity: 0.45; cursor: default; }
+/* Touch targets. This block must stay AFTER the sizes above: a media query adds no
+   specificity, so an identical rule later in the file would win instead. */
+@media (pointer: coarse) {
+  /* No hover, so the line under the map is filled by tapping rather than pointing, and
+     it should not hold open a gap until something is tapped. */
+  .probe { min-height: 0; }
+  .act { min-height: 44px; }
+  .swatch { min-height: 44px; }
+  .bar { height: calc(2rem * var(--ui)); }
+}
+.act:focus-visible, .info:focus-visible, .swatch:focus-visible, input:focus-visible {
+  outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px;
+}
+
+/* ---- pinned proposals ---------------------------------------------------- */
+.pins { display: flex; gap: calc(0.6rem * var(--ui)); overflow-x: auto; padding-bottom: calc(0.3rem * var(--ui)); }
+.pin {
+  flex: 0 0 auto; width: calc(15.5rem * var(--ui));
+  border: 1px solid var(--edge); border-left: calc(6px * var(--ui)) solid var(--edge);
+  border-radius: calc(0.4rem * var(--ui)); padding: calc(0.45rem * var(--ui)) calc(0.55rem * var(--ui));
+  background: var(--panel);
+}
+.pin .nameline { display: flex; align-items: center; gap: calc(0.35rem * var(--ui)); }
+.pin input[type="text"] {
+  font: inherit; font-size: calc(0.95rem * var(--ui)); font-weight: 650;
+  flex: 1 1 auto; min-width: 0; background: transparent; color: inherit;
+  border: 1px solid transparent; border-bottom-color: var(--edge);
+  border-radius: calc(0.2rem * var(--ui)); padding: calc(0.15rem * var(--ui)) calc(0.2rem * var(--ui));
+}
+.pin .drop { font: inherit; line-height: 1; background: transparent; border: none; color: var(--ink-soft); cursor: pointer; padding: calc(0.2rem * var(--ui)); min-width: 24px; min-height: 24px; }
+.pin .stats { color: var(--ink-soft); font-size: calc(0.85rem * var(--ui)); margin: calc(0.25rem * var(--ui)) 0; }
+.pin .warn { color: var(--ink); font-size: calc(0.82rem * var(--ui)); }
+.mini { display: grid; grid-template-columns: auto 1fr auto; gap: calc(0.12rem * var(--ui)) calc(0.3rem * var(--ui)); align-items: center; }
+.mini .mb { height: calc(0.55rem * var(--ui)); background: var(--page); border: 1px solid var(--edge); position: relative; border-radius: 1px; }
+.mini .mb span { position: absolute; inset: 0 auto 0 0; display: block; min-width: 2px;
+  border-right: 2px solid var(--ink); }
+.mini .mn { font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); white-space: nowrap; }
+.mini .mv { font-size: calc(0.72rem * var(--ui)); font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+.empty { color: var(--ink-soft); font-size: calc(0.93rem * var(--ui)); margin: 0; }
+
+/* ---- (i) panels ---------------------------------------------------------- */
+.info {
+  font: inherit; font-size: calc(0.8rem * var(--ui)); font-style: italic; font-weight: 700; line-height: 1;
+  width: calc(1.55rem * var(--ui)); height: calc(1.55rem * var(--ui)); min-width: 24px; min-height: 24px;
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: 50%;
+  background: transparent; color: var(--ink-soft); cursor: pointer;
+}
+.info[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.help-panel {
+  background: var(--panel); border: 1px solid var(--edge); border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.9rem * var(--ui)) calc(0.7rem * var(--ui));
+  font-size: calc(0.94rem * var(--ui)); margin-top: calc(0.5rem * var(--ui));
+}
+.help-panel p { margin: calc(0.6rem * var(--ui)) 0 0; }
+.refs b { color: var(--ink); font-weight: 600; }
+
+footer { color: var(--ink-soft); font-size: calc(0.85rem * var(--ui)); border-top: 1px solid var(--edge); padding-top: calc(0.5rem * var(--ui)); }
+footer a { color: inherit; }
+footer p { margin: calc(0.3rem * var(--ui)) 0 0; }
+body[data-present="1"] footer { display: none; }
+body[data-present="1"] .help-panel { display: none; }
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Least cost, whose cost?</h1>
+  <p class="intro">A power line has to get from a substation in Surrey to a new plant at
+    Campbell Heights. The numbers below set how much it costs to cross each kind of land.
+    Nobody measured them; somebody chose them. Change them and the route moves. Keep the
+    routes you want to compare.</p>
+
+  <div class="main">
+
+    <div class="stage">
+      <div class="armbar" id="armbar" hidden>
+          <span>Drawing <b id="armname">farmland</b>. Drag on the map.</span>
+          <span class="row" role="group" aria-label="Brush size">
+            <button class="act" data-brush="1">Small</button>
+            <button class="act" data-brush="5">Medium</button>
+            <button class="act" data-brush="11">Large</button>
+          </span>
+        <button class="act" id="disarm">Stop drawing</button>
+      </div>
+      <div class="mapbox" id="mapbox" data-armed="0">
+        <canvas id="cv" width="220" height="190" aria-hidden="true"></canvas>
+        <svg id="ov" viewBox="0 0 220 190" preserveAspectRatio="none" aria-hidden="true"></svg>
+      </div>
+
+      <div class="underline">
+        <span><span class="big" id="len">0.0</span> <span class="label">km of line</span>
+          <button class="info" data-info="info-len" aria-expanded="false" aria-controls="info-len" title="How is this measured?">i</button></span>
+        <span class="mix" id="mix"></span>
+      </div>
+      <div class="help-panel" id="info-len" hidden>
+        <p>This route is built from square cells and can only travel in eight directions:
+          along the sides and along the diagonals. A real line can run at any angle. A route
+          that wants to go at 22.5 degrees has to be made of steps that cannot, and comes
+          out up to 8.2% longer than the straight line it is copying.</p>
+        <p>The general point is older than this page. A path found on a grid never settles
+          onto the path you would draw on open ground, and how far apart they end up depends
+          on which moves the grid allows. Eight is only one choice.</p>
+        <p>This route is nearly on the diagonal, where the error is smallest: measured
+          against a true straight line between the same two points, the grid adds 0.5%.
+          Turn the map and the same method would be less kind.</p>
+        <p class="refs"><b>For more, see:</b> Goodchild, M. F. 1977. An evaluation of
+          lattice solutions to the problem of corridor location. <i>Environment and
+          Planning A</i> 9(7), 727&ndash;738.</p>
+      </div>
+      <p class="probe" id="probe"></p>
+
+      <div class="row">
+        <button class="act go" id="pin">Keep this proposal</button>
+        <button class="act" id="band" aria-pressed="false">Show near ties</button>
+        <span class="row" id="bandopts" hidden role="group" aria-label="How close counts as a tie">
+          <button class="act" data-tol="0.001">0.1%</button>
+          <button class="act" data-tol="0.01">1%</button>
+          <button class="act" data-tol="0.05">5%</button>
+        </span>
+        <button class="info" data-info="info-band" aria-expanded="false" aria-controls="info-band" title="What are near ties?">i</button>
+      </div>
+      <div class="help-panel" id="info-band" hidden>
+        <p>The line on the map is the cheapest route. It is not the only cheap one. This
+          control keeps the land that a route could cross while still costing almost the
+          same, and fades everything else.</p>
+        <p>The band is usually wide. In the Langley version of this problem, land covering
+          24.7 square kilometres can carry a route within one part in a thousand of the
+          cheapest. Software draws one line and gives no sign of that.</p>
+        <p>The routes are found the same way twice: costs are added up outward from the
+          substation, then outward from the plant. Add the two together and each cell holds
+          the cost of the best route that goes through it.</p>
+        <p class="refs"><b>For more, see:</b> Pinto, N. and Keitt, T. H. 2009. Beyond the
+          least-cost path: evaluating corridor redundancy using a graph-theoretic approach.
+          <i>Landscape Ecology</i> 24, 253&ndash;266.</p>
+      </div>
+    </div>
+
+    <div class="chart">
+      <fieldset>
+        <legend>What it costs to cross
+          <button class="info" data-info="info-cost" aria-expanded="false" aria-controls="info-cost" title="Where do these numbers come from?">i</button>
+        </legend>
+        <div id="rows"></div>
+        <div class="axis" aria-hidden="true"><span>1</span><span>10</span><span>100</span><span>200</span></div>
+        <div class="help-panel" id="info-cost" hidden>
+          <p>Each number says how much harder that kind of land is to cross than the
+            cheapest kind. Open land is 1, so a number of 150 means a metre through houses
+            costs as much as 150 metres of open land.</p>
+          <p>Only the ratios matter. Double every number and the route does not move.</p>
+          <p>The bars are spaced so that doubling a number always moves the bar the same
+            distance, whether it is 1 to 2 or 100 to 200. That is why 1, 10 and 100 sit
+            evenly along the bottom.</p>
+          <p>The opening numbers are the ones a textbook exercise uses for this kind of
+            problem: open land 1, industry 10, shops 50, civic buildings 70, parks 125,
+            houses 150, water 200. That exercise has no class for farmland at all, so its
+            farmland falls in with open land at 1. Roads and rail start high here, not
+            because that is right, but so that lowering them shows you something.</p>
+        </div>
+      </fieldset>
+
+      <fieldset style="margin-top: calc(0.6rem * var(--ui))">
+        <legend>Numbers somebody might argue for
+          <button class="info" data-info="info-preset" aria-expanded="false" aria-controls="info-preset" title="What are these?">i</button>
+        </legend>
+        <div class="row" id="presets" role="group" aria-label="Example sets of numbers"></div>
+        <div class="help-panel" id="info-preset" hidden>
+          <p>Four sets of numbers, each one a position somebody could hold. None of them
+            is the right answer. Load one, look at where the line goes, then decide whether
+            you would sign your name to it.</p>
+          <p>Watch what &ldquo;keep away from homes&rdquo; does. It barely moves the line,
+            because the cheapest route was already avoiding houses. A value you state
+            loudly can still change nothing, and that depends on the land, not on how
+            strongly you feel.</p>
+        </div>
+      </fieldset>
+
+      <div class="row" style="margin-top: calc(0.6rem * var(--ui))">
+        <button class="act" id="resetcost">Costs back to the start</button>
+        <button class="act" id="resetmap">Land back to the real map</button>
+      </div>
+      <div class="row" style="margin-top: calc(0.4rem * var(--ui))">
+        <button class="act" id="reset">Reset everything</button>
+        <button class="act" id="present" aria-pressed="false">Big screen</button>
+      </div>
+    </div>
+  </div>
+
+  <section aria-labelledby="pinhead">
+    <h2 id="pinhead" style="font-size: calc(1rem * var(--ui)); margin: 0 0 calc(0.4rem * var(--ui)); font-weight: 650;">
+      Proposals you kept
+      <button class="info" data-info="info-pins" aria-expanded="false" aria-controls="info-pins" title="What is this for?">i</button>
+    </h2>
+    <div class="help-panel" id="info-pins" hidden>
+      <p>A route is a proposal, not a result. Two groups who disagree about what land is
+        worth will get two different routes from the same data and the same software, and
+        neither is the wrong answer.</p>
+      <p>So a kept route carries the numbers that produced it. Name it after whoever would
+        argue for it. A route without its table beside it is an answer with its reasons
+        removed.</p>
+      <p>Do not take this too far. There is a long argument in geography about whether
+        putting a map in front of people widens a decision or only appears to, and one of
+        the sharper objections is that software of this kind lends the illusion of control
+        while the control stays where it was. Five proposals side by side can look like a
+        debate and change nothing about who signs.</p>
+      <p class="refs"><b>For more, see:</b> Sieber, R. 2006. Public participation
+        geographic information systems: a literature review and framework. <i>Annals of the
+        Association of American Geographers</i> 96(3), 491&ndash;507. And Elwood, S. 2006.
+        Critical issues in participatory GIS: deconstructions, reconstructions, and new
+        research directions. <i>Transactions in GIS</i> 10(5), 693&ndash;708.</p>
+    </div>
+    <p class="empty" id="pinempty">Nothing kept yet. Change some numbers, then press
+      &ldquo;Keep this proposal&rdquo;.</p>
+    <div class="pins" id="pins"></div>
+  </section>
+
+  <footer>
+    <p>Land use from <a href="https://open-data-portal-metrovancouver.hub.arcgis.com/">Metro
+      Vancouver Land Use 2016</a>, used under the Metro Vancouver Open Government Licence.
+      Grouped into eight classes for this page; the grouping is ours, not theirs.
+      220 &times; 190 cells of 100 m, NAD83 / UTM zone 10N.</p>
+    <p>The line starts at a real utility site at 124 St and 86 Ave in Surrey, which the
+      land use data classes as a utility yard. The plant at the other end is not real. It
+      stands in for something that would be proposed at Campbell Heights, where the
+      industrial district's expansion into farmland is an argument that is happening.</p>
+    <p>Made by Luke Bergmann with Claude.
+      <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
+  </footer>
+
+  <p class="visually-hidden" id="live" aria-live="polite"></p>
+</div>
+<script>
+// Metro Vancouver Land Use 2016, Metro Vancouver Open Government Licence.
+// Built by tools/lab4-extract.py. 220 x 190 cells of 100 m, NAD83 / UTM 10N,
+// north-west corner 504000 E 5447500 N. One digit per cell, row-major.
+var GRID = "7777744944444477777444449992299265226222229999256992222222926629966633339522622235533336666666666226662992222222629999966222922226666666696666666666666669662699296662229964448444444944444444444449444444449344666629222288777744444444447777744444922222222222292299999996622922222229922299993333932259229666636666666666622666262222222299999665522222222666666669666666666666666922222999966688966444444444494444444444444484444444944442222222222977449494499484777774444966229222222229222299922599999992322292229999222293895629969666966666666662229229229229292289966552222222266666666966666666666666692228226469962266644444444449444344444444448443334493444222222222664444944499948777774444466699999999999999999999999999999999999999999999999999999999666699999999999222222265299999999999999999999999999999998222222222929999822228482249994444444444494944493444494444444444449322222926622222444444446444777777444496662299922999994333996699992222223322222222222558955556229669966666666666622222223999299922969992252292229266666662222222222292288992222848228696994444444449494449444449444444444444932922222262226644449444449477777744799229229922222222933222552222999922222222222222222295555222926666696666666662222222292262222222222222299229226666666999922222229228896666666666666666999644444949444944444944444444444462299922229666224444444444447777744479222222222222222293322266222229222222222222222222559235362292666666666666666222299222222222922222222222922222666666688222222222922889222999982222888922299644894944494444494444444444493229992222622622444444444444777774479222222222222222222332222222296699222292266229926665933362269666666666666666699999992922522222222222222962229666666668822222222292222988822228222222292222899944444449494444444444444484492922222262226694944444944777777477822292292222599222933222222292252922229995622222626692926622966666666666966662296622222262222226666642266222222226666222292222229226692222822822222889222282269944444944444444444444443889229222226992624444444444477777777689229229922222222223222222229699999299922229222222229666999293336666666666966222662222266222222226666226622222266666622228222222922229222282282222222922228229269996664444444444443444344922222222299996444444944477777747922929266222222222222932222222222222999999229222222266966292229333666666666666652222225225522222222229222662222269692222228822222292222922228228222222292222222829269996444444449444444484492222222222222244944444447777777982222996629222669222993225292228222999566699999926666899229292922266292222222239222222229222222222222223222222211111111111111111111111192222222222222229222222222222296996444444444444445366222222662222224444444447777777962223226669966566999992222692222222296255662222266662229699999992922222222922222229222223922222292222265222922281111111111111111111111119222222222222222922222222228886292299644444444444333329922666222222444444447777777762262992222296656622299366666222222222622222296666292222922965999662222222222222289222222392622299266226522222962666661111111111111111111922222222222222292222222222889229111199944444222233332666666622222244444447777777966626222222222562292222289226622222222299229266622229566296296622922922229222222228922223533962229226529225522222266666111911111111111111191111111222222229222222222222922911111119944422226666366226222629264444447777777982662929222222222922222623924444443322222926666229999992969629922296222226922222222292222293332922922222222222222888688111111111111111111119111111111111111922222222222222291111111129996694833362222262222926944447777779929226622262222222922229992394444444339222666629962299992222962922299222229226222922229662222393392222222222222222688888811119111111111111111911111111111111192222222222292229111111112228994988369922222662662644447777776229966266225622222222222225535444444433336662222222229999222299299999922229922662222222966222233339222222222222266558829981111911111111111111191111111111111119222222222222222911111111222888999832332922262222229447777776229262696622222222222222222233394444444333296252992222292922229229999992222522252222222222222223883922522222222255622822292111191111111111111119111111111111111922222222242222291111111122288883399933332226222222667777779692996622229992822222222226523334364444444449999299999999999999999999669222822222222222222622222222292932222222522222222822282229666666611111199944941111111111191111122224226629226611112222288933989332335695222276777779622292252266696699999999999992934449444444444243922444436222922396656666992989222222222222692222222229993232222222222222222282922922626661111111194444111111111119111112222226622922661111222228988388449933569522227777779662222222246222222222222266662233444494444444444422244444222222229666666699222292222222622629229922222992222822222222222222228299692222266111111119444411111111111911111229222222292266111122882288338849939996222262777779262622222292222222222222222922222244444944444444444444444466222222966666669226222622222262622222992222292222229222288225566222662929262292611111111944441111111111191111122922222229166611112288228333884993966996626277779929222292262226622226622222222222233444444444444444444455666666266296666666926222222222626629922222222222222222229335222222222262292926292221111111191111111111111119111119292222222966661111228888883222282288626999627767929299292922299669226662229622222222329222444444444444445644455666229666666699226522222226668222222222222222222222933322222222222229292822929111111119111111111111111911119119222222291166111122833888322228228862222699777992222992922222962222666666992222292392222244844444444446644488622666966666669922662226566222225669222229992222222233393333222229222999622222911111111911111111111111191119111922822229111111112283388882222822226288986677992226299922822222925356656622222222233222222448444444646444448869222696666666992222222655699622666222222622222222822233393222222922292929922291111111191111111111111119119111192282222911111111228883333222282226622292227969296662922989222222233256222222222223322222444444449944999999999999999666666699999999999999992999222222228662299999999899263321166682999299999111111119111111111111111919111119111111191111111122226343228282228866555222944622262226692222222222325622222222292332222949444394444444944492929999922666659222222222622226229922222292266222299226622222932116668629929292611111111911111111111111119111111911111119111111112222666688828229886666622294992292929229229222299222225566299922233226699444444944444494449222222292266666962922222228222222222222222226952296222999252222936666222999929291111111191111111199999999111111191111111911111111222222228882822888262882584444662622222222222222222222656652222223322269444444444444449444992222229222266592662922222225666226622229222995522292222225222222666333999662922111111119111111111111111111111119111111192222222222222222828282288826288288439449992922222256622222222222222222923333222992449999944444944492669288922222669226666922699666629222222299999999999999992255822289633369966292211111111911111111111111111111111111111119222222222222249352222255888888882244449499299922226666222299222222222292333222299944466449444494449266922292222666622226662922222222222229299292265299222222226682228829333999929251111111191111111111111111111111118822111922222222222224982222225588888888884444944922292222666622229222266622222233392269924444444494449455999999999988622692222226662222222222222222229286592222222222666229266883392292925111111119111111111111111111111111222222292222222222222888442222258888862262499946699222222265622222222225562222228339226999444444544334943392999999939662222262629226666266662229226229992222222222222962692922228269929292511111111911111111111111111111111122222229222222222222283822222222888886256243344666692922229922262222922222222229233322222999999994443494999929999993269999996662299926666666666666662299999999999999999999999999992959999999999999999999999999999111199999999922222922222222222222228682522222888825286994496666922222222226222222222222228223332222222996622433349444929992229226662929992662222264444666666666692922255666666222296229562222999229261111111119111111111111111222222222222222292222222222222228868252222288882628194449666669222222222629222222222222222432222222222662244449444492999222922652222222266222226222266666666662992226666666622229622966222229222966111111111911111111911111222222222222222229222222222222222866666222222229888814944669666692222222266622222222222222223222222229266228444494999222922292222229299922222626669226666666666629999996666662222222999999292992996811111111191111111911111122222222222222222922222222222222226666522222222332881449669666666922222222222222222222222222222999999966699899944444944443339222222222992222266669999666666666666228288666666266269999999999999692211111111119111111911111112222222222222222292222222222222222666552992222888882111119966666669622222222292222222222222288222222222662244449444494449843922222222229222222226222266666666666622222866666622626992992992699292266911111111911111911111112222222282266666229222222222222222266665222222288888811111196666666692222299252222222226266228222666622666224344444949444943492222222222296622222622226666226666669822226666662962222262292226966666666111111191111911111111222222228226622222922222222882288886666622222222222621111111666666666629222225666222299622222922256662226622244444349944494449222265529962262222222222292999926666632222666666222226266222229996666666669111119111111111111222222222822222222292222222288228888556662222222222268111111196666666662922222566222222262222922292299999969999944434494449983922266662922226629999999999999999666666666666666699996666666666669666666666661114911111111111122222222289999999229222222222222222288222222222228882911111111666666666922622266622222299999999962999222266222222233339444449393329222292222229222222222922222266661111411111111111111111111111966666666666691111111111111112266222222222222222922222288228882228822222222222822226666666696666666662922926299992222222222326999999996666659993343944444939338222222222262222222262292222226776666644411111111111111111111196666666666661911111111111112222629222222222222292222228822222222228882222222282288666666666666666666622222229222222222292233699292299666666292334394944493933222222222622222229965229222226667766664444111111111111111111119666666666671111991111111111222222222222222222229222222888888288888222222222229222266666666696666666699222622922222999922233333922922266666999922239449449393322222229292666999929992222622266766666444411111111111111111111911111116611111191111111111222222222222299999992922888222888822228888882222222922226666666666966666666662229666622222222223333322222264666699229922999444999332222222622626622222292292299226666666644411111111111111111111191111111111111119119111116222222222222222222228899222222299882222229992222222298822666666666666666666696292962222222222292333332929226666669262992294494494933222222222222565262222229222222666666661111111111111111111111111111111111111111911191111292222228888222222288829962222822222929262299222545229222266666666666966666666222296299992999999233333229929662222992299999444444393399222822222229229992222922222261111111111111111111111111111111111111111111111191111118122822222888822222999999999998289262299923529922222522922226666666666669999999999999999999999992933399999999999999999999922944493949333332282222222999999999999992296111111111111111111111111111111111171111111111119111111922222222222222222999999998999999999999999999999999999999999666666666666966666622266666662292222293332222292223255549662922292229329933633222222222222255552999222223111111111111111111111111111111111111111111111111911666222222222222222652222994629822222222222229232292222222222226866666666666666666696666666666229922229333222222252692555955999999222922298663322222222222295555222292222211111111111111111111111111111111911111111111111191166222299222222226666222622668922922292222926662225622222222222626666666666666666669629222666622922222933555622222262228596699299999292239882322222222222282555556999222221111111111111111176661111111111691111111111111119116292292229222222666666222265292222222229229668222662222228222262666666666666966666622292699666662992299992665622926222299269969296622229992635222222222222555555666922222111111111111111766666666111116669111111111111111911622299222222252266666699999999999999922999999996992222222222229966666666666696666629222629222226662229332222666522622269999999999666922393966622966652222255555222292666211111111111111116666666666666666911111111111111191162699926666228288666552222222922269222229292222229988222882222226666666666669666662222692222222226222236226666222262222999999965966669239226692226662222225555522228222222221111111117111666666666766666691111111111111119196666996222992692866622262229292226922262992222888992222222882222666666666666966666922622922929222692922222229992226222229999996296666263932262222666622225555552222222292222111111111111166666666666666669111111111111111922622666622222222626662222222929222622662229299688866922222288222266666666666696666626699222992255562262229999999999999922929992289666622992526222266222222222255229222222553881111111111116666666676666666911111111111111192296666922222222222956222222999999999999999999999999992222222222296666666666669666622229966622266665922955222299922962999999229292222299299326829222999922222222922222222925584411111111111666666666666666691111111111111149662292299266522222929333699998292229962222922222882222222299222221666666666666966696222226662262266622292222222662296222229926999229622226932282222299222924422222266622222448841111111111166666667666666661111111111111118946662229966659222222239928888889262996222929222288862292222922221166666666666696669222222666222222222292292222222229629922992299992269222228292625522222222944444442222222283484111111111116666666666666611111111111111111294444462922222222222923398892886999999999669992628882262562292221116666666666669666292222292222222222222222222222222262992899629992222922222222226222692222244444444222282528888411111111111666666766666666691111111111111189944446692299299222269222288282292229668922992299999999266666291111666666661111966966222999222992922922622222222662226255629962999999622562266229666222626224449444922226552242221111111111166666666666666669221111111111144994444266629999929266622229928229222996292222229233333322822291111166666666111169666622999992222992222269292222265222666562996292255222256223222266622999992444444442288888621222111111111116666676666666662922111111111111499494422962999299929552222928826928896229226266223333332288669111116666666611196966992299922229299222222933222222229966662292299922222922222392626222292262229999994428884481111111111111111666666666666666292222222111111129339442296629999229922522922239396889228922226622333333333339111111666666661119699929222222292222299999223332222222226666229262992222292229226222229922222263922444445584444111111111117111111117111922222888222222222222224933944299266292232292252295222229299999999999969999993633333111111166666669666669666292666666666666666292233222222222622222929992862552292238696882222662633666644444444222369111111111111111111111282922222966666222222223396666666992692292399222222229222992922229833333333344444444891111116666666966666196922266666666666666622293322222222269222292999269256622923369988666665222266664444444422226661111111111111111711128299222296666622222222959666666692926222299229992929922296622222283333333334444444484911111666666691111111966666666666666666669929232222256226955449999922922222262322222666669929225565299962222229996691111111111111111166629222229666662222222292999666669292269225666292222992299262992229333333333344684944449111166666669111111119696666666666666666662225529926622622244929992292222222239292228288922922552222999222222222666611111171111171166669999992966666999966622299999966922226622666699229299229926222333933333333394468494444441111111111911111111119969666666666666652222222222222226229292299269222226522322822229999992266222222229222922226666911111111111169229226622292999229296662229556666592222262229999292922929292229689393333333333344339344443491111111191111111111111699966666666662222292222229222262299222222922222266629222622299922222622622222652292222226661111111117116622922529229292999999556222966666659222222622222222296692229222222293333333333334333934444334611111119111111111111111199966666666222222222962922228699922299292222222622292262222225662222222222266229922292911119117111111662292222222929292222922262293666666922222266292292929229222926622629393393333333933494443339311111111911111111111111116696666666692222266662292222226299622222952222222222292222222222222292229522222226669221111191111711162269222222292929222292225229566666699922929262225222922922255622922943933333333393449444333393111111191111111111111111111966666666666626222922225622629922522222922222222229222829922222222999922892222226222111111191111111222929222522292222222225222922222569222922223622956222222222444443493933949944444444446443393911111119111111111111111111119666666666669999292222662962992222229222622222222922822222222229222229222229222226262111111911111126992225555229292922222256692222252922999222966926629222266244444349334444544449444944499335551111111911111111111111111111199666666666999929222266226292822662922222222999999922288286626226699222222222299226211111111911112229222556299299292222222259222222292299222229662662992222224494339944444444394444944944426555111111191111111111111111111119666666666622222229929922229329266992222222322222292288828992222668822222222229629221111111119666622222256629292992222222229932222299222922552226666299922622444439399449444493444324443422226511111119111111111111111111111196666696222222222222222228928282229299222222222922822236333222229222222226622269922111111111116676666222522922299222222828892222222922296665222296652222662944333999494444442233382994332292261111111911111111111111111111119666666992262222222999999292828222929992222229299622223333322222992926222662622222211111111111696776112222292928222222862889322222292299226222989966622222294443944954449444922933393335222622111111191111111111111111111111169669222222229266222922829222222292222222222922292922333562222299222662666922222221111111116161666111166111662111122883345932222229888922222992222266222299333344494444944222223933339332222211111119111111111111111111111119669992222222229222222288922222229222222292692222969696666222222292996933333322222111111111616166911111111931111118888338395586522988899262229222223662299996334449234492422223333393339999991111111911111111111111111116666666666222222222292929222822922222222222226882222222898222222282222883893223333111111111111111111119999999999999999999999999333333395522222422225248559644494444944999992228222332925333332226111111191111111111111111111666666969692222222922222922222292222299222222269882222222922222822222288882223633311111111111111111111911111111111111191114449983333349556222222222624822224449494444992822222299926993386925923311111119111111111111111111116666966991212626222222296288922222222222266666666666222222992222222996988442333381111111111111111111191111111111111111111449498894444985622992266222982226444944444449229929282962223332662223931111111911111111111111111111166669966122666666666669528292222299226666666666666666229926699226222664444443338111111111111111111119111111111111111111144949888844498962929222622292222644999944449926222296222222222265222222111111191111111111111111111116696966661266666666666922229229229262222666666666666622282666696662226664444111111111111111111111199999999999999999999999999999888949889588882222922222244449444949949962222222228222922222966911111119111111111111111111111196696666616666666662299222929921626622266666666666666666666666666222666444411111111111199991111111711111111166666622211111991111999948888888444499229224444944944444229922222992222292222566961111111911111111111111111111911666996666661699999999299921111112262226666666666666666666666696666666644441999999111111111111111117111111116666662221111119111115599988888844944482848844494444444477726999999999999996666629111111111111111111111991111111166696666611111222229292111111111222222666666666666666666666699669999991111111111111111111111111111111111111666666222111111911111551111998884443448844984449944466666666662266222222926656222211111119111111191111111111111111666666661111111222811111111111112222266666666666699999999991611111111111111111111111111111111111999999999966666622211111191111111111111119111111111111111911111666666666666666622666666999221111111999111111111111111111111166699666111111111111111111111111222226669999999911111111111161111111171111111711111111111111111111111111116666666221111119111111111111111411111111111111191111166662666666666696666292562222111119191111111111111111111111116666666611111111111111111111119999999991111111111111111111119911111171111111111111111111111111111111111111666666611111111911111111111111111111111111111119111116762292229699926666669966226211911119111111111111711111111111666696661111111119999999991111116666611111111111111111111111991111111111711111111111111117111111111111111166666611111111191111111111111111111111111111111911111666922222929222222222626622291111111911111111111999911111111191116699116699911111111119111111666661111111111111111119999999111111111111111111111111111111119999999999991111111111111119111111111111111111111111111111191111116922226622222622229226662999111111191111111119117111111111111199666666111111111111111111111166666111111111111111177999199111111171111111111111111111111111111111111111111111111111111911111111111111111111111111111111199966662222292596262226222666999911111119111111111111111999999991196669666999999911111111111191116666611111111111111117671111191111111111111111111111117111111111111111111111711111111111191111111111111111111111111111111111111666999999992222222662226622991111111111999999999111111111111111666677777777766666999999999999666666111111111111111767111119111111111111111111111171111111111111111111771111111111111119111111111111111111111111171111111111166622222222222229266222662529111111191111111111111111111111111166677777777777777776676666669999999911111111111111176711111919911111999999999999999999999999999999999911111719999999999111111111111111111111711111119999999111666622222222652229522229922211111119111111191117111111111111167777777777777777777777776666111111111119911111111117677711111171111171111111111111111111111111111111111111111711111111111111111111111119111111111111111111111166666666666666222622929222291111111911111111111111111111111116777777777777777777777777666691111111111119111111777666611111117111171111111111111111111111111111111117111111171111111111111111171111111911111111111111111111116699299288666662622222822992111111191111119111111111111111166777777777777777777777777776766111111111111177666666666661119111111111111111111111111111111111111111111711111111111111111117111111111111191111111111111111111111662222222296622262822222222211111119111111111111111111111166677777777777777777777777777777611111111111171966666666666666111711111111111111111111111111111111111171711111111111111111171111111171111119111111111111111111111162999999999226292222222222921111111911111111111711111111666667777777777777777777777777777777711111777711119666666666666611111111111111111111111111111111111111711111111111117111117111111111111117111711111111111111111111116222999662222262222222222222111111191111111111117111117777677777777777777777777777777777777777111711111111196666666666691171111111111111111111111111111111111711111111111111111111111111111111111111191111111111111119111116626222299222229666222222222211111119111911111111114767777777777777777777777777777777777777777771171111111111666666666669111111111111111111111111111111111111711111111111111111111111111111111111111119111111111111111911111662999222256299292666696692991111111911111111111166777777777777777777777777777777777777777777777776111111111116666666666111111111111111111111111111111111111711111111111111111111111111111111111111111911111111111111191111166692229999992222226669229222111111191111111111677777777777777777777777777777777777777777777777777111111111111911111111111111111111111111111111111111111111111111111111111111111111111111111111111111111119111111122229888888882229222292222222222255552211111119111111116677777777777777777777777777777777777777777777777777111111111111119111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111911111112222988888888222922299222222222926666991111111911111116777777777777777777777777777777777777777777777777777111111111111111191111119111111111111111111111111711111111111111111111111111111111111111111111111111111111111111111222288888888826692229922222292229666622111111191111667777777777777777777777777777777777777777777777777611111111111111111111911111911111111111111111111111111111117111111111111111111111111111111111111111111111111111111111122228888888892226262992222229222966692299999999116677777777777777777777777777777777777777777777777776611111111111111111111119111111111111111111111111777111111111111111111111111111111111111111111111111111111111111111111112222888888889229622692222222922222229229999999967777777777777777777777777777777777777777777777777777761111111111111111111111191116111111111111111111711111111111111111111111111111111111111111111111111111111111111111111111222288888888968866239222222292222222922999996677777777777777777777777777777777777777777777777777777777911111111111111111111111911666666611111111111111111111111111111111111111111111111111111111111111111111111111111111111122228888888896222623322222229222222392299667777777777777777777777777777777777777777777777777777777777791111111111111111991111169669666661111111111117711111111111111111111111111111111111111111111111111111111111111111111112222888888889222226633322222922225239226677777777777777777777777777777777777777777777777777777777777779111111111111111777771116696111111111111111111116262222222111111111111111111111111111111111111111111111111111111116666688888888888992226292222292522222222966777777777777777777777777777777777777777777777777777777777777777911111111111111177777111996611111111111111111116622222627211111111111111111111111111111111111111111111111111111111666688888888888892225666222229229222222296677777777777777777777777777777777777777777777777777777777777777791111111111111117666711196661111111111111111116292282262721111111111111111111111111111111111111111111111111111111166668888888888889892992269222929922222229667777777777777777777777777777777777777777777777777777777777777779111111111111111766677919996911111111111111176229282966992111111111111111111111111111111111111111111111111111111116668888888888888222222222622222292222222966777777777777777777777777777777777777777777777777777777777777777911111111111111176666671969179111111111111116629992226966211111111111111111111111111111111111111111111111111111111666888888888888822222222222222229266292296677777777777777777777777777777777777777777777777777777777777777791111111111111117666667716611791111111117766669222226629661111111111111111111111111111111111111111111111111111111166888888888888882222222222229222926622229557777777777777777777777777777777777777777777777777777777777777779111111111111117766222229771117777777116625566222222622262111622222211111111111111111111111111111111111111111111116688444488888888222222229222922292662229922777777777777777777777777777777777777777777777777777777777777776111111117111111766222222922912269666662222222929922922268988262222291111111111111111111111111111111111111111111111688844448888888822222252922292229266222992277777777777777777777777777777777777777777777777777777777777777711111177777711766222226929295222696888226222222252222626222266222699111111111111111111111111111111111111111111111168848844882291222222422298866666222226669227777777777777777777777777777777777777777777777777777777777777771111177666777766222222222292232222962922622222626222262262666622969211111111111111111111111111111111111111111111116888888888229222222222299226666622225666922777777777777777777777777777777777777777777777777777777777777779111117766666666222222222222229666269622262229626222226626666662626921111111111111111111111111111111111111111111111648888888881922222222222944456662222266692277777777777777777777777777777777777777777777777777777777777777911111766666669222222888666222596622696226222222622222269666666229692111111111111111111111111111111111111111111111164444484888192222222222292244444222226669227777777777777777777777777777777777777777777777777777777777777711111676666922666222266622622692922226669999299222225626696666666669211111111111111111111111111111111111111111111116344448488819221222222229288924422222662922777777777777777777777777777777777777777777777777777777777777761111167229222222222222699969929229222299628829222222569688966662926922111111111111111111111111111111111111111111111634444844448822122288222922292446822222292277777777777777777777777777777777777777777777777766777777777669111117722222222229922226662226666229922962282292222662662826629299692211111911111111111111111111111111111111111111168488888444222222228822398229244622224444227777777777777777777777777777777777777777777777776677777776669111111722222222222228222226228222292392269334339222222266226966666669221111191111111111111119111111111111111111111116888888844422222222882239822922562222444422777777777777777777777777777777777777777777777776666777777699111177722222222222222322222222222222993999993699999999999999999992222922226669562228882222228211111111111111191112244442844212224222222882228922295629222222222277777777777777777777777777777777777777777777766666777777791177777722922222222222222299688222226293993343963326662555555222622922292222886922222888222228821111111111111119111884444114421222422222288222292669228977722222887777777777777777777777777777777777777777777729666667777771177777222222922222222222299692222252699329333339499226655555522662222229222289222222288822222882211111111111111911188444411442194448888966622229222922897779722222777777777777777777777777777777777777777777662966667777777777762222922222222262222229629222226622928833333392666225555556662222222922229989222228882222222222111111111111111118844441188212222888896662222922292289777277222277777777777777777777777777777777777777777722292667776937777762292222229222226622222922222222222225555323332922622228884699922229298888888922228888222222222221111111111111111111188111111222298889222222292229222927767222227777777777777777777777777777777777777777776269266666337766658922222222222222222222222222222296299555592293226262222222826822626269222222992222888862222225555555511111111111111111111111192229888922222229222922297776772222777777777777777777777777777777777777777777799992669222229265922229922992229628622222622922229222255552922292266222929986686669922988892229292288822222922555555551111111111116666111111119222928892222222988292219777677881177777777777777777777777777777777777777777772222229229922222992222222222222262822222222228222222295555229222222922226288566222222292222222929228882262992291555555111111661111666611111111948494889822222292929111922222222117777777777777777777777777777777777777777777699962226222296666666622222222222228222226222999999999999992969999999999999999999999999222622298829292292222229888888811111116111111114444944496668888922222229222222122222222211777777777777777777777777777777777777777777772292292222222666666662222222222222622229222666666666666652955828999964222222244229222982262229882922262222222228888882111111111111111444498449667888892222666922222222222222221177777777777777777777777777777777777777777777229229222222966666666662222222222269222222229666666666666225532299999442299992256266992296222982222226222282292222222226111111111111144449444967788889866666692222222222222222117777777777777777777777777777777777777777777766292922299256666666622222622222299222296222666666666666622223922666964428882555662229222692292222292622268229222222222221111111111114444944496778888986666669222222222222222211777777777777777777777777777777777777777777777922292222228996666662222222926666992662662996666666692662222829999996933999966662222999292299282226562229282988822222222261111118444888894349666888891666622922222222222222821177777777777777777777777777777777777777777777769222222222222666666222222222552229222222666666666662222622222292222293232222226292299822222928222656222222292222222222222619111848888889434984488889166662292222222222222282117777777777777777777777777777777777777777777776222222222926666666622292222266922222222922266666666222222222222333322922333223922929992222296682222622222229888222222282882911184449888944494448888912222229222222222222228611777777777777777777777777777777777777777777777229222222222566666662222222226622222222222226666666629992222223333332226393333322292982222229668222262222222922222222228288291118888988894449444888891222288932222226222222851177777777777777777777777777777777777777777777669999999999999999999999999999999999999999999999999999999999999999999999999999999999999999992922222229222222292222822222288229611111111889444944468889222922252222222222222223117777777777777777777777777777777777777777777762222222222222222999292929522222222229996666666666666522252228222239322229333888399999922242292222222922222229222282292228822911111111188944494446888922292222777222222222222211777777777777777777777777777777777777777777776222222222222222299929992952222299922229666666666666629995222222229399922293333339989999299999222229292222222922228229222222291111111118894449844688892222882226222222222222221177777777777777777777777777777777777777777777622222222222222262229922226222629222222666666666666662222556522222223962229638863268292669299922222929222222292222822988822229111111111889444984468889222222222292222222222222117777777777777777777777777777777777777777777776222222222222222666666666666666666699266666666666666222296692292999286222693666399829888922892999292922222229888222292222222911111118888848494446888622222222229222222222222211777777777777777777777777777777777777777777777622222222222666629222229666822292292666666666666666622229222222299922222222922222222988892229222229292229222988822229222222291111111888884449884688862222222222222962222222221177777777777777777777777777777777777777777777776229226222222222922922966682222222266666666666666662222222232222666299922926888222298222299929999999222222292882292922222229161111188888444944466866292222222222226622222222117777777777777777777777777777777777777777777777622299922922252292292226668929922229966666666666666222222292299566622292222298882229822222292222222222222669222222292922222916111118888844494446666622222262222922662222222211777777777777777777777777777777777777777777777776222999999999999999999999999999999999999999999999999999299982222222229922269899999999999999999999999911222962266669228822291911111222222229888866622222111166666666666666111177777777777777777777777777777777777777777777777922266992229999998922222226999222229999222226666662229299232222529222229992292222292222292922222222211182296222666922882229611111122222222988888822222211116666666666666611117777777777777777777777777777777777777777777777776229999222226292669222922226666992222222222666666222229223222229922222229222888889222229292222222221112229222266692288611911111112222222228888222222221111666666666666661111777777777777777777777777777777777777777777777777629922922222226552992222229996222222222222266666622226222826699292222262222298888922222229222222222111222922226669226111191111111222222222888822222222111166666666666666111177777777777777777777777777777777777777777777777776222222222226666996969999999999922922622222226552222622532662222229922992222988899929999999998222999992292266666926111119111111112222266622222222222211116666666666666611117777777777777777777777777777777777777777777777777762222222222622229922922669922222292562222292666229222333622222229926622922229889222228292888822222822229266666661111111911111111222226662222222222221111666666666666666611777777777777777777777777777777777777777777777777779629222882229292299298822996922299296222222266529622233222222222992266929229288922222829666652222288222922226661111111191111111122222666222222222222111166666666666666111177777777777777777777777777777777777777777777777777762222352299992299969225629992229299992222922222662233332222225299562222222999892222222966665222228822292222661111111119111111112222266622222222222211116666666666666611117777777777777777777777777777777777777777777777777776999999999999999999999992999993229999922225222262223333822222529955222922296999992299999999999999999919999161111111111911191119999999999999982211111111666666666996666611777777777777777777777777777777777777777777777777777929222299999222222692922222222222292222996666922292233292223554992222299992226922222229111111191111111911161111111111191111111111122222222288221111111166666666666666661177777777777777777777777777777777777777777777777777762922266929929222269992222222222229922999666692222282389222555299222229992922292288882911111119111111191111111111111119111111111112222222228822111111116666666666666666117777777777777777777777777777777777777777777777777777692282999999229922299222222992222992229966669842222223922222229222222999999229926666291111111911111119111111111111111911111111111222222222882211111111666666666666666611777777777777777777777777777777777777777777777777777776666292222222222292222222222262222229266662299999999292222222922222299922392922666669199991191111111911211111111111191111111111122222222288221111111166666666666666661177777777777777777777777777777777777777777777777777777666629222229999222222222229926922292222666222222222289222222292226629222222226966666911111119111111191111111111111111111111111112222222228822111111116666666666666666117777777777777777777777777777777777777777777777777777776662922222929292222222222226666666922229222222222533922522229222562922225222266666691111111911111119111111111111111111111111111222222222882211111111446666666666666611777777777777777777777777777777777777777777777777777777779682266666666666666669667777777776992222222222222662292222922292992226629966966669111111111111111911111111111111111111111111122222222288221111111144666666666666661177777777777777777777777777777777777777777777777777777777777677777777777777777777777777777777776924222222266222692292222229229662999396666911911111111111199999999999999999111111161122222211111111119111116666666666666666117777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777776922222222559929229222222929969999293888896111111111111119111111111111111111111116222222221111111111111111666666666666666611777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777629222992222992222222292929699992398889611111111111111911111111111111111111111122222222111111111111111166666666666666661177777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777622229922229222222229262962992226888961111111111111191111111111111111111111112222222211111112111111116666666666666666117777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777626229262229222222922296229222982296111111111111119111111111111111111111111221111111111112211111111666666666666666666777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777692999622299999992226629999299229611111111111111911111111111111111111111122111111111112221111111166666666666666666677777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777799929229999999222666292692662911111111111111191111111111111111111111112111111111111622111111116666666666666666667777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777762922299999922222229299669961111111111111119111111111111111111111111211111111111266211111111666666666666666666777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777763229999999222228929996996691119999999999999999999999999999999999999999999999966699999999999999999666666666677777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777766666678888288888888666666611969111111192111111122661111111111111111111111222222111111111112111166666666667777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777766682228877788888888966661196911111119111111116266111111111111111111111122222211111111111211116666666666777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777767866888888888878876666119691111111911111111666666661111111111111111112222221111111111122211666666666677777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777779768888888888888966611969111111191111111166666666111111111111111111222222111111111112221266666666667777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777779789888888888896666611111111119111111116666666611111111111111222222222211111111111222126666666666777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777776222288888889666662291111111911111111666666661111111188888822222292221111111111122212666666666677777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777776288288888966661119111111191111111166666666111111118888888822222222111111111112221266666666667777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777762828888896666111911111119111111116666666911111111888888882222222211111111111622229999999911";
+</script>
+<script>
+(function () {
+  "use strict";
+
+  // ---- the land ------------------------------------------------------------
+  // GRID is written by tools/lab4-extract.py: one digit per cell, row-major from the
+  // north-west corner. Metro Vancouver Land Use 2016, grouped into eight classes.
+  var W = 220, H = 190, N = W * H, CELL = 100;
+  var SUB = 24 * W + 51;    // BC Hydro substation, 124 St and 86 Ave, Surrey
+  var DST = 150 * W + 180;  // the proposed plant, Campbell Heights
+
+  var CLASSES = [
+    { k: 1, name: "Farmland",            v: "--c1" },
+    { k: 2, name: "Houses",              v: "--c2" },
+    { k: 3, name: "Shops and offices",   v: "--c3" },
+    { k: 4, name: "Industry",            v: "--c4" },
+    { k: 5, name: "Schools and civic",   v: "--c5" },
+    { k: 6, name: "Parks and protected", v: "--c6" },
+    { k: 7, name: "Water",               v: "--c7" },
+    { k: 8, name: "Open land",           v: "--c8" },
+    { k: 9, name: "Road and rail",       v: "--c9" }
+  ];
+  // The opening table. Seven of these are a textbook exercise's numbers; farmland sits
+  // where that exercise's own classification puts it, which is in with open land at 1.
+  // Road and rail start high so that lowering them is a discovery rather than the state
+  // you arrive in. Defaults are claims — see principles.md section 5.
+  var START = { 1: 1, 2: 150, 3: 50, 4: 10, 5: 70, 6: 125, 7: 200, 8: 1, 9: 130 };
+  var VMIN = 1, VMAX = 200, LOGMAX = Math.log(VMAX);
+  // Four positions somebody could hold, kept as presets so the failing case is one click
+  // away rather than something a student has to stumble into. Each route below was
+  // checked against a separate Python implementation; the numbers are in
+  // docs/widgets/least-cost.md.
+  var PRESETS = [
+    { name: "Cheapest to build",    t: { 1: 1,   2: 150, 3: 50, 4: 10, 5: 70, 6: 125, 7: 200, 8: 1, 9: 130 } },
+    { name: "Protect farmland",     t: { 1: 120, 2: 60,  3: 20, 4: 10, 5: 40, 6: 125, 7: 200, 8: 1, 9: 130 } },
+    { name: "Follow what is built", t: { 1: 40,  2: 150, 3: 50, 4: 10, 5: 70, 6: 125, 7: 200, 8: 1, 9: 2   } },
+    { name: "Keep away from homes", t: { 1: 10,  2: 200, 3: 60, 4: 5,  5: 80, 6: 100, 7: 150, 8: 1, 9: 60  } }
+  ];
+  var suggested = "";
+  var MAXPIN = 5;
+  var PINCOL = [], PINTEXT = [];   // read from CSS in readColours()
+  var LIVECOL = "#111111";
+
+  // ---- state ---------------------------------------------------------------
+  var base = new Uint8Array(N);   // the real map, never written to
+  var land = new Uint8Array(N);   // what is on screen, painted over
+  var cost = {}, pins = [], armed = 0;
+  // A five-cell brush is about 16 px across on a phone, well under a fingertip, so touch
+  // starts on the large one. Both sizes stay available either way.
+  var brush = (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ? 11 : 5;
+  var bandOn = false, bandTol = 0.01, bandMask = null;
+  var cursor = -1, present = false, solved = null, focusPin = -1;
+  var i;
+  for (i = 0; i < N; i++) base[i] = GRID.charCodeAt(i) - 48;
+  land.set(base);
+  for (i = 0; i < CLASSES.length; i++) cost[CLASSES[i].k] = START[CLASSES[i].k];
+
+  function className(k) {
+    for (var j = 0; j < CLASSES.length; j++) if (CLASSES[j].k === k) return CLASSES[j].name;
+    return "";
+  }
+  function edited() {
+    for (var j = 0; j < N; j++) if (land[j] !== base[j]) return true;
+    return false;
+  }
+
+  // ---- shortest path -------------------------------------------------------
+  // Dijkstra over the eight-neighbour lattice. Stepping between two cells costs the mean
+  // of their two values times the distance between their centres, which is what ArcGIS's
+  // Distance Accumulation does and what the lab's numbers assume.
+  var DR = [-1, -1, -1, 0, 0, 1, 1, 1], DC = [-1, 0, 1, -1, 1, -1, 0, 1];
+  var STEP = new Float64Array(8);
+  for (i = 0; i < 8; i++) STEP[i] = CELL * ((DR[i] && DC[i]) ? Math.SQRT2 : 1);
+
+  var hk = new Float64Array(1 << 16), hv = new Int32Array(1 << 16), hn = 0;
+  function hpush(key, val) {
+    if (hn === hk.length) {
+      var k2 = new Float64Array(hk.length * 2), v2 = new Int32Array(hv.length * 2);
+      k2.set(hk); v2.set(hv); hk = k2; hv = v2;
+    }
+    var c = hn++, p, t;
+    hk[c] = key; hv[c] = val;
+    while (c > 0) {
+      p = (c - 1) >> 1;
+      if (hk[p] <= hk[c]) break;
+      t = hk[p]; hk[p] = hk[c]; hk[c] = t;
+      t = hv[p]; hv[p] = hv[c]; hv[c] = t;
+      c = p;
+    }
+  }
+  function hpop() {
+    var top = hv[0], c = 0, l, r, s, t;
+    hn--;
+    if (hn > 0) {
+      hk[0] = hk[hn]; hv[0] = hv[hn];
+      for (;;) {
+        l = 2 * c + 1; r = l + 1; s = c;
+        if (l < hn && hk[l] < hk[s]) s = l;
+        if (r < hn && hk[r] < hk[s]) s = r;
+        if (s === c) break;
+        t = hk[s]; hk[s] = hk[c]; hk[c] = t;
+        t = hv[s]; hv[s] = hv[c]; hv[c] = t;
+        c = s;
+      }
+    }
+    return top;
+  }
+
+  var cellCost = new Float64Array(N);
+  function fillCost() {
+    var t = new Float64Array(10), j;
+    for (j = 0; j < CLASSES.length; j++) t[CLASSES[j].k] = cost[CLASSES[j].k];
+    for (j = 0; j < N; j++) cellCost[j] = t[land[j]];
+  }
+
+  // A cell can sit in the heap more than once, so the settled flag is what stops it
+  // being expanded twice. Reading the key off the heap instead would use a stale value.
+  var acc1 = new Float64Array(N), acc2 = new Float64Array(N);
+  var backA = new Int32Array(N), done = new Uint8Array(N);
+  function dijkstra(src, acc, back) {
+    var j;
+    for (j = 0; j < N; j++) { acc[j] = Infinity; done[j] = 0; }
+    if (back) for (j = 0; j < N; j++) back[j] = -1;
+    acc[src] = 0; hn = 0; hpush(0, src);
+    while (hn > 0) {
+      var u = hpop();
+      if (done[u]) continue;
+      done[u] = 1;
+      var du = acc[u], ur = (u / W) | 0, uc = u - ur * W, cu = cellCost[u], k;
+      for (k = 0; k < 8; k++) {
+        var vr = ur + DR[k], vc = uc + DC[k];
+        if (vr < 0 || vr >= H || vc < 0 || vc >= W) continue;
+        var v = vr * W + vc, nd = du + (cu + cellCost[v]) * 0.5 * STEP[k];
+        if (nd < acc[v]) { acc[v] = nd; if (back) back[v] = u; hpush(nd, v); }
+      }
+    }
+  }
+
+  function tracePath(back, from) {
+    var p = [], u = from, guard = 0;
+    while (u !== -1 && guard++ <= N) { p.push(u); u = back[u]; }
+    p.reverse();
+    return p;
+  }
+  function pathStats(p) {
+    var m = 0, mix = {}, j, a, b, ar, br;
+    for (j = 0; j + 1 < p.length; j++) {
+      a = p[j]; b = p[j + 1]; ar = (a / W) | 0; br = (b / W) | 0;
+      m += CELL * (((br - ar) && ((b - br * W) - (a - ar * W))) ? Math.SQRT2 : 1);
+    }
+    for (j = 0; j < p.length; j++) mix[land[p[j]]] = (mix[land[p[j]]] || 0) + 1;
+    return { m: m, mix: mix, n: p.length };
+  }
+
+  function recompute(withBand) {
+    fillCost();
+    dijkstra(SUB, acc1, backA);
+    var path = tracePath(backA, DST), st = pathStats(path);
+    solved = { path: path, m: st.m, mix: st.mix, n: st.n, total: acc1[DST] };
+    if (bandOn && withBand) {
+      dijkstra(DST, acc2, null);
+      var lim = acc1[DST] * (1 + bandTol), mask = new Uint8Array(N), count = 0, j;
+      for (j = 0; j < N; j++) if (acc1[j] + acc2[j] <= lim) { mask[j] = 1; count++; }
+      bandMask = { mask: mask, count: count };
+    } else if (!bandOn) {
+      bandMask = null;
+    }
+  }
+
+  // ---- colours -------------------------------------------------------------
+  // The palette lives in CSS custom properties so the swatches, the map and the mini
+  // charts cannot drift apart, and so dark mode has one place to change.
+  var rgb = {}, dimRGB = [255, 255, 255], cssCol = {};
+  function hex(s) {
+    s = s.trim();
+    if (s.charAt(0) === "#") s = s.slice(1);
+    if (s.length === 3) s = s[0] + s[0] + s[1] + s[1] + s[2] + s[2];
+    return [parseInt(s.slice(0, 2), 16), parseInt(s.slice(2, 4), 16), parseInt(s.slice(4, 6), 16)];
+  }
+  function readColours() {
+    var cs = getComputedStyle(document.documentElement), j, raw;
+    for (j = 0; j < CLASSES.length; j++) {
+      raw = cs.getPropertyValue(CLASSES[j].v).trim();
+      cssCol[CLASSES[j].k] = raw;
+      rgb[CLASSES[j].k] = hex(raw);
+    }
+    dimRGB = hex(cs.getPropertyValue("--dim"));
+    PINCOL.length = 0; PINTEXT.length = 0;
+    for (j = 1; j <= 5; j++) {
+      PINCOL.push(cs.getPropertyValue("--p" + j).trim());
+      PINTEXT.push(cs.getPropertyValue("--p" + j + "t").trim());
+    }
+  }
+
+  // ---- the map -------------------------------------------------------------
+  var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+  var img = ctx.createImageData(W, H);
+  var ov = document.getElementById("ov");
+  var SVGNS = "http://www.w3.org/2000/svg";
+
+  function paintBase() {
+    var px = img.data, j, c, k, m = (bandOn && bandMask) ? bandMask.mask : null;
+    for (j = 0; j < N; j++) {
+      c = rgb[land[j]];
+      k = j << 2;
+      if (m && !m[j]) {
+        // Outside the band, fade towards the page. Nothing inside it is recoloured, so
+        // the band is the map at full strength and the rest is turned down.
+        px[k]     = c[0] + (dimRGB[0] - c[0]) * 0.72;
+        px[k + 1] = c[1] + (dimRGB[1] - c[1]) * 0.72;
+        px[k + 2] = c[2] + (dimRGB[2] - c[2]) * 0.72;
+      } else { px[k] = c[0]; px[k + 1] = c[1]; px[k + 2] = c[2]; }
+      px[k + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  function el(name, attrs) {
+    var e = document.createElementNS(SVGNS, name), a;
+    for (a in attrs) if (Object.prototype.hasOwnProperty.call(attrs, a)) e.setAttribute(a, attrs[a]);
+    return e;
+  }
+  function pointString(p) {
+    var s = [], j, r;
+    for (j = 0; j < p.length; j++) { r = (p[j] / W) | 0; s.push((p[j] - r * W + 0.5) + "," + (r + 0.5)); }
+    return s.join(" ");
+  }
+  function routeLine(p, colour, wide, faded) {
+    var g = document.createDocumentFragment(), d = pointString(p);
+    // A white casing under every route, so one colour reads over pale farmland and over
+    // dark industry alike. Colour is never the only cue: the live route is also the
+    // thickest, and each kept route repeats its colour beside its name.
+    g.appendChild(el("polyline", { points: d, fill: "none", stroke: "#ffffff",
+      "stroke-width": wide ? 3.6 : 2.8, "stroke-linejoin": "round", "stroke-linecap": "round", opacity: "0.92" }));
+    g.appendChild(el("polyline", { points: d, fill: "none", stroke: colour,
+      "stroke-width": wide ? 1.9 : 1.3, "stroke-linejoin": "round", "stroke-linecap": "round",
+      opacity: faded ? "0.35" : "1" }));
+    return g;
+  }
+  function marker(idx, kind, label) {
+    var r = (idx / W) | 0, c = idx - r * W, g = document.createDocumentFragment(), t;
+    g.appendChild(kind === "sub"
+      ? el("rect", { x: c - 2.5, y: r - 2.5, width: 5, height: 5, fill: "#111111",
+          stroke: "#ffffff", "stroke-width": 1.5 })
+      : el("polygon", { points: c + "," + (r - 3.2) + " " + (c + 3) + "," + (r + 2.3) + " " + (c - 3) + "," + (r + 2.3),
+          fill: "#111111", stroke: "#ffffff", "stroke-width": 1.5 }));
+    var right = c > W * 0.55;
+    t = el("text", { x: c + (right ? -5 : 5), y: r + 2, "text-anchor": right ? "end" : "start",
+      "font-size": "6.4", "font-family": "system-ui, sans-serif", "font-weight": "600",
+      fill: "#111111", stroke: "#ffffff", "stroke-width": "2.4", "paint-order": "stroke" });
+    t.textContent = label;
+    g.appendChild(t);
+    return g;
+  }
+  function paintOverlay() {
+    ov.textContent = "";
+    var j;
+    for (j = 0; j < pins.length; j++) {
+      if (j === focusPin) continue;                    // drawn last, so it sits on top
+      ov.appendChild(routeLine(pins[j].path, PINCOL[j % PINCOL.length], false, focusPin >= 0));
+    }
+    if (solved) ov.appendChild(routeLine(solved.path, LIVECOL, true, focusPin >= 0));
+    if (focusPin >= 0 && pins[focusPin])
+      ov.appendChild(routeLine(pins[focusPin].path, PINCOL[focusPin % PINCOL.length], true));
+    ov.appendChild(marker(SUB, "sub", "substation"));
+    ov.appendChild(marker(DST, "plant", "plant"));
+    if (cursor >= 0) {
+      var r = (cursor / W) | 0, c = cursor - r * W, half = (brush - 1) / 2;
+      ov.appendChild(el("rect", { x: c - half - 0.5, y: r - half - 0.5, width: brush, height: brush,
+        fill: "none", stroke: "#ffffff", "stroke-width": "1.8" }));
+      ov.appendChild(el("rect", { x: c - half - 0.5, y: r - half - 0.5, width: brush, height: brush,
+        fill: "none", stroke: "#0b57d0", "stroke-width": "0.9" }));
+    }
+  }
+
+  // ---- the chart of costs --------------------------------------------------
+  // Bars are placed on a log axis because the route responds only to the ratios between
+  // the numbers. A doubling is then the same width everywhere, and a 1 stays visible
+  // beside a 200 instead of collapsing to a stub.
+  function frac(v) { return Math.log(v) / LOGMAX; }
+  function unfrac(f) {
+    var v = Math.round(Math.exp(Math.max(0, Math.min(1, f)) * LOGMAX));
+    return Math.max(VMIN, Math.min(VMAX, v));
+  }
+
+  var rowsEl = document.getElementById("rows"), bars = {}, swatches = {}, vals = {};
+  function buildRows() {
+    var j, cl, row, sw, bar, fill, val, t;
+    for (j = 0; j < CLASSES.length; j++) {
+      cl = CLASSES[j];
+      row = document.createElement("div"); row.className = "crow";
+
+      sw = document.createElement("button");
+      sw.className = "swatch"; sw.type = "button";
+      sw.setAttribute("aria-pressed", "false");
+      sw.dataset.k = cl.k;
+      sw.title = "Draw " + cl.name.toLowerCase() + " on the map";
+      t = document.createElement("i"); sw.appendChild(t);
+      sw.appendChild(document.createTextNode(cl.name));
+      swatches[cl.k] = sw;
+
+      bar = document.createElement("div");
+      bar.className = "bar"; bar.dataset.k = cl.k;
+      bar.setAttribute("role", "slider");
+      bar.setAttribute("tabindex", "0");
+      bar.setAttribute("aria-label", "Cost to cross " + cl.name.toLowerCase());
+      bar.setAttribute("aria-valuemin", String(VMIN));
+      bar.setAttribute("aria-valuemax", String(VMAX));
+      fill = document.createElement("span"); bar.appendChild(fill);
+      [10, 100].forEach(function (tick) {
+        var u = document.createElement("u");
+        u.style.left = (frac(tick) * 100) + "%";
+        bar.appendChild(u);
+      });
+      bars[cl.k] = { bar: bar, fill: fill };
+
+      val = document.createElement("span"); val.className = "val";
+      vals[cl.k] = val;
+
+      row.appendChild(sw); row.appendChild(bar); row.appendChild(val);
+      rowsEl.appendChild(row);
+    }
+  }
+
+  function drawRows() {
+    var j, cl, v;
+    for (j = 0; j < CLASSES.length; j++) {
+      cl = CLASSES[j]; v = cost[cl.k];
+      bars[cl.k].fill.style.width = (frac(v) * 100) + "%";
+      bars[cl.k].fill.style.background = cssCol[cl.k];
+      bars[cl.k].bar.setAttribute("aria-valuenow", String(v));
+      bars[cl.k].bar.setAttribute("aria-valuetext", v + " times the cheapest land");
+      vals[cl.k].textContent = String(v);
+      swatches[cl.k].firstChild.style.background = cssCol[cl.k];
+      swatches[cl.k].setAttribute("aria-pressed", armed === cl.k ? "true" : "false");
+    }
+  }
+
+  // ---- readout and pins ----------------------------------------------------
+  var lenEl = document.getElementById("len"), mixEl = document.getElementById("mix");
+  var pinsEl = document.getElementById("pins"), pinEmpty = document.getElementById("pinempty");
+  var pinBtn = document.getElementById("pin"), liveEl = document.getElementById("live");
+  var probeEl = document.getElementById("probe");
+
+  function mixText(mix, n, top) {
+    var arr = [], k;
+    for (k in mix) if (Object.prototype.hasOwnProperty.call(mix, k)) arr.push([+k, mix[k]]);
+    arr.sort(function (a, b) { return b[1] - a[1]; });
+    return arr.slice(0, top).map(function (p) {
+      return Math.round(100 * p[1] / n) + "% " + className(p[0]).toLowerCase();
+    }).join(", ");
+  }
+
+  function drawReadout() {
+    lenEl.textContent = (solved.m / 1000).toFixed(1);
+    var s = "Crosses " + mixText(solved.mix, solved.n, 3) + ".";
+    if (bandOn && bandMask) {
+      s += " A route within " + (bandTol * 100) + "% of this one could cross "
+        + (bandMask.count * CELL * CELL / 1e6).toFixed(1) + " km² of the map.";
+    }
+    mixEl.innerHTML = "";
+    mixEl.appendChild(document.createTextNode(s));
+    pinBtn.disabled = pins.length >= MAXPIN;
+    pinBtn.textContent = pins.length >= MAXPIN ? "Five is the limit" : "Keep this proposal";
+  }
+
+  function drawPins() {
+    pinsEl.textContent = "";
+    pinEmpty.hidden = pins.length > 0;
+    pins.forEach(function (p, idx) {
+      var col = PINCOL[idx % PINCOL.length];
+      var card = document.createElement("div");
+      card.className = "pin";
+      card.style.borderLeftColor = col;
+
+      var nameline = document.createElement("div"); nameline.className = "nameline";
+      var swatch = document.createElement("span");
+      swatch.setAttribute("aria-hidden", "true");
+      swatch.style.cssText = "width:calc(1.4rem * var(--ui));height:calc(0.3rem * var(--ui));border-radius:2px;flex:none;background:" + col;
+      var name = document.createElement("input");
+      name.type = "text"; name.value = p.name; name.maxLength = 28;
+      name.placeholder = "Whose proposal?";
+      name.setAttribute("aria-label", "Name for the route drawn in " + COLNAME[idx % COLNAME.length]);
+      name.style.color = PINTEXT[idx % PINTEXT.length];
+      name.addEventListener("input", function () { p.name = name.value; writeURL(); });
+      var drop = document.createElement("button");
+      drop.className = "drop"; drop.type = "button";
+      drop.innerHTML = "&times;";
+      drop.title = "Drop this proposal";
+      drop.setAttribute("aria-label", "Drop the proposal named " + (p.name || "unnamed"));
+      drop.addEventListener("click", function () {
+        pins.splice(idx, 1);
+        say("Dropped. " + pins.length + " kept.");
+        paintOverlay(); drawPins(); drawReadout(); writeURL();
+      });
+      nameline.appendChild(swatch); nameline.appendChild(name); nameline.appendChild(drop);
+
+      var stats = document.createElement("div"); stats.className = "stats";
+      stats.textContent = (p.m / 1000).toFixed(1) + " km. " + mixText(p.mix, p.n, 2) + ".";
+
+      var mini = document.createElement("div"); mini.className = "mini";
+      CLASSES.forEach(function (cl) {
+        var nm = document.createElement("div"); nm.className = "mn";
+        nm.textContent = SHORT[cl.k];
+        mini.appendChild(nm);
+        var b = document.createElement("div"); b.className = "mb";
+        b.title = cl.name + ": " + p.cost[cl.k];
+        var f = document.createElement("span");
+        f.style.width = (frac(p.cost[cl.k]) * 100) + "%";
+        f.style.background = cssCol[cl.k];
+        b.appendChild(f);
+        var v = document.createElement("div"); v.className = "mv";
+        v.textContent = String(p.cost[cl.k]);
+        mini.appendChild(b); mini.appendChild(v);
+      });
+
+      function lift(on) { focusPin = on ? idx : -1; paintOverlay(); }
+      card.addEventListener("pointerenter", function () { lift(true); });
+      card.addEventListener("pointerleave", function () { lift(false); });
+      card.addEventListener("focusin", function () { lift(true); });
+      card.addEventListener("focusout", function () { lift(false); });
+      card.appendChild(nameline); card.appendChild(stats); card.appendChild(mini);
+      if (p.edited) {
+        var w = document.createElement("p");
+        w.className = "warn"; w.style.margin = "calc(0.3rem * var(--ui)) 0 0";
+        w.textContent = "Drawn on a map you had changed.";
+        card.appendChild(w);
+      }
+      pinsEl.appendChild(card);
+    });
+  }
+
+  var COLNAME = ["orange", "purple", "pink", "brown", "teal"];
+  // Short forms for the miniature tables, where the full names will not fit. Words, not
+  // initials: an abbreviation a reader has to decode is worse than a slightly odd word.
+  var SHORT = { 1: "Farmland", 2: "Houses", 3: "Shops", 4: "Industry", 5: "Civic",
+                6: "Parks", 7: "Water", 8: "Open", 9: "Roads" };
+  function addPin() {
+    if (pins.length >= MAXPIN) return;
+    flush();
+    var c = {}, j;
+    for (j = 0; j < CLASSES.length; j++) c[CLASSES[j].k] = cost[CLASSES[j].k];
+    pins.push({ name: suggested, cost: c, path: solved.path.slice(), m: solved.m,
+                mix: solved.mix, n: solved.n, edited: edited() });
+    say("Kept. " + pins.length + " on the map. Name it in the card below.");
+    suggested = "";
+    paintOverlay(); drawPins(); drawReadout(); writeURL();
+    var boxes = pinsEl.querySelectorAll('input[type="text"]');
+    if (boxes.length) { boxes[boxes.length - 1].focus(); boxes[boxes.length - 1].select(); }
+  }
+
+  function say(msg) { liveEl.textContent = msg; }
+
+  // ---- the URL -------------------------------------------------------------
+  // Costs, kept proposals and the toggles travel in the link. A kept proposal carries
+  // its own route as a string of directions, because it cannot be recomputed once the
+  // land underneath it has been drawn over. Drawing itself does not travel: it can run
+  // to thousands of cells and would make the link unusable.
+  var DIRCH = "abcdefgh";
+  function encPath(p) {
+    var s = String(p[0]) + ":", j, a, b, ar, br, dr, dc, k;
+    for (j = 0; j + 1 < p.length; j++) {
+      a = p[j]; b = p[j + 1]; ar = (a / W) | 0; br = (b / W) | 0;
+      dr = br - ar; dc = (b - br * W) - (a - ar * W);
+      for (k = 0; k < 8; k++) if (DR[k] === dr && DC[k] === dc) { s += DIRCH[k]; break; }
+    }
+    return s;
+  }
+  function decPath(s) {
+    var bits = s.split(":"), u = parseInt(bits[0], 10), p = [u], j, k, r, c;
+    if (!(u >= 0 && u < N)) return null;
+    for (j = 0; j < bits[1].length; j++) {
+      k = DIRCH.indexOf(bits[1].charAt(j));
+      if (k < 0) return null;
+      r = ((u / W) | 0) + DR[k]; c = (u - ((u / W) | 0) * W) + DC[k];
+      if (r < 0 || r >= H || c < 0 || c >= W) return null;
+      u = r * W + c; p.push(u);
+    }
+    return p;
+  }
+  function costStr(c) { return CLASSES.map(function (cl) { return c[cl.k]; }).join("."); }
+  function costParse(s) {
+    var a = String(s).split("."), c = {}, j, v;
+    if (a.length !== CLASSES.length) return null;
+    for (j = 0; j < CLASSES.length; j++) {
+      v = parseInt(a[j], 10);
+      if (!(v >= VMIN && v <= VMAX)) return null;
+      c[CLASSES[j].k] = v;
+    }
+    return c;
+  }
+  // Debounced. render() runs once per animation frame while a bar or a brush is being
+  // dragged, and Safari throttles replaceState to about a hundred calls in thirty
+  // seconds — a few seconds of painting would trip it and start throwing.
+  var urlTimer = 0;
+  function writeURL() {
+    if (urlTimer) clearTimeout(urlTimer);
+    urlTimer = setTimeout(writeURLNow, 350);
+  }
+  function writeURLNow() {
+    urlTimer = 0;
+    var p = new URLSearchParams();
+    if (costStr(cost) !== costStr(START)) p.set("c", costStr(cost));
+    if (bandOn) { p.set("band", "1"); p.set("tol", String(bandTol)); }
+    if (present) p.set("present", "1");
+    if (pins.length) {
+      p.set("k", pins.map(function (x) {
+        return encodeURIComponent(x.name) + "!" + costStr(x.cost) + "!" + encPath(x.path) + "!" + (x.edited ? "1" : "0");
+      }).join("*"));
+    }
+    var q = p.toString();
+    history.replaceState(null, "", location.pathname + (q ? "?" + q : ""));
+  }
+
+  // ---- redraw: one path through, called after every change -----------------
+  // Drawing changes are batched into one frame so a brush stroke never waits on a solve.
+  // That means solved can be one frame behind the table, which matters at the moment a
+  // proposal is kept: it would file the new numbers against the old route. flush() is
+  // for the places that have to read a settled answer.
+  var pendingBand = false, frameQueued = false;
+  function draw() {
+    recompute(pendingBand);
+    pendingBand = false;
+    paintBase(); paintOverlay(); drawRows(); drawReadout(); writeURL();
+  }
+  function render(withBand) {
+    if (withBand) pendingBand = true;
+    if (frameQueued) return;
+    frameQueued = true;
+    requestAnimationFrame(function () { frameQueued = false; draw(); });
+  }
+  function flush() { pendingBand = pendingBand || bandOn; draw(); }
+
+  // ---- editing a cost ------------------------------------------------------
+  function setCost(k, v, announce) {
+    v = Math.max(VMIN, Math.min(VMAX, Math.round(v)));
+    if (cost[k] === v) return;
+    cost[k] = v;
+    // The row is redrawn now rather than in the next frame, so aria-valuenow is never
+    // behind what a key press just did. The map can wait; the control cannot.
+    drawRows();
+    render(true);
+    if (announce) say(className(k) + " now " + v + ".");
+  }
+  function barFromEvent(bar, clientX) {
+    var r = bar.getBoundingClientRect();
+    return unfrac((clientX - r.left) / r.width);
+  }
+  function wireRows() {
+   CLASSES.forEach(function (cl) {
+    var bar = bars[cl.k].bar, dragging = false;
+    bar.addEventListener("pointerdown", function (e) {
+      dragging = true;
+      bar.setPointerCapture(e.pointerId);
+      setCost(cl.k, barFromEvent(bar, e.clientX), false);
+      e.preventDefault();
+    });
+    bar.addEventListener("pointermove", function (e) {
+      if (dragging) setCost(cl.k, barFromEvent(bar, e.clientX), false);
+    });
+    function stop() {
+      if (!dragging) return;
+      dragging = false;
+      say(cl.name + " now " + cost[cl.k] + ".");
+    }
+    bar.addEventListener("pointerup", stop);
+    bar.addEventListener("pointercancel", stop);
+    // Arrow keys step by a fixed ratio rather than a fixed amount, to match the axis:
+    // one press is always the same distance along the bar.
+    bar.addEventListener("keydown", function (e) {
+      var v = cost[cl.k], step = 1.15, nv = null;
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") nv = Math.max(v + 1, v * step);
+      else if (e.key === "ArrowLeft" || e.key === "ArrowDown") nv = Math.min(v - 1, v / step);
+      else if (e.key === "PageUp") nv = v * 2;
+      else if (e.key === "PageDown") nv = v / 2;
+      else if (e.key === "Home") nv = VMIN;
+      else if (e.key === "End") nv = VMAX;
+      if (nv === null) return;
+      e.preventDefault();
+      setCost(cl.k, nv, true);
+    });
+    swatches[cl.k].addEventListener("click", function () { arm(armed === cl.k ? 0 : cl.k); });
+   });
+  }
+
+  // ---- drawing on the map --------------------------------------------------
+  // Off until a class is armed. Until then the map takes no pointer events at all, so a
+  // finger dragged across it scrolls the page as it would anywhere else. This is the
+  // trade the first widget refused to make; here drawing is the point, so it is made
+  // explicitly and it is always visible that it has been made.
+  var mapbox = document.getElementById("mapbox"), armbar = document.getElementById("armbar");
+  var armname = document.getElementById("armname");
+  function arm(k) {
+    armed = k;
+    mapbox.dataset.armed = k ? "1" : "0";
+    armbar.hidden = !k;
+    if (k) {
+      armname.textContent = className(k).toLowerCase();
+      mapbox.setAttribute("aria-label", "Map. Drawing " + className(k).toLowerCase()
+        + ". Arrow keys move, space draws.");
+      say("Drawing " + className(k).toLowerCase() + ". Drag on the map, or use arrow keys and space.");
+    } else {
+      cursor = -1;
+      mapbox.setAttribute("aria-label", "Map of land use with the cheapest route drawn on it.");
+      say("Drawing off.");
+    }
+    drawRows(); paintOverlay();
+  }
+  document.getElementById("disarm").addEventListener("click", function () { arm(0); mapbox.focus(); });
+  armbar.querySelectorAll("[data-brush]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      brush = +b.dataset.brush;
+      armbar.querySelectorAll("[data-brush]").forEach(function (o) {
+        o.setAttribute("aria-pressed", +o.dataset.brush === brush ? "true" : "false");
+      });
+      say("Brush " + brush + " cells across.");
+      paintOverlay();
+    });
+  });
+
+  function cellAt(clientX, clientY) {
+    var r = cv.getBoundingClientRect();
+    var c = Math.floor((clientX - r.left) / r.width * W), rr = Math.floor((clientY - r.top) / r.height * H);
+    if (c < 0 || c >= W || rr < 0 || rr >= H) return -1;
+    return rr * W + c;
+  }
+  function stamp(idx) {
+    if (!armed || idx < 0) return false;
+    var r = (idx / W) | 0, c = idx - r * W, half = (brush - 1) / 2, dr, dc, rr, cc, changed = false;
+    for (dr = -half; dr <= half; dr++) {
+      for (dc = -half; dc <= half; dc++) {
+        rr = r + dr; cc = c + dc;
+        if (rr < 0 || rr >= H || cc < 0 || cc >= W) continue;
+        if (land[rr * W + cc] !== armed) { land[rr * W + cc] = armed; changed = true; }
+      }
+    }
+    return changed;
+  }
+  // Pointer events arrive in jumps, so a quick drag reports a position several cells on
+  // from the last one. Fill the line between, or the stroke comes out dotted.
+  function stampLine(a, b) {
+    var ar = (a / W) | 0, ac = a - ar * W, br = (b / W) | 0, bc = b - br * W;
+    var steps = Math.max(Math.abs(br - ar), Math.abs(bc - ac)), k, changed = false;
+    if (steps === 0) return stamp(b);
+    for (k = 0; k <= steps; k++) {
+      changed = stamp(Math.round(ar + (br - ar) * k / steps) * W
+                    + Math.round(ac + (bc - ac) * k / steps)) || changed;
+    }
+    return changed;
+  }
+
+  var drawing = false, lastCell = -1;
+  mapbox.addEventListener("pointerdown", function (e) {
+    var idx = cellAt(e.clientX, e.clientY);
+    if (idx < 0) return;
+    if (!armed) {
+      // Nothing armed, so a press just asks what is here. On a phone this is the only
+      // way to find out, because there is no pointer to hover with.
+      probeEl.textContent = "You tapped " + className(land[idx]).toLowerCase()
+        + (solved && solved.path.indexOf(idx) >= 0 ? ", and the route runs through it." : ".");
+      return;
+    }
+    drawing = true; lastCell = idx; cursor = idx;
+    try { mapbox.setPointerCapture(e.pointerId); } catch (err) {}
+    if (stamp(idx)) render(false);
+    else paintOverlay();
+    e.preventDefault();
+  });
+  mapbox.addEventListener("pointermove", function (e) {
+    var idx = cellAt(e.clientX, e.clientY);
+    if (!drawing) {
+      if (idx >= 0) probeEl.textContent = "Under the pointer: " + className(land[idx]).toLowerCase()
+        + (solved && solved.path.indexOf(idx) >= 0 ? ", and the route runs through it." : ".");
+      return;
+    }
+    if (idx < 0 || idx === lastCell) return;
+    var changed = stampLine(lastCell, idx);
+    lastCell = idx; cursor = idx;
+    if (changed) render(false); else paintOverlay();
+  });
+  function stopDraw(e) {
+    if (!drawing) return;
+    drawing = false; lastCell = -1;
+    try { mapbox.releasePointerCapture(e.pointerId); } catch (err) {}
+    flush();                // the band is only worth recomputing once the stroke ends
+    say("Route now " + (solved.m / 1000).toFixed(1) + " km, crossing "
+        + mixText(solved.mix, solved.n, 2) + ".");
+  }
+  mapbox.addEventListener("pointerup", stopDraw);
+  mapbox.addEventListener("pointercancel", stopDraw);
+  mapbox.addEventListener("pointerleave", function () {
+    if (!drawing) probeEl.textContent = "";
+  });
+
+  // Keyboard drawing. Not a courtesy: without it the whole left half of this widget is
+  // unreachable without a pointer.
+  mapbox.setAttribute("tabindex", "0");
+  mapbox.setAttribute("role", "application");
+  mapbox.setAttribute("aria-label", "Map of land use with the cheapest route drawn on it.");
+  mapbox.addEventListener("keydown", function (e) {
+    if (!armed) return;
+    var step = e.shiftKey ? 5 : 1, r, c, moved = false;
+    if (cursor < 0) cursor = SUB;
+    r = (cursor / W) | 0; c = cursor - r * W;
+    if (e.key === "ArrowUp") { r -= step; moved = true; }
+    else if (e.key === "ArrowDown") { r += step; moved = true; }
+    else if (e.key === "ArrowLeft") { c -= step; moved = true; }
+    else if (e.key === "ArrowRight") { c += step; moved = true; }
+    else if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      if (stamp(cursor)) { render(true); say("Drew " + className(armed).toLowerCase() + "."); }
+      return;
+    } else if (e.key === "Escape") { arm(0); return; }
+    if (!moved) return;
+    e.preventDefault();
+    cursor = Math.max(0, Math.min(H - 1, r)) * W + Math.max(0, Math.min(W - 1, c));
+    paintOverlay();
+    say("Row " + (((cursor / W) | 0) + 1) + ", column " + ((cursor % W) + 1) + ": "
+      + className(land[cursor]).toLowerCase() + ".");
+  });
+
+  // ---- near ties -----------------------------------------------------------
+  var bandBtn = document.getElementById("band"), bandOpts = document.getElementById("bandopts");
+  function setBand(on, announce) {
+    bandOn = on;
+    bandBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    bandBtn.textContent = on ? "Hide near ties" : "Show near ties";
+    bandOpts.hidden = !on;
+    bandOpts.querySelectorAll("[data-tol]").forEach(function (b) {
+      b.setAttribute("aria-pressed", +b.dataset.tol === bandTol ? "true" : "false");
+    });
+    render(true);
+    if (announce) say(on ? "Showing every route within " + (bandTol * 100) + "% of the cheapest."
+                        : "Near ties hidden.");
+  }
+  bandBtn.addEventListener("click", function () { setBand(!bandOn, true); });
+  bandOpts.querySelectorAll("[data-tol]").forEach(function (b) {
+    b.addEventListener("click", function () { bandTol = +b.dataset.tol; setBand(true, true); });
+  });
+
+  // ---- the rest of the controls -------------------------------------------
+  pinBtn.addEventListener("click", addPin);
+
+  var presetsEl = document.getElementById("presets");
+  PRESETS.forEach(function (pr) {
+    var b = document.createElement("button");
+    b.className = "act"; b.type = "button"; b.textContent = pr.name;
+    b.addEventListener("click", function () {
+      CLASSES.forEach(function (cl) { cost[cl.k] = pr.t[cl.k]; });
+      suggested = pr.name;
+      drawRows(); flush();
+      say(pr.name + ". Route now " + (solved.m / 1000).toFixed(1) + " km, crossing "
+          + mixText(solved.mix, solved.n, 2) + ".");
+    });
+    presetsEl.appendChild(b);
+  });
+  document.getElementById("resetcost").addEventListener("click", function () {
+    CLASSES.forEach(function (cl) { cost[cl.k] = START[cl.k]; });
+    suggested = ""; drawRows(); render(true); say("Costs back to the start.");
+  });
+  document.getElementById("resetmap").addEventListener("click", function () {
+    land.set(base); render(true); say("Land back to the real map.");
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    land.set(base);
+    CLASSES.forEach(function (cl) { cost[cl.k] = START[cl.k]; });
+    pins = []; suggested = ""; arm(0); setBand(false, false); bandTol = 0.01;
+    drawRows(); render(true); drawPins(); say("Back to the start.");
+  });
+
+  var presentBtn = document.getElementById("present");
+  function setPresent(on) {
+    present = on;
+    document.body.dataset.present = on ? "1" : "0";
+    presentBtn.textContent = on ? "Normal size" : "Big screen";
+    presentBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    render(false);
+  }
+  presentBtn.addEventListener("click", function () { setPresent(!present); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "p" || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = document.activeElement;
+    if (t && (t.tagName === "INPUT" || t.getAttribute("role") === "slider"
+        || t.getAttribute("role") === "application")) return;
+    setPresent(!present);
+  });
+
+  // One handler for every (i) panel on the page.
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-info]");
+    if (!b) return;
+    var panel = document.getElementById(b.dataset.info);
+    if (!panel) return;
+    var open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", open ? "false" : "true");
+    panel.hidden = open;
+  });
+
+  // Dark mode swaps the palette, and the map is painted pixel by pixel from it.
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    var onScheme = function () { readColours(); drawPins(); render(false); };
+    if (mq.addEventListener) mq.addEventListener("change", onScheme);
+    else if (mq.addListener) mq.addListener(onScheme);
+  }
+
+  // ---- start ---------------------------------------------------------------
+  var params = new URLSearchParams(location.search);
+  var pc = costParse(params.get("c") || "");
+  if (pc) cost = pc;
+  present = params.get("present") === "1";
+  var tol = parseFloat(params.get("tol"));
+  if (tol === 0.001 || tol === 0.01 || tol === 0.05) bandTol = tol;
+  var wantBand = params.get("band") === "1";
+  var kept = params.get("k");
+  if (kept) {
+    kept.split("*").slice(0, MAXPIN).forEach(function (chunk) {
+      var f = chunk.split("!");
+      if (f.length !== 4) return;
+      var c = costParse(f[1]), p = decPath(f[2]);
+      if (!c || !p || p.length < 2) return;
+      var st = pathStats(p);
+      pins.push({ name: decodeURIComponent(f[0]).slice(0, 28), cost: c, path: p,
+                  m: st.m, mix: st.mix, n: st.n, edited: f[3] === "1" });
+    });
+  }
+
+  readColours();
+  buildRows();
+  wireRows();
+  CLASSES.forEach(function (cl) { swatches[cl.k].firstChild.style.background = cssCol[cl.k]; });
+  armbar.querySelectorAll("[data-brush]").forEach(function (b) {
+    b.setAttribute("aria-pressed", +b.dataset.brush === brush ? "true" : "false");
+  });
+  setPresent(present);
+  setBand(wantBand, false);
+  drawPins();
+  render(true);
+})();
+</script>
+</body>
+</html>

@@ -35,6 +35,10 @@
     --panel: #1e2128; --edge: #6e7682; --focus: #7cacff; --mark: #e9ecf1;
   }
 }
+/* The browser's rule behind the hidden attribute is a UA rule, so any author rule that
+   sets display outranks it and the element stays on screen. That has caught three widgets
+   here. Declaring it once, globally, is cheaper than remembering per selector. */
+[hidden] { display: none !important; }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {

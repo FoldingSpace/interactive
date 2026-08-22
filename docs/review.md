@@ -100,6 +100,12 @@ silently diverged and cost a round of confusion; the later seed search ran in No
 a copy of the widget's own source and matched exactly. Rule of thumb: verify formulas by
 reimplementing, verify generated inputs by executing.
 
+**Check that what was recorded matches what was shown.** Where a widget saves, pins, or
+exports a result, the saved copy and the thing on screen are written by different code and
+can disagree. Change two inputs, save after each, and confirm the two saved records differ
+in the way the inputs did. This is where batched rendering shows up as a data bug rather
+than a visual one.
+
 **Derive one case by hand.** Slow, and worth it once per statistic. It is the only check
 that tests your understanding rather than your code.
 

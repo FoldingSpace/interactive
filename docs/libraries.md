@@ -4,7 +4,7 @@ What we use, what worked, what did not, and what is worth trying. Update this ev
 a library earns or loses a place. Licences below are recorded from prior knowledge and
 must be checked against the project's own repository before anything ships publicly.
 
-Started 2026-08-19. Two widgets built so far and neither needed a library, so the
+Started 2026-08-19. Three widgets built so far and none needed a library, so the
 "in use" table is still empty and everything below it remains a candidate.
 
 The empty table is a result about one kind of widget, not about the repository. A widget
@@ -22,6 +22,27 @@ that happens rather than contorting the widget to keep them true. See section 13
 | Library | Version | What we use it for | Notes |
 |---|---|---|---|
 | _(none)_ | | | Spatial autocorrelation needed no dependency at all. Worth trying that first each time. |
+
+Three widgets in, the streak is holding, and the third was the one most likely to break it.
+`web/least-cost` runs Dijkstra over 41,800 cells and repaints a raster on every animation
+frame, which sounds like a job for a graph library and a canvas library and is neither. A
+binary heap on two typed arrays is about forty lines. Painting the land is one
+`ImageData` and one `putImageData`; the browser's own nearest-neighbour upscaling does the
+rest, from `image-rendering: pixelated`. Two Dijkstras, a full repaint and a DOM rebuild
+settle at about 15 ms.
+
+What it did need was a build-time dependency, which is a different thing and does not go in
+the table above: `tools/lab4-extract.py` uses GDAL's Python bindings to fetch and rasterise
+Metro Vancouver's land use. That runs on our machine, once, and what ships is a string of
+41,800 digits inlined in the HTML. A build-time tool has none of the costs a runtime
+dependency has — it cannot break a lecture, and it cannot stop working in 2031 — so the
+rule "try it with no dependency first" applies to what the browser loads, not to what makes
+the data.
+
+Also worth recording because it was considered and rejected: shipping the grid as a GeoTIFF
+and parsing it in the browser. That needs a TIFF reader, which is a runtime dependency, to
+save about 30 KB before compression on a file the server already gzips. Digits in the HTML
+keep the widget a single file that works from `file://`.
 
 ## Platform features we do rely on
 

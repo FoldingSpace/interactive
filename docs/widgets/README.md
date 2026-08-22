@@ -8,6 +8,7 @@ choice is gone and only the choice is left.
 |---|---|---|
 | [Spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/) | [spatial-autocorrelation.md](spatial-autocorrelation.md) | Live |
 | [Drawing the lines: MAUP in Vancouver](https://foldingspace.github.io/interactive/maup/) | [maup.md](maup.md) | Live |
+| [Least cost, whose cost?](https://foldingspace.github.io/interactive/least-cost/) | [least-cost.md](least-cost.md) | Live |
 
 Graphical decisions that recur across widgets are in `../visual-forms.md`, not here.
 
