@@ -40,7 +40,7 @@ Government Licence. Already in NAD83 / UTM zone 10N, so nothing is reprojected.
 DMTI CanMap Route Logistics, which the lab uses, is licensed data and cannot go on a public
 site. That constraint turned out to improve the widget rather than limit it.
 
-**Window:** 504000–526000 E, 5428500–5447500 N. 440 × 380 cells of 50 m. Entirely inside
+**Window:** 504000–526000 E, 5428500–5447500 N. 660 × 570 cells of 33⅓ m, that size chosen so 660 cells is exactly the 22 km width. Entirely inside
 Metro Vancouver, so there are no holes, and clear of every reserve and treaty boundary in
 the region's own `Jurisdiction` field — checked, not assumed. An earlier plan ran to Roberts
 Bank; the causeway's shore end sits inside Tsawwassen First Nation lands, and a cost surface
@@ -49,12 +49,12 @@ moved rather than the question fudged. This does not make the land it does cross
 uncontested.
 
 **Endpoints.** The start is a real utility site at 124 St and 86 Ave in Surrey, cell
-(row 48, col 103). Metro Vancouver's own data classifies that exact cell **T400, "Utility,
+(row 73, col 154). Metro Vancouver's own data classifies that exact cell **T400, "Utility,
 Communication and Work Yards"**, which is what the widget's wording rests on — checked
 against the open dataset rather than inherited from the licensed one, and stated as a
 utility site rather than as a named company's substation, because the open data does not
 say whose it is. The plant is not real: it stands in for something that would be proposed
-at Campbell Heights, cell (row 300, col 360), where the industrial district's expansion
+at Campbell Heights, cell (row 450, col 540), where the industrial district's expansion
 into farmland is a live argument.
 
 **Classes.** Twenty-nine Metro Vancouver codes grouped into eight, plus roads. The grouping
@@ -63,27 +63,29 @@ is ours and the widget says so. Shares of the window:
 | Class | Codes | Share |
 |---|---|---|
 | Houses | S100, S110, S120, S130, S131, S135, S410, S230, S235 | 29.1% |
-| Farmland | A500 | 22.2% |
+| Farmland | A500 | 22.1% |
 | Water | R200 | 14.1% |
 | Parks and protected | R100, W400 | 13.1% |
-| Road and rail | S500, T100, T200, T300 | 11.1% |
-| Industry | S300, M300, S600, T400 | 3.9% |
+| Road and rail | S500, T100, T200, T300 | 11.2% |
+| Industry | S300, M300, S600, T400 | 3.8% |
 | Open land | U100 | 3.3% |
 | Shops and offices | S200, S202, S204 | 1.9% |
 | Schools and civic | S400, S420, S450, S460 | 1.2% |
 
-**Cells started at 100 m and that was wrong.** Blocks of housing and farmland were fine;
-everything linear was not. Road allowances, rail and watercourses are narrower than 100 m,
-so at that size they rasterised into dotted lines and a route could not follow one — which
-mattered, because "follow what is built" is one of the three positions the widget offers.
-At 50 m they are continuous and that route runs along them in clean right angles. The cost
-is four times the cells, 167,200, and the answer to that was a faster solver rather than a
-coarser map.
+**Cells started at 100 m and went to 50 and then to 33⅓, both times for the same reason.**
+Blocks of housing and farmland rasterise fine at any of these; everything linear does not.
+Road allowances, rail and watercourses are narrower than 100 m, so at that size they came
+out as dotted lines and a route could not follow one — which mattered, because "follow what
+is built" is one of the three positions the widget offers. At 50 m the main grid joined up
+and the lanes through the farmland still broke. At 33⅓ m the rural network is connected.
+
+376,200 cells, nine times the first attempt. The answer to that was never a coarser map; it
+was a faster solver and then a worker.
 
 ## How it computes
 
 Eight-neighbour Dijkstra. Stepping between two cells costs the mean of their two values
-times the distance between their centres — 50 m orthogonally, 50√2 m diagonally — which is
+times the distance between their centres — 33⅓ m orthogonally, 33⅓√2 m diagonally — which is
 what ArcGIS's Distance Accumulation does with a cost raster, and what the lab's numbers
 assume.
 
@@ -112,15 +114,25 @@ A candidate is rejected if more than 85% of its cells are already covered by som
 and the next candidate in that stage is tried. Without that, two routes at the 5% setting
 overlapped by 99% and drew as one line.
 
+**The whole solver runs in a worker**, built from a Blob at load out of a function that
+closes over nothing, so the widget stays one file. The main thread keeps the land, the
+numbers and the drawing, and never solves; it sends a cost table and, when the land has
+changed, a copy of it, and gets back a route and optionally a band. Moving it was the only
+way to keep a brush stroke at 60 frames a second once a solve reached 35 ms, which is two
+frames. The rule is `principles.md` section 4 and it took three resolutions to actually
+need it.
+
+The move had to change no answers, and the suite is what says it did not: 194 assertions,
+every recorded number identical before and after.
+
 **The queue is Dial's buckets, not a binary heap**, which is where the speed came from when
-the grid got four times finer. Each cell is filed in the bucket for its distance and the
+the grid first got finer. Each cell is filed in the bucket for its distance and the
 buckets are emptied in order, so a push and a pop are constant-time array operations rather
-than O(log n). Measured over these 167,200 cells: 28.9 ms with the heap, 13.5 ms with
-buckets.
+than O(log n). Measured over 167,200 cells at the time: 28.9 ms with the heap, 13.5 ms with buckets.
 
 Buckets are exact only while a bucket is no wider than the smallest possible step, which
-here is one cell of the cheapest land to the next: `VMIN × CELL`, and `VMIN` is 1, so 50 m
-is safe whatever a reader sets. Checked rather than assumed — against the heap, over five
+here is one cell of the cheapest land to the next: `VMIN × CELL`, and `VMIN` is 1, so one
+bucket per cell width is safe whatever a reader sets. Checked rather than assumed — against the heap, over five
 tables including all-equal and alternating extremes, all 167,200 accumulated costs came out
 identical. At twice that width, 42,528 cells disagreed.
 
@@ -138,35 +150,44 @@ it. They agree to the displayed precision in every case.
 
 | Numbers | Length | Route composition |
 |---|---|---|
-| The opening state | 23.3 km | 65% farmland, 19% industry, 5% open land |
-| Protect farmland | 26.9 km | 32% industry, 32% open land, 23% houses |
-| Follow what is built | 27.4 km | 67% road and rail, 25% open land, 5% industry |
-| Keep away from homes | 23.8 km | 31% farmland, 29% industry, 29% open land |
+| The opening state | 20.4 km | 57% farmland, 23% industry, 9% open land |
+| Protect farmland | 24.3 km | 35% road and rail, 33% open land, 28% industry |
+| Follow what is built | 24.5 km | 84% road and rail, 14% open land, 2% industry |
+| Keep away from homes | 22.9 km | 33% farmland, 29% open land, 26% industry |
 
 Tables, in the order farmland, houses, shops, industry, civic, parks, water, open, roads:
 
 ```
 The opening state      1  150  50  10  70  125  200  1  130
-Protect farmland     120   60  20  10  40  125  200  1  130
+Protect farmland     120   60  20  10  40  125  200  1   20
 Follow what is built  40  150  50  10  70  125  200  1    2
 Keep away from homes  10  200  60   5  80  100  150  1   60
 ```
+
+**"Protect farmland" prices road and rail at 20, not 130, and that was a correction.** A
+group trying to keep fields whole has no reason to avoid ground that is already a corridor
+and every reason to prefer it, so pricing corridors high was incoherent as a position. The
+number is a balance rather than a preference: pushing it lower stops the route being about
+farmland at all and turns it into "follow what is built". Measured overlap between the two
+routes as that number falls — 130: 2%, 60: 3%, 40: 31%, 20: **34%**, 10: 76%, 5: 92%. At 5
+they were the same proposal twice. There is a test guarding the gap.
 
 The opening state used to be a fourth preset called "Cheapest to build" and is not one any
 more. Nothing here is a construction cost and no land prices were looked up, so a button
 offering the cheapest build claimed something the widget cannot support. "Numbers back to the
 start" restores those numbers without naming them as a position anybody holds.
 
-**Accumulated cost at the plant, opening state: 342042.506987.** That figure is the anchor:
-it is identical under both queue implementations and is what a rebuild should reproduce
-first.
+**Accumulated cost at the plant, opening state: 316031.8685**, over a 499-cell route
+measuring 20.425 km. That figure is the anchor and a rebuild should reproduce it first. It
+was confirmed by a Python implementation sharing no code with the widget, agreeing to every
+printed digit, and is unchanged by the move into a worker.
 
 **Similar proposals**, opening state. The band areas:
 
 ```
-within 0.1% of the optimum    14.6 km²    4 routes drawn, longest 23.6 km   (+1%)
-within 1%                     40.8 km²    6 routes drawn, longest 26.7 km   (+15%)
-within 5%                     75.7 km²    6 routes drawn, longest 40.4 km   (+73%)
+within 0.1% of the optimum    11.4 km²    5 routes drawn, longest 20.9 km   (+3%)
+within 1%                     38.0 km²    5 routes drawn, longest 23.6 km   (+15%)
+within 5%                     72.0 km²    6 routes drawn, longest 30.3 km   (+48%)
 ```
 
 The "+" figures are how much further the longest alternative runs **on the ground** for that
@@ -202,21 +223,29 @@ worst case, for a route running at 22.5° to the grid, is **8.239%**. This corri
 close to 45°, where the error is smallest — which is itself the point, since the error is a
 property of the direction, not of the landscape.
 
-**Timing**, measured in the page, not in a harness. Over 167,200 cells: one solve plus a
-full repaint and DOM rebuild is 19 ms; turning the similar proposals on — two solves plus
-seven spreads plus the sampling — is 53 ms. During a brush stroke the median frame is
-16.7 ms and the 90th percentile is 18.9 ms, so painting holds 60 frames per second.
+**Timing**, measured in the page, not in a harness. During a brush stroke over 376,200
+cells: median frame 16.7 ms, 90th percentile 17.5, 99th 17.8, **zero frames over 25 ms**. A
+flat 60 frames a second for the whole stroke.
 
-Three things got it there, in the order they mattered. **The queue**, heap to buckets, 2×.
-**Painting and solving were separated**: repainting the land is 0.7 ms and solving is 13, so
-while a stroke is in progress the land follows the brush every frame and the route re-solves
-a few times a second, with a flush at the end so nothing stale settles. **The band caches
-against a model version** — keeping a proposal changes nothing about the model, and was
-paying for two solves anyway. That one alone took keeping a proposal from 180 ms to 19.
+Four things got it there, in the order they mattered.
 
-For scale: at 100 m with a heap, a band flush was 15 ms. At 50 m with buckets it is 53. Four
-times the data for three and a half times the work, and everything that happens during a
-drag is unchanged at 60 fps.
+**The queue**, binary heap to Dial's buckets, better than 2× and exact.
+
+**Painting was separated from solving.** Repainting the land is about a millisecond and
+solving is thirty-five, so the land follows the brush on every frame regardless.
+
+**The band caches against a model version.** Keeping a proposal changes nothing about the
+model and was paying for two solves anyway; that alone took it from 180 ms to 19.
+
+**Then the worker**, once a solve reached two frames and no amount of scheduling on one
+thread would hide it. Before the worker, at this resolution, 12 frames in 83 ran over 25 ms
+and a stroke averaged 52 fps. After it, none do.
+
+The cost of the worker is that nothing is synchronous any more. `whenSettled` replaced
+`flush`, and keeping a proposal now waits — usually for nothing, because the answer is
+already in — for a route that matches the numbers beside it rather than the previous ones.
+The first frame paints the land with the length still blank, which is better than a blank
+page and is noted in `drawReadout`.
 
 ## Why the choices are what they are
 

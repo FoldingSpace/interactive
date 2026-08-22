@@ -71,10 +71,21 @@ eikonal solver would quietly *change the answer*, because it approximates contin
 distance rather than the eight-direction lattice — losing the very artefact the widget
 teaches about in its length panel.
 
-**What is still on the table**, if a widget ever needs more: move the solve into a Web
-Worker. That does not make it faster, it makes the main thread never wait, which is what
-`principles.md` section 4 actually asks for. Not needed yet — the expensive path is 53 ms
-on a click, and everything that happens during a drag is inside a frame.
+**The Web Worker, which was on the table and is now in use.** It does not make anything
+faster; it stops the main thread waiting, which is what `principles.md` section 4 asks for.
+The trigger was measurable rather than aesthetic: at 376,200 cells a solve is about 35 ms,
+which is two frames, and no scheduling on one thread hides that — 12 frames in 83 ran long
+and a stroke averaged 52 fps. With the solver in a worker, none do.
+
+Two things worth copying from how it is wired. The worker body is a **function that closes
+over nothing**, stringified into a Blob at load, so the widget is still one file that works
+from `file://` and there is no second request. And the move had to change no answers, which
+is the sort of claim that needs a suite rather than a promise: 194 assertions, every
+recorded number identical either side of it.
+
+The cost is that nothing is synchronous any more, and that lands somewhere specific — the
+one place that needed an answer matching the numbers beside it rather than the previous
+ones. Find that place before moving a solver, not after.
 
 ## Platform features we do rely on
 

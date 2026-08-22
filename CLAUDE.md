@@ -125,6 +125,9 @@ where anyone reads past the fifth. Grouped now. Every one was paid for.
 - **Measure before optimising, and measure the alternative too.** Swapping a binary heap for
   a bucket queue more than halved a solve; a graph library and WebGPU were both considered
   and both would have been slower or less portable. See `libraries.md`.
+- **A worker is for when scheduling can no longer hide the work**, not for anything that
+  fits in a frame. It costs you every synchronous read, so find the place that needs a
+  settled answer before you move the solver, not after.
 - **Measure rather than eyeball** — layout, speed, and what a control actually demonstrates.
   Most real defects here were invisible until something was measured, and one control turned
   out to teach the opposite of its design intent.

@@ -87,6 +87,19 @@ function load(file, opts) {
     setTimeout: function (fn, ms) { timers.push(fn); return timers.length; },
     clearTimeout: function () {},
     URLSearchParams: URLSearchParams,
+    // A worker that runs the widget's real solver source, but delivers its replies through
+    // the same queue as setTimeout. Tests therefore have to flush to see a route, which is
+    // what a browser makes them wait a tick for too — the async ordering gets exercised
+    // rather than papered over.
+    Blob: function (parts) { this.source = parts.join(""); },
+    URL: { createObjectURL: function (b) { return b; }, revokeObjectURL: function () {} },
+    Worker: function (blob) {
+      var outer = this;
+      var scope = { onmessage: null, postMessage: function (d) { timers.push(function () { if (outer.onmessage) outer.onmessage({ data: d }); }); } };
+      vm.runInContext("(function(self){" + blob.source + "})", win)(scope);
+      this.postMessage = function (d) { scope.onmessage({ data: d }); };
+      this.terminate = function () {};
+    },
     PointerEvent: function (t, p) { return dom.makeEvent(t, p); },
     KeyboardEvent: function (t, p) { return dom.makeEvent(t, p); },
     Event: function (t, p) { return dom.makeEvent(t, p); },
@@ -114,7 +127,19 @@ function load(file, opts) {
   }
   function flushTimers() { var due = timers; timers = []; due.forEach(function (fn) { fn(); }); }
 
-  return { doc: doc, win: win, vars: vars, flushFrames: flushFrames, flushTimers: flushTimers, location: loc };
+  // Run frames and timers alternately until neither has anything left. Worker replies and
+  // the debounced URL write both arrive as timers, and a reply schedules a repaint, so a
+  // single pass of either is not enough.
+  function settle(limit) {
+    for (var i = 0; i < (limit || 40); i++) {
+      if (!frames.length && !timers.length) return;
+      flushFrames(1);
+      flushTimers();
+    }
+  }
+
+  return { doc: doc, win: win, vars: vars, flushFrames: flushFrames, flushTimers: flushTimers,
+           settle: settle, location: loc };
 }
 
 module.exports = { load: load, parseHTML: parseHTML, cssVars: cssVars };

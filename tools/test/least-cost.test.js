@@ -9,8 +9,8 @@ var L = require("./load.js");
 var dom = require("./dom.js");
 
 var FILE = path.join(__dirname, "..", "..", "web", "least-cost", "index.html");
-var W = 440, H = 380, CELL = 50, SUB = "48,103", DST = "300,360";
-var SCALE = 2;   // pixels per cell for the pretend canvas, so pointer maths is exact
+var W = 660, H = 570, CELL = 100 / 3, SUB = "73,154", DST = "450,540";
+var SCALE = 1;   // pixels per cell for the pretend canvas, so pointer maths is exact
 
 function open(search) {
   var w = L.load(FILE, { search: search || "" });
@@ -18,7 +18,7 @@ function open(search) {
   w.doc.querySelectorAll(".bar").forEach(function (b) {
     b._rect = { left: 0, top: 0, width: 200, height: 24 };
   });
-  w.flushFrames();
+  w.settle();
   return w;
 }
 function hex(s) {
@@ -72,9 +72,10 @@ function readDrawing(w) {
       whollyInBand: P.every(function (q) { return inBand[q.r * W + q.c] === 1; })
     };
   }
-  var heavy = lines.filter(function (p) { return p.getAttribute("stroke-width") === "3.8"; });
-  var thin = lines.filter(function (p) { return p.getAttribute("stroke-width") === "1.8"; });
+  var heavy = lines.filter(function (p) { return p.getAttribute("stroke-width") === "5.7"; });
+  var thin = lines.filter(function (p) { return p.getAttribute("stroke-width") === "2.7"; });
   return {
+    cells: heavy.length ? pts(heavy[0]).map(function (q) { return q.r * W + q.c; }) : [],
     best: heavy.length ? evaluate(pts(heavy[0])) : null,
     alts: thin.map(function (p) { return evaluate(pts(p)); }),
     bandCells: Array.prototype.reduce.call(inBand, function (a, v) { return a + v; }, 0)
@@ -89,7 +90,7 @@ function setValue(w, k, want) {
   while (+bar.getAttribute("aria-valuenow") !== want && guard++ < 600) {
     press(bar, +bar.getAttribute("aria-valuenow") < want ? "ArrowRight" : "ArrowLeft");
   }
-  w.flushFrames();
+  w.settle();
   return +bar.getAttribute("aria-valuenow");
 }
 function stroke(w, k, brush, x0, y0, x1, y1, steps) {
@@ -105,13 +106,13 @@ function stroke(w, k, brush, x0, y0, x1, y1, steps) {
   mb.dispatchEvent(ev("pointerdown", 0));
   for (var i = 1; i <= steps; i++) mb.dispatchEvent(ev("pointermove", i / steps));
   mb.dispatchEvent(ev("pointerup", 1));
-  w.flushFrames();
+  w.settle();
 }
 function bandOn(w, tol) {
   var btn = w.doc.getElementById("band");
   if (btn.getAttribute("aria-pressed") !== "true") btn.click();
   w.doc.querySelector('[data-tol="' + tol + '"]').click();
-  w.flushFrames();
+  w.settle();
 }
 
 // --- the tests -------------------------------------------------------------------------
@@ -124,29 +125,29 @@ module.exports = function (t) {
   // and re-record these, and read this comment while doing it.
   t("opens showing a route, and it is the recorded one", function (a) {
     var w = open();
-    a.equal(w.doc.getElementById("len").textContent, "23.3", "opening length");
+    a.equal(w.doc.getElementById("len").textContent, "20.4", "opening length");
     a.equal(w.doc.getElementById("mix").textContent,
-      "Crosses 65% farmland, 19% industry, 5% open land.", "opening composition");
+      "Crosses 57% farmland, 23% industry, 9% open land.", "opening composition");
     var d = readDrawing(w);
     a.equal(d.best.from, SUB, "route starts at the substation");
     a.equal(d.best.to, DST, "route ends at the plant");
     a.equal(d.best.illegal, 0, "every step is an eight-neighbour move");
-    a.close(d.best.km, 23.31, 0.01, "drawn length matches the model");
-    a.close(d.best.cost, 342042.5, 0.5, "drawn route re-costs to the recorded optimum");
+    a.close(d.best.km, 20.44, 0.02, "drawn length matches the model");
+    a.close(d.best.cost, 316031.87, 0.5, "drawn route re-costs to the recorded optimum");
   });
 
   t("the three presets give the recorded routes", function (a) {
     var w = open();
     var want = [
-      ["Protect farmland", "26.9", "Crosses 32% industry, 32% open land, 23% houses."],
-      ["Follow what is built", "27.4", "Crosses 67% road and rail, 25% open land, 5% industry."],
-      ["Keep away from homes", "23.8", "Crosses 31% farmland, 29% industry, 29% open land."]
+      ["Protect farmland", "24.3", "Crosses 35% road and rail, 33% open land, 28% industry."],
+      ["Follow what is built", "24.5", "Crosses 84% road and rail, 14% open land, 2% industry."],
+      ["Keep away from homes", "22.9", "Crosses 33% farmland, 29% open land, 26% industry."]
     ];
     var buttons = w.doc.querySelectorAll("#presets .act");
     a.equal(buttons.length, 3, "three presets, and none of them a cost claim");
     want.forEach(function (row, i) {
       a.equal(buttons[i].textContent, row[0], "preset " + i + " name");
-      buttons[i].click(); w.flushFrames();
+      buttons[i].click(); w.settle();
       a.equal(w.doc.getElementById("len").textContent, row[1], row[0] + " length");
       a.equal(w.doc.getElementById("mix").textContent, row[2], row[0] + " composition");
     });
@@ -213,16 +214,35 @@ module.exports = function (t) {
       });
     });
 
+  t("the two positions that use existing corridors stay distinguishable", function (a) {
+    // "Protect farmland" prices road and rail low, because a group keeping fields whole has
+    // no reason to avoid ground that is already a corridor. Priced too low it stops being
+    // about farmland and becomes "follow what is built"; at 5 the two shared 92% of their
+    // cells. This guards the gap.
+    function routeOf(i) {
+      var w = open();
+      w.doc.querySelectorAll("#presets .act")[i].click(); w.settle();
+      return readDrawing(w).cells;
+    }
+    var farm = routeOf(0), follow = routeOf(1);
+    var f = {}, shared = 0;
+    follow.forEach(function (u) { f[u] = 1; });
+    farm.forEach(function (u) { if (f[u]) shared++; });
+    var pct = Math.round(100 * shared / farm.length);
+    a.ok(pct < 60, "the two routes share " + pct + "% of their cells, which is under 60");
+    a.ok(pct > 5, "and more than 5%, so farmland is still using corridors where they help");
+  });
+
   t("a kept proposal records the route that matches the numbers beside it", function (a) {
     var w = open();
-    w.doc.querySelectorAll("#presets .act")[0].click(); w.flushFrames();
-    w.doc.getElementById("pin").click(); w.flushFrames();
+    w.doc.querySelectorAll("#presets .act")[0].click(); w.settle();
+    w.doc.getElementById("pin").click(); w.settle();
     var first = w.doc.querySelector(".pin .stats").textContent;
-    a.ok(/^26\.9 km/.test(first), "the kept card carries the route it was kept from: " + first);
-    w.doc.querySelectorAll("#presets .act")[1].click(); w.flushFrames();
-    w.doc.getElementById("pin").click(); w.flushFrames();
+    a.ok(/^24\.3 km/.test(first), "the kept card carries the route it was kept from: " + first);
+    w.doc.querySelectorAll("#presets .act")[1].click(); w.settle();
+    w.doc.getElementById("pin").click(); w.settle();
     var cards = w.doc.querySelectorAll(".pin .stats").map(function (e) { return e.textContent; });
-    a.ok(/^26\.9 km/.test(cards[0]) && /^27\.4 km/.test(cards[1]),
+    a.ok(/^24\.3 km/.test(cards[0]) && /^24\.5 km/.test(cards[1]),
       "two kept proposals stay distinct: " + cards.join(" | "));
     var names = w.doc.querySelectorAll(".pin input").map(function (e) { return e.getAttribute("value") || e.value; });
     a.equal(names[0], "Protect farmland", "a preset supplies the name it was loaded under");
@@ -230,16 +250,16 @@ module.exports = function (t) {
 
   t("a link carries the numbers and the kept proposals", function (a) {
     var w = open();
-    w.doc.querySelectorAll("#presets .act")[0].click(); w.flushFrames();
-    w.doc.getElementById("pin").click(); w.flushFrames();
-    w.flushTimers();
+    w.doc.querySelectorAll("#presets .act")[0].click(); w.settle();
+    w.doc.getElementById("pin").click(); w.settle();
+    w.settle();
     var url = w.location.search;
-    a.ok(url.indexOf("c=120.60.20.10.40.125.200.1.130") > 0, "the numbers are in the link");
+    a.ok(url.indexOf("c=120.60.20.10.40.125.200.1.20") > 0, "the numbers are in the link");
     a.ok(url.indexOf("k=") > 0, "the kept proposal is in the link");
     var back = open(url);
-    a.equal(back.doc.getElementById("len").textContent, "26.9", "reopening restores the route");
+    a.equal(back.doc.getElementById("len").textContent, "24.3", "reopening restores the route");
     a.equal(back.doc.querySelectorAll(".pin").length, 1, "reopening restores the kept proposal");
-    a.equal(back.doc.querySelector(".pin .stats").textContent.slice(0, 7), "26.9 km",
+    a.equal(back.doc.querySelector(".pin .stats").textContent.slice(0, 7), "24.3 km",
       "the restored proposal carries its route");
   });
 
@@ -252,10 +272,10 @@ module.exports = function (t) {
     w.doc.querySelector('.swatch[data-k="1"]').click();
     a.equal(w.doc.body.dataset.hinting, "0", "the hint goes once anything is armed");
     a.equal(w.doc.getElementById("mapbox").dataset.armed, "1", "arming a class arms the map");
-    w.doc.getElementById("reset").click(); w.flushFrames();
+    w.doc.getElementById("reset").click(); w.settle();
     a.equal(w.doc.body.dataset.hinting, "1", "reset offers it again");
     a.equal(w.doc.getElementById("mapbox").dataset.armed, "0", "reset disarms");
-    a.equal(w.doc.getElementById("len").textContent, "23.3", "reset returns the opening route");
+    a.equal(w.doc.getElementById("len").textContent, "20.4", "reset returns the opening route");
   });
 
   t("nothing on the page claims these numbers were measured", function (a) {

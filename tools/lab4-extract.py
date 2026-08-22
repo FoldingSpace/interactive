@@ -18,11 +18,12 @@ Why these choices, since none of them are forced:
            side for a route to wander. Entirely inside Metro Vancouver, so there are no
            holes, and clear of every reserve and treaty boundary in the region's
            Jurisdiction field.
-  Cells    50 m. It began at 100 m, which was fine for the blocks of housing and farmland
-           and wrong for everything linear: road allowances, rail and watercourses are
-           narrower than that, so they came out as dotted lines and a route could not
-           follow one. Halving the cell quadruples the count to 167200, which still solves
-           inside an animation frame.
+  Cells    33 1/3 m, chosen so that 660 cells is exactly the 22 km width. It began at
+           100 m, which was fine for blocks of housing and farmland and wrong for
+           everything linear: road allowances, rail and watercourses are narrower than
+           that, so they rasterised into dotted lines and a route could not follow one. At
+           50 m the main grid joined up but the lanes through the farmland still broke.
+           At 33 1/3 m the rural network is connected. 376200 cells.
   Classes  Metro Vancouver's 29 codes grouped into 8. The grouping is a claim and is
            printed in the widget.
 """
@@ -34,7 +35,8 @@ gdal.UseExceptions(); ogr.UseExceptions()
 SERVICE = ("https://services6.arcgis.com/56eqCzQ5SZhBaDST/arcgis/rest/services/"
            "Landuse_2016___Code_Description_No_Outlines/FeatureServer/1/query")
 
-X0, Y1, CELL, W, H = 504000, 5447500, 50, 440, 380
+X0, Y1, W, H = 504000, 5447500, 660, 570
+CELL = 100.0 / 3          # 33 1/3 m: 660 x 33 1/3 is exactly the 22 km window
 
 # Class 0 is unused: it means "no land use polygon here", and the window has none.
 CLASSES = [
