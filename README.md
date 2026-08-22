@@ -27,12 +27,13 @@ install.
   about what dealing with them does not fix.
 
 - [**Least cost, whose cost?**](https://foldingspace.github.io/interactive/least-cost/)
-  — a power line has to reach a new plant, and the route it takes is decided by eight numbers
-  nobody measured. Set what it costs to cross farmland, houses, parks or water and the line
-  moves; draw a park where there was none and it moves again. Keep a route and it carries the
-  table that produced it, so a set of proposals can be compared with their reasons attached.
-  A near-tie control shades every route that would cost almost the same, because the single
-  confident line is the method's most misleading habit.
+  — a power line has to reach a new plant, and the route it takes is decided by nine numbers
+  nobody measured. Say what crossing farmland, houses, parks or water is worth avoiding and
+  the line moves; draw a park where there was none and it moves again. Keep a route and it
+  carries the table that produced it, so a set of proposals can be compared with their reasons
+  attached. One control draws six more routes the same numbers score almost the same, because
+  the single confident line is the method's most misleading habit — at the tightest setting
+  one of them shares barely a third of its length with the answer and costs no more.
 
 ## How they are built
 

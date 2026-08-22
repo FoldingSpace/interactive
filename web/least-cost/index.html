@@ -119,6 +119,15 @@ legend { padding: 0 calc(0.3rem * var(--ui)); color: var(--ink-soft); font-size:
 }
 .swatch i { width: calc(1.1rem * var(--ui)); height: calc(1.1rem * var(--ui)); flex: none; border: 1px solid var(--edge); border-radius: calc(0.2rem * var(--ui)); }
 .swatch[aria-pressed="true"] { border-color: var(--focus); background: var(--panel); font-weight: 650; }
+/* The suggested row, before anything has been armed. Dashed so it cannot be mistaken for
+   the armed state above, which is solid. It goes away the first time anything is armed. */
+body[data-hinting="1"] .swatch[data-hint="1"] { border-style: dashed; border-color: var(--ink-soft); }
+body[data-hinting="1"] .swatch[data-hint="1"]::after {
+  content: "draw"; font-size: calc(0.72rem * var(--ui)); font-style: italic;
+  color: var(--ink-soft); margin-left: calc(0.25rem * var(--ui));
+}
+body:not([data-hinting="1"]) .drawhint b { font-weight: inherit; }
+.drawhint { margin: 0 0 calc(0.35rem * var(--ui)); color: var(--ink-soft); font-size: calc(0.9rem * var(--ui)); }
 .bar {
   position: relative; height: calc(1.5rem * var(--ui)); background: var(--panel);
   border: 1px solid var(--edge); border-radius: calc(0.25rem * var(--ui));
@@ -141,6 +150,14 @@ legend { padding: 0 calc(0.3rem * var(--ui)); color: var(--ink-soft); font-size:
 
 /* ---- buttons ------------------------------------------------------------- */
 .row { display: flex; flex-wrap: wrap; gap: calc(0.4rem * var(--ui)); }
+/* Keeping a route and looking at the alternatives to it are different kinds of act, and
+   sat in one row they read as a set of four equal buttons. */
+.row.apart {
+  margin-top: calc(0.9rem * var(--ui));
+  padding-top: calc(0.9rem * var(--ui));
+  border-top: 1px solid var(--edge);
+  align-items: center;
+}
 .act {
   font: inherit; font-size: calc(0.93rem * var(--ui));
   min-height: calc(2.4rem * var(--ui));
@@ -221,9 +238,9 @@ body[data-present="1"] .help-panel { display: none; }
 
   <h1>Least cost, whose cost?</h1>
   <p class="intro">A power line has to get from a substation in Surrey to a new plant at
-    Campbell Heights. The numbers below set how much it costs to cross each kind of land.
-    Nobody measured them; somebody chose them. Change them and the route moves. Keep the
-    routes you want to compare.</p>
+    Campbell Heights. The numbers below say how much this scenario is willing to spend to
+    avoid each kind of land. Nobody measured them; somebody chose them. Change them and the
+    route moves. Keep the routes you want to compare.</p>
 
   <div class="main">
 
@@ -266,25 +283,34 @@ body[data-present="1"] .help-panel { display: none; }
 
       <div class="row">
         <button class="act go" id="pin">Keep this proposal</button>
-        <button class="act" id="band" aria-pressed="false">Show near ties</button>
-        <span class="row" id="bandopts" hidden role="group" aria-label="How close counts as a tie">
+      </div>
+
+      <div class="row apart">
+        <button class="act" id="band" aria-pressed="false">Show similar proposals</button>
+        <span class="row" id="bandopts" hidden role="group" aria-label="How close a proposal has to be">
           <button class="act" data-tol="0.001">0.1%</button>
           <button class="act" data-tol="0.01">1%</button>
           <button class="act" data-tol="0.05">5%</button>
         </span>
-        <button class="info" data-info="info-band" aria-expanded="false" aria-controls="info-band" title="What are near ties?">i</button>
+        <button class="info" data-info="info-band" aria-expanded="false" aria-controls="info-band" title="What are similar proposals?">i</button>
       </div>
       <div class="help-panel" id="info-band" hidden>
-        <p>The line on the map is the cheapest route. It is not the only cheap one. This
-          control keeps the land that a route could cross while still costing almost the
-          same, and fades everything else.</p>
-        <p>The band is usually wide. Turn it on and read the area printed beside the
-          length: tens of square kilometres of land can carry a route costing within one
-          part in a thousand of the cheapest. Software draws one line and gives no sign
-          that the rest of the band is there.</p>
-        <p>The routes are found the same way twice: costs are added up outward from the
-          substation, then outward from the plant. Add the two together and each cell holds
-          the cost of the best route that goes through it.</p>
+        <p>The heavy line is the best route these numbers can produce. It is not the only
+          good one. This control draws six more routes that the same numbers score almost
+          the same, and shades the land any of them could use.</p>
+        <p>The thin routes are real answers, not sketches. Each one is the best route that
+          goes through some particular place, and each is within the percentage you choose
+          of the heavy line. They are picked to be as far apart as the shading allows, so
+          you see the range rather than six versions of the same line.</p>
+        <p>How they are found: costs are added up outward from the substation, then outward
+          from the plant. Add the two surfaces and every cell holds the cost of the best
+          route passing through it, which is all you need to draw one.</p>
+        <p>Set it to 0.1% and one of the thin routes shares barely a third of its length
+          with the heavy one and costs the same, to within a thousandth of one per cent.
+          That is not a near miss. It is a tie, and the software picked between them
+          without telling you.</p>
+        <p>Software normally shows the heavy line and nothing else. Read the area printed
+          beside the length to see how much room the alternatives have.</p>
         <p class="refs"><b>For more, see:</b> Pinto, N. and Keitt, T. H. 2009. Beyond the
           least-cost path: evaluating corridor redundancy using a graph-theoretic approach.
           <i>Landscape Ecology</i> 24, 253&ndash;266.</p>
@@ -293,24 +319,31 @@ body[data-present="1"] .help-panel { display: none; }
 
     <div class="chart">
       <fieldset>
-        <legend>What it costs to cross
+        <legend>Current scenario assumes we have the following values (and/or costs):
           <button class="info" data-info="info-cost" aria-expanded="false" aria-controls="info-cost" title="Where do these numbers come from?">i</button>
         </legend>
+        <p class="drawhint" id="drawhint">Drag a bar to change a number. Or tap the name of
+          a kind of land and then draw more of it onto the map &mdash; try
+          <b>parks and protected</b>.</p>
         <div id="rows"></div>
         <div class="axis" aria-hidden="true"><span>1</span><span>10</span><span>100</span><span>200</span></div>
         <div class="help-panel" id="info-cost" hidden>
-          <p>Each number says how much harder that kind of land is to cross than the
-            cheapest kind. Open land is 1, so a number of 150 means a metre through houses
-            costs as much as 150 metres of open land.</p>
+          <p>Each number says how hard this scenario is trying to stay off that kind of
+            land, against the kind it minds least. Open land is 1, so a number of 150 means
+            a metre through houses is treated as being worth 150 metres of open land.</p>
+          <p>These are not construction costs and nobody looked up any land prices. They
+            stand in for whatever mixture of money, damage, objection and principle a
+            particular group is weighing, which is why the page keeps asking whose numbers
+            these are.</p>
           <p>Only the ratios matter. Double every number and the route does not move.</p>
           <p>The bars are spaced so that doubling a number always moves the bar the same
             distance, whether it is 1 to 2 or 100 to 200. That is why 1, 10 and 100 sit
             evenly along the bottom.</p>
-          <p>The opening numbers are the ones a textbook exercise uses for this kind of
-            problem: open land 1, industry 10, shops 50, civic buildings 70, parks 125,
-            houses 150, water 200. That exercise has no class for farmland at all, so its
-            farmland falls in with open land at 1. Roads and rail start high here, not
-            because that is right, but so that lowering them shows you something.</p>
+          <p>The opening numbers come from a textbook exercise on this kind of problem:
+            open land 1, industry 10, shops 50, civic buildings 70, parks 125, houses 150,
+            water 200. That exercise has no class for farmland at all, so its farmland falls
+            in with open land at 1. Roads and rail start high here, not because that is
+            right, but so that lowering them shows you something.</p>
         </div>
       </fieldset>
 
@@ -320,18 +353,18 @@ body[data-present="1"] .help-panel { display: none; }
         </legend>
         <div class="row" id="presets" role="group" aria-label="Example sets of numbers"></div>
         <div class="help-panel" id="info-preset" hidden>
-          <p>Four sets of numbers, each one a position somebody could hold. None of them
-            is the right answer. Load one, look at where the line goes, then decide whether
-            you would defend it.</p>
+          <p>Three sets of numbers, each one a position somebody could hold. None of them
+            is the right answer, and the numbers the page opens on are not one either. Load
+            one, look at where the line goes, then decide whether you would defend it.</p>
           <p>Watch what &ldquo;keep away from homes&rdquo; does. It barely moves the line,
-            because the cheapest route was already avoiding houses. A value you state
-            loudly can still change nothing, and that depends on the land, not on how
-            strongly you feel.</p>
+            because the opening route was already avoiding houses. A value you state loudly
+            can still change nothing, and that depends on the land, not on how strongly you
+            feel.</p>
         </div>
       </fieldset>
 
       <div class="row" style="margin-top: calc(0.6rem * var(--ui))">
-        <button class="act" id="resetcost">Costs back to the start</button>
+        <button class="act" id="resetcost">Numbers back to the start</button>
         <button class="act" id="resetmap">Land back to the real map</button>
       </div>
       <div class="row" style="margin-top: calc(0.4rem * var(--ui))">
@@ -423,12 +456,17 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
   // checked against a separate Python implementation; the numbers are in
   // docs/widgets/least-cost.md.
   var PRESETS = [
-    { name: "Cheapest to build",    t: { 1: 1,   2: 150, 3: 50, 4: 10, 5: 70, 6: 125, 7: 200, 8: 1, 9: 130 } },
     { name: "Protect farmland",     t: { 1: 120, 2: 60,  3: 20, 4: 10, 5: 40, 6: 125, 7: 200, 8: 1, 9: 130 } },
     { name: "Follow what is built", t: { 1: 40,  2: 150, 3: 50, 4: 10, 5: 70, 6: 125, 7: 200, 8: 1, 9: 2   } },
     { name: "Keep away from homes", t: { 1: 10,  2: 200, 3: 60, 4: 5,  5: 80, 6: 100, 7: 150, 8: 1, 9: 60  } }
   ];
   var suggested = "";
+  // One row is marked on arrival so that drawing is discoverable at a glance. Parks,
+  // because "what if this were protected?" is the move a reader is most likely to want,
+  // and because a park drawn across a corridor changes the route visibly. The row is
+  // marked, not armed: arming would make the map swallow pointer events before anyone
+  // asked it to, which on a phone means the page stops scrolling.
+  var HINT = 6, hinting = true;
   var MAXPIN = 5;
   var PINCOL = [], PINTEXT = [];   // read from CSS in readColours()
   var LIVECOL = "#111111";
@@ -508,7 +546,7 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
   // A cell can sit in the heap more than once, so the settled flag is what stops it
   // being expanded twice. Reading the key off the heap instead would use a stale value.
   var acc1 = new Float64Array(N), acc2 = new Float64Array(N);
-  var backA = new Int32Array(N), done = new Uint8Array(N);
+  var backA = new Int32Array(N), backB = new Int32Array(N), done = new Uint8Array(N);
   function dijkstra(src, acc, back) {
     var j;
     for (j = 0; j < N; j++) { acc[j] = Infinity; done[j] = 0; }
@@ -544,16 +582,92 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
     return { m: m, mix: mix, n: p.length };
   }
 
+  // The cheapest route through a given cell is the cheapest way in from the substation
+  // followed by the cheapest way out to the plant, which is exactly what the two solves
+  // already hold. So any cell in the band names a real route, and its cost is the sum of
+  // the two surfaces there.
+  function routeThrough(v) {
+    var head = tracePath(backA, v), tail = tracePath(backB, v), j;
+    for (j = tail.length - 2; j >= 0; j--) head.push(tail[j]);
+    return head;
+  }
+
+  // Spread outward from the best route, carrying how far each cell is from it and which
+  // part of it that cell is nearest to. A cell in the band then answers two questions at
+  // once: how big a departure it represents, and where along the journey it departs.
+  var bfsQ = new Int32Array(N), bfsD = new Int32Array(N), bfsL = new Int32Array(N);
+  function spreadFromPath(path) {
+    var head = 0, tail = 0, j, u, ur, uc, k, vr, vc, v;
+    for (j = 0; j < N; j++) { bfsD[j] = -1; bfsL[j] = -1; }
+    for (j = 0; j < path.length; j++) {
+      u = path[j];
+      if (bfsD[u] < 0) { bfsD[u] = 0; bfsL[u] = j; bfsQ[tail++] = u; }
+    }
+    while (head < tail) {
+      u = bfsQ[head++]; ur = (u / W) | 0; uc = u - ur * W;
+      for (k = 0; k < 8; k++) {
+        vr = ur + DR[k]; vc = uc + DC[k];
+        if (vr < 0 || vr >= H || vc < 0 || vc >= W) continue;
+        v = vr * W + vc;
+        if (bfsD[v] < 0) { bfsD[v] = bfsD[u] + 1; bfsL[v] = bfsL[u]; bfsQ[tail++] = v; }
+      }
+    }
+  }
+
+  var ALTS = 6;        // how many to draw
+  var MINOFF = 2;      // a departure has to beat this many cells to be worth drawing
+  var SHARE = 0.85;    // above this much overlap it is the same line drawn twice
+  var TRIES = 6;       // how far down a stage's candidates to look for something distinct
+
+  // One alternative per stage of the journey, each the biggest departure available in that
+  // stage. Taking the six biggest departures overall instead gives six variations on the
+  // same bulge, because the band is widest in one place and every pick lands there.
+  //
+  // Within a stage the biggest departure is not always usable: it can reach the same place
+  // by the same route as one already drawn, and two lines on top of each other read as one.
+  // So candidates are tried in order until one is far enough from everything drawn.
+  var usedCells = new Uint8Array(N);
+  function overlap(path) {
+    var hit = 0, j;
+    for (j = 0; j < path.length; j++) if (usedCells[path[j]]) hit++;
+    return hit / path.length;
+  }
+  function markUsed(path) {
+    for (var j = 0; j < path.length; j++) usedCells[path[j]] = 1;
+  }
+  function samplePaths(mask, best) {
+    var out = [], i, j, lo, hi, L = best.length, cand, t, p;
+    spreadFromPath(best);
+    usedCells.fill(0);
+    markUsed(best);
+    for (i = 0; i < ALTS; i++) {
+      lo = ((i * L / ALTS) | 0); hi = (((i + 1) * L / ALTS) | 0);
+      cand = [];
+      for (j = 0; j < N; j++) {
+        if (!mask[j] || bfsL[j] < lo || bfsL[j] >= hi || bfsD[j] <= MINOFF) continue;
+        cand.push(j);
+      }
+      cand.sort(function (a, b) { return bfsD[b] - bfsD[a]; });
+      for (t = 0; t < cand.length && t < TRIES; t++) {
+        p = routeThrough(cand[t]);
+        if (overlap(p) <= SHARE) { out.push(p); markUsed(p); break; }
+      }
+    }
+    return out;
+  }
+
   function recompute(withBand) {
     fillCost();
     dijkstra(SUB, acc1, backA);
     var path = tracePath(backA, DST), st = pathStats(path);
     solved = { path: path, m: st.m, mix: st.mix, n: st.n, total: acc1[DST] };
     if (bandOn && withBand) {
-      dijkstra(DST, acc2, null);
+      dijkstra(DST, acc2, backB);
       var lim = acc1[DST] * (1 + bandTol), mask = new Uint8Array(N), count = 0, j;
       for (j = 0; j < N; j++) if (acc1[j] + acc2[j] <= lim) { mask[j] = 1; count++; }
-      bandMask = { mask: mask, count: count };
+      var alts = samplePaths(mask, path), longest = 0, ai;
+      for (ai = 0; ai < alts.length; ai++) longest = Math.max(longest, pathStats(alts[ai]).m);
+      bandMask = { mask: mask, count: count, paths: alts, longest: longest };
     } else if (!bandOn) {
       bandMask = null;
     }
@@ -598,9 +712,9 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
       if (m && !m[j]) {
         // Outside the band, fade towards the page. Nothing inside it is recoloured, so
         // the band is the map at full strength and the rest is turned down.
-        px[k]     = c[0] + (dimRGB[0] - c[0]) * 0.72;
-        px[k + 1] = c[1] + (dimRGB[1] - c[1]) * 0.72;
-        px[k + 2] = c[2] + (dimRGB[2] - c[2]) * 0.72;
+        px[k]     = c[0] + (dimRGB[0] - c[0]) * 0.62;
+        px[k + 1] = c[1] + (dimRGB[1] - c[1]) * 0.62;
+        px[k + 2] = c[2] + (dimRGB[2] - c[2]) * 0.62;
       } else { px[k] = c[0]; px[k + 1] = c[1]; px[k + 2] = c[2]; }
       px[k + 3] = 255;
     }
@@ -647,6 +761,13 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
   function paintOverlay() {
     ov.textContent = "";
     var j;
+    if (bandOn && bandMask && bandMask.paths) {
+      for (j = 0; j < bandMask.paths.length; j++) {
+        ov.appendChild(el("polyline", { points: pointString(bandMask.paths[j]), fill: "none",
+          stroke: LIVECOL, "stroke-width": "0.9", "stroke-linejoin": "round",
+          "stroke-linecap": "round", opacity: "0.55" }));
+      }
+    }
     for (j = 0; j < pins.length; j++) {
       if (j === focusPin) continue;                    // drawn last, so it sits on top
       ov.appendChild(routeLine(pins[j].path, PINCOL[j % PINCOL.length], false, focusPin >= 0));
@@ -687,6 +808,7 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
       sw.setAttribute("aria-pressed", "false");
       sw.dataset.k = cl.k;
       sw.title = "Draw " + cl.name.toLowerCase() + " on the map";
+      if (cl.k === HINT) sw.dataset.hint = "1";
       t = document.createElement("i"); sw.appendChild(t);
       sw.appendChild(document.createTextNode(cl.name));
       swatches[cl.k] = sw;
@@ -695,7 +817,7 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
       bar.className = "bar"; bar.dataset.k = cl.k;
       bar.setAttribute("role", "slider");
       bar.setAttribute("tabindex", "0");
-      bar.setAttribute("aria-label", "Cost to cross " + cl.name.toLowerCase());
+      bar.setAttribute("aria-label", "How much this scenario avoids " + cl.name.toLowerCase());
       bar.setAttribute("aria-valuemin", String(VMIN));
       bar.setAttribute("aria-valuemax", String(VMAX));
       fill = document.createElement("span"); bar.appendChild(fill);
@@ -721,7 +843,7 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
       bars[cl.k].fill.style.width = (frac(v) * 100) + "%";
       bars[cl.k].fill.style.background = cssCol[cl.k];
       bars[cl.k].bar.setAttribute("aria-valuenow", String(v));
-      bars[cl.k].bar.setAttribute("aria-valuetext", v + " times the cheapest land");
+      bars[cl.k].bar.setAttribute("aria-valuetext", v + ", where the least avoided land is 1");
       vals[cl.k].textContent = String(v);
       swatches[cl.k].firstChild.style.background = cssCol[cl.k];
       swatches[cl.k].setAttribute("aria-pressed", armed === cl.k ? "true" : "false");
@@ -746,9 +868,13 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
   function drawReadout() {
     lenEl.textContent = (solved.m / 1000).toFixed(1);
     var s = "Crosses " + mixText(solved.mix, solved.n, 3) + ".";
-    if (bandOn && bandMask) {
-      s += " A route within " + (bandTol * 100) + "% of this one could cross "
-        + (bandMask.count * CELL * CELL / 1e6).toFixed(1) + " km² of the map.";
+    if (bandOn && bandMask && bandMask.paths.length) {
+      s += " " + bandMask.paths.length + " other routes are drawn thin. The longest is "
+        + (bandMask.longest / 1000).toFixed(1) + " km, "
+        + Math.round(100 * (bandMask.longest / solved.m - 1)) + "% further, for under "
+        + (bandTol * 100) + "% more cost. Any route in the shaded "
+        + (bandMask.count * CELL * CELL / 1e6).toFixed(1) + " km² is within "
+        + (bandTol * 100) + "% too.";
     }
     mixEl.innerHTML = "";
     mixEl.appendChild(document.createTextNode(s));
@@ -983,6 +1109,7 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
   var mapbox = document.getElementById("mapbox"), armbar = document.getElementById("armbar");
   var armname = document.getElementById("armname");
   function arm(k) {
+    if (k && hinting) { hinting = false; document.body.dataset.hinting = "0"; }
     armed = k;
     mapbox.dataset.armed = k ? "1" : "0";
     armbar.hidden = !k;
@@ -1111,19 +1238,19 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
       + className(land[cursor]).toLowerCase() + ".");
   });
 
-  // ---- near ties -----------------------------------------------------------
+  // ---- similar proposals ---------------------------------------------------
   var bandBtn = document.getElementById("band"), bandOpts = document.getElementById("bandopts");
   function setBand(on, announce) {
     bandOn = on;
     bandBtn.setAttribute("aria-pressed", on ? "true" : "false");
-    bandBtn.textContent = on ? "Hide near ties" : "Show near ties";
+    bandBtn.textContent = on ? "Hide similar proposals" : "Show similar proposals";
     bandOpts.hidden = !on;
     bandOpts.querySelectorAll("[data-tol]").forEach(function (b) {
       b.setAttribute("aria-pressed", +b.dataset.tol === bandTol ? "true" : "false");
     });
     render(true);
-    if (announce) say(on ? "Showing every route within " + (bandTol * 100) + "% of the cheapest."
-                        : "Near ties hidden.");
+    if (announce) say(on ? "Showing other routes within " + (bandTol * 100) + "% of this one."
+                        : "Similar proposals hidden.");
   }
   bandBtn.addEventListener("click", function () { setBand(!bandOn, true); });
   bandOpts.querySelectorAll("[data-tol]").forEach(function (b) {
@@ -1148,7 +1275,7 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
   });
   document.getElementById("resetcost").addEventListener("click", function () {
     CLASSES.forEach(function (cl) { cost[cl.k] = START[cl.k]; });
-    suggested = ""; drawRows(); render(true); say("Costs back to the start.");
+    suggested = ""; drawRows(); render(true); say("Numbers back to the start.");
   });
   document.getElementById("resetmap").addEventListener("click", function () {
     land.set(base); render(true); say("Land back to the real map.");
@@ -1157,6 +1284,9 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
     land.set(base);
     CLASSES.forEach(function (cl) { cost[cl.k] = START[cl.k]; });
     pins = []; suggested = ""; arm(0); setBand(false, false); bandTol = 0.01;
+    // Reset means the opening state, and the opening state includes the hint that drawing
+    // exists. A student who resets should see what a student who just arrived sees.
+    hinting = true; document.body.dataset.hinting = "1";
     drawRows(); render(true); drawPins(); say("Back to the start.");
   });
 
@@ -1224,6 +1354,7 @@ var GRID = "77777449444444777774444499922992652262222299992569922222229266299666
   armbar.querySelectorAll("[data-brush]").forEach(function (b) {
     b.setAttribute("aria-pressed", +b.dataset.brush === brush ? "true" : "false");
   });
+  document.body.dataset.hinting = "1";
   setPresent(present);
   setBand(wantBand, false);
   drawPins();

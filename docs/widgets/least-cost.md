@@ -79,10 +79,30 @@ times the distance between their centres — 100 m orthogonally, 100√2 m diago
 what ArcGIS's Distance Accumulation does with a cost raster, and what the lab's numbers
 assume.
 
-The near-tie band runs the same solve twice, outward from the substation and outward from
-the plant, and adds the surfaces. Each cell then holds the cost of the cheapest route that
+The similar proposals run the same solve twice, outward from the substation and outward from
+the plant, and add the surfaces. Each cell then holds the cost of the cheapest route that
 passes through it; cells within the tolerance of the optimum are the band. This is Pinto and
-Keitt's Conditional Minimum Transit Cost.
+Keitt's Conditional Minimum Transit Cost. Because both solves keep their back-pointers, any
+band cell also *names* a route — the cheapest way in, then the cheapest way out — so drawing
+an alternative costs nothing beyond a trace.
+
+**Choosing which alternatives to draw took two attempts, and the first was wrong.** Taking
+the six band cells furthest from the best route gave six versions of the same bulge, because
+the band is much wider in one place than anywhere else and every pick landed there; rendered
+at full size they hugged the answer and taught nothing. The second attempt spreads outward
+from the best route carrying *which point of it* each cell is nearest to, then takes one
+alternative per sixth of the journey. Each one then departs at a different stage.
+
+A wrong turn worth recording: the first version of that staged the journey by accumulated
+*cost*, `accA / accA[DST]`. That fails badly here. Cost accumulates fast through the
+expensive industrial edge near the plant, so nine tenths of the cost is spent on a short
+stretch and the entire wide part of the band falls into the last tenth. Measured by tenths
+of cost, the furthest cell from the route ran 4, 5, 1, 1, 0, 0, 0, 0, 0 and then 24. Stage by
+position along the route, not by cost spent.
+
+A candidate is rejected if more than 85% of its cells are already covered by something drawn,
+and the next candidate in that stage is tried. Without that, two routes at the 5% setting
+overlapped by 99% and drew as one line.
 
 A binary heap on typed arrays, with a settled flag rather than a decrease-key. A cell can be
 pushed more than once; the flag is what stops it being expanded twice. Reading the key off
@@ -94,11 +114,11 @@ Every figure below was produced by the widget in the browser **and** by an indep
 Python implementation (GDAL for the raster, `heapq` for the search) that shares no code with
 it. They agree to the displayed precision in every case.
 
-**The four presets**, on the unedited map:
+**The opening state and the three presets**, on the unedited map:
 
-| Preset | Length | Route composition |
+| Numbers | Length | Route composition |
 |---|---|---|
-| Cheapest to build | 19.9 km | 56% farmland, 25% industry, 8% open land |
+| The opening state | 19.9 km | 56% farmland, 25% industry, 8% open land |
 | Protect farmland | 26.3 km | 32% open land, 30% industry, 21% houses |
 | Follow what is built | 28.1 km | 65% road and rail, 21% open land, 8% industry |
 | Keep away from homes | 20.1 km | 50% farmland, 29% industry, 11% open land |
@@ -106,11 +126,16 @@ it. They agree to the displayed precision in every case.
 Tables, in the order farmland, houses, shops, industry, civic, parks, water, open, roads:
 
 ```
-Cheapest to build      1  150  50  10  70  125  200  1  130     (also the opening state)
+The opening state      1  150  50  10  70  125  200  1  130
 Protect farmland     120   60  20  10  40  125  200  1  130
 Follow what is built  40  150  50  10  70  125  200  1    2
 Keep away from homes  10  200  60   5  80  100  150  1   60
 ```
+
+The opening state used to be a fourth preset called "Cheapest to build" and is not one any
+more. Nothing here is a construction cost and no land prices were looked up, so a button
+offering the cheapest build claimed something the widget cannot support. "Numbers back to the
+start" restores those numbers without naming them as a position anybody holds.
 
 **Other checked cases**, all against Python:
 
@@ -121,7 +146,7 @@ houses 20, rest at start           19.7 km   57% farmland, 21% industry
 accumulated cost, opening state    300320.8
 ```
 
-**Near-tie band**, opening state:
+**Similar proposals**, opening state. The band areas:
 
 ```
 within 0.1% of the optimum    1322 cells    13.2 km²
@@ -129,6 +154,32 @@ within 1%                     4198 cells    42.0 km²
 within 5%                     7625 cells    76.3 km²   (Python prints 76.2; same 7625 cells,
                                                          the two languages round 76.25 apart)
 ```
+
+The drawn routes, and how much longer they run on the ground than the 19.95 km answer:
+
+```
+0.1%   4 routes   19.95, 20.21, 20.24, 20.24 km
+1%     5 routes   20.47, 22.91, 22.92, 22.92, 22.95 km   longest +15%
+5%     5 routes   21.88, 25.03, 26.10, 32.85, 34.69 km   longest +74%
+```
+
+**These were checked as drawings, not as numbers.** The polylines were read back out of the
+rendered SVG; the land classes were read back off the painted canvas by matching pixels to
+the palette and to the palette faded by 0.62; the nine values were read off the controls'
+`aria-valuenow`. Every route was then re-costed from those three. At all three tolerances:
+every step is an eight-neighbour move, every route runs cell (24,51) to cell (150,180), every
+route lies wholly inside the shaded band, and every route is inside the selected tolerance.
+Costs over the minimum:
+
+```
+0.1%   0.000, 0.086, 0.098, 0.098 %
+1%     0.637, 0.988, 0.989, 0.991, 0.998 %
+5%     1.992, 4.297, 4.394, 4.736, 4.908 %
+```
+
+**The 0.000% is real and is the best thing in the widget.** At the 0.1% setting one drawn
+route has 157 cells, exactly as many as the answer, shares only 61 of them — 39% — and costs
+the same to within a thousandth of one per cent. Not a near miss: a tie, decided silently.
 
 **Grid bias.** The straight line between the two endpoints is 18032.5 m. The same line
 measured eight-connected on this grid is 18119.1 m, an overstatement of **0.480%**. The
@@ -188,6 +239,18 @@ on a phone, well under a fingertip.
 **Keyboard drawing exists.** Arrow keys move a cursor, shift moves it five at a time, space
 draws. Without it the whole left half of the widget is unreachable without a pointer, and
 principles §9 does not have an exception for the hard case.
+
+**One kind of land is marked on arrival, and nothing is armed.** Drawing is the half of the
+widget nobody would find on their own — a chart of numbers does not look like a palette. A
+line above the rows says so, and the parks row carries a dashed outline and the word "draw"
+until the first time anything is armed. It is marked, not armed: arming on load would make
+the map swallow pointer events before anyone asked, which on a phone means the page stops
+scrolling. Parks because "what if this were protected?" is the move a reader is most likely
+to want, and because a park drawn across the corridor moves the route visibly.
+
+**Keeping a proposal and looking at the alternatives are separated by a rule.** Sitting in
+one row they read as four equal buttons, when one is an act on this route and the others
+change what you are looking at.
 
 **Colour is never the only cue for a route.** Every route has a white casing so one colour
 reads over pale farmland and over dark industry alike; the live route is the thickest; each
@@ -251,11 +314,12 @@ To rebuild the grid: `python3 tools/lab4-extract.py > /tmp/grid.js`, then replac
 `var GRID = "..."` line in the first `<script>` block. The tool caches the download at
 `/tmp/mv-landuse-window.geojson`; pass `--refetch` to go back to the service.
 
-**Check these first after any change.** The four preset lengths — 19.9, 26.3, 28.1, 20.1 km
-— and their compositions. Then the near-tie areas at the three tolerances. Then that keeping
-a proposal records the route that matches the table beside it, which is the bug that was
-hardest to see: `render()` batches into an animation frame, so `solved` can be one frame
-behind the table, and `addPin` calls `flush()` for exactly that reason.
+**Check these first after any change.** The opening length and the three preset lengths —
+19.9, 26.3, 28.1, 20.1 km — and their compositions. Then the similar-proposal band areas and
+route lengths at the three tolerances, re-costed off the drawing rather than off the model.
+Then that keeping a proposal records the route matching the table beside it, which is the bug
+that was hardest to see: `render()` batches into an animation frame, so `solved` can be one
+frame behind the table, and `addPin` calls `flush()` for exactly that reason.
 
 ## Review record
 
