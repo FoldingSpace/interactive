@@ -305,9 +305,13 @@ twentieth of the answer.
 **How little the tightest setting has to overlap.** Of the three alternatives at 0.1%, the
 least overlapping shares **46%** of its cells with the heavy line; at 1% it is 27% and at 5%
 26%. The page used to say "barely a third" of a length at 0.1%, which was true of an earlier
-table and is not true of this one. It now says "under half", and there is a test asserting
-that, because a sentence which is a measurement should fail when the measurement changes
-rather than sit there being wrong.
+table and is not true of this one. It now says the route "runs over different ground for more
+than half its way", and there is a test asserting that, because a sentence which is a
+measurement should fail when the measurement changes rather than sit there being wrong.
+
+Note which unit the page uses. These are shares of **cells**, not of length, and the two are
+not the same on an eight-connected grid where a diagonal step is 1.41 times an orthogonal
+one. The page says "way" rather than "length" for that reason.
 
 **Swapping the queue moved half the route at identical cost, and that is the widget's own
 thesis arriving uninvited.** Heap and buckets both give accumulated cost 361735.3709 at the
@@ -414,17 +418,15 @@ are claims (principles §5), and this one is a claim the widget wants a student 
 The (i) panel says where the numbers came from.
 
 **"Keep away from homes" hardly changes the answer.** 20.5 km against 20.9. That is not a
-broken preset, it is the best thing in the set:
-the cheapest route was already avoiding houses, so a value stated loudly changes almost
-nothing. Whether an assertion has consequences depends on the land, not on how strongly it
+broken preset, it is the best thing in the set: the cheapest route was already avoiding
+houses, so a value stated loudly changes almost nothing. Whether an assertion has consequences depends on the land, not on how strongly it
 is held. The preset (i) says so.
 
 This is also the claim that went stale without anyone noticing. It was recorded as "20.1 km
 against 20.0" from a coarser grid; by the time the grid reached 22²⁄₉ m the preset was
-running 23.2 km against 20.9, so the sentence in the (i) panel was simply false, and had
-been through two resolutions. Pricing "Other" properly is what
-brought it back, because the detour it had been taking ran through unclassified land the page
-was giving away at 1. Text that states a measurement needs a test, or it needs re-reading
+running 23.2 km against 20.9, so the sentence in the (i) panel was simply false, and had been
+through two resolutions. Pricing "Other" properly is what brought it back, because the detour
+it had been taking ran through unclassified land the page was giving away at 1. Text that states a measurement needs a test, or it needs re-reading
 every time the measurement moves; this one now has a test.
 
 **Endpoints are fixed.** The disagreement this widget is about is over values, not over where
@@ -499,13 +501,13 @@ silence about territory louder rather than quieter. Adding a line to the footer 
 obvious move and is close to the failure `principles.md` section 6 describes. Open question
 there; not this file's to settle.
 
-**The page still does not name what is in the "Other" class.** It says the class is the bin
-for ground the survey could not name and gives examples; it does not say that until this
-week the bin included part of a reserve. That is deliberate. Naming a First Nation on a page
-that prices land is the question section 6 leaves open, and it should not get answered by
-accident inside a class label. The window no longer contains the reserve, so the page is not
-being silent about something it is currently doing — but it is silent about territory in
-general, which is the open question one paragraph up.
+**The page does not say what used to be in the "Other" class.** It gives the source's own
+definition of U100 and says the class is named for what the land is not; it does not say
+that until this week the class included part of a reserve. That is deliberate. Naming a First
+Nation on a page that prices land is the question section 6 leaves open, and it should not
+get answered by accident inside a class label. The window no longer contains the reserve, so
+the page is not being silent about something it is currently doing — but it is silent about
+territory in general, which is the open question one paragraph up.
 
 **Whether the framing lands.** The pin cards and the naming prompt are the whole argument
 that a route is a proposal. Untested with students.
@@ -546,17 +548,18 @@ proposals the spine of the widget rather than a convenience, and made the naming
 part of the argument instead of a label.
 
 Three presets were added so that the failing case is one click away rather than something a
-student has to stumble into. "Keep away from homes" is the failing case: it moves the line
-by 0.2 km, because the cheapest route was already avoiding houses.
+student has to stumble into. "Keep away from homes" is the failing case: it changes the
+answer by 0.4 km, because the cheapest route was already avoiding houses.
 
 **Correctness — pass.** Every figure in "Verified numbers" was produced twice, once by the
 widget in the browser and once by a Python implementation sharing no code with it, and they
 agree to the displayed precision.
 
 **Classification — fail, then fixed, 2026-08-22.** Class 8 was labelled "Open land" and
-priced at 1. The source calls it "Undeveloped and Unclassified" and it is a residual bin, so
-the label described a landscape where the data recorded a gap, and the price then made that
-gap the cheapest ground on the map. 1621 of the class's cells were on Semiahmoo Indian
+priced at 1. The source calls it "Undeveloped and Unclassified" and defines it by what the
+land is not — no visible development, vacant urban land, vegetation that is neither park nor
+farm — so the label turned a category of absence into a landscape, and the price then made
+that landscape the cheapest ground on the map. 1621 of the class's cells were on Semiahmoo Indian
 Reserve. Three things changed: the class is "Other" at 100 in every table; the window was
 trimmed from 855 rows to 818 so it holds no reserve cell at all; and this file's claim that
 the window was clear of every reserve — which carried the word "checked" — has been

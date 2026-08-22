@@ -230,7 +230,7 @@ is a property of the software. Software normally shows one and says nothing, whi
 strongest version of this section's problem: not a blank result but a confident one.
 
 **A choice that changes nothing.** The least-cost widget carries a preset called "keep
-away from homes" that moves the route by 0.2 km, because the cheapest route was already
+away from homes" that changes the answer by 0.4 km, because the cheapest route was already
 avoiding houses. Whether a value you assert has any consequence is a fact about the ground,
 not about how strongly you hold it. A widget whose every control visibly works teaches that
 every value you hold has an effect, which is false and is the more comfortable of the two
