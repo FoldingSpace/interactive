@@ -402,8 +402,17 @@ the mean spacing between area centres, which keeps 996 of them from merging into
 Colour carries the sign: red above, blue below. Symbols are 68 per cent opaque with no
 outline, so overlaps read as overlaps and a small circle is not mostly its own border.
 
-The constant has no map. In counts it is the same number everywhere, so a map of it would
-be one value repeated. It keeps its place in the row as a number with its standard error.
+The constant has a map of its own: the same circle in every area, blue because it is
+negative. Mapping one repeated value looks wasteful until you see what it is for. Circle
+area is proportional to value, so the signed areas across a row add the way the numbers do,
+and the constant has to be drawn for that sum to be visible. Its number and standard error
+sit underneath like every other term's.
+
+**The circle areas add exactly.** Signed areas of the five terms equal the area of the
+result, to zero relative error, in both models and at both real scales, measured off the
+rendered SVG rather than off the values behind it. That required dropping a clamp that had
+been limiting the largest circles: any cap on radius breaks the proportionality, and the
+proportionality is the whole point.
 
 The polygons are now a base under the symbols, still with the dissemination-area hairlines
 under every grouping.

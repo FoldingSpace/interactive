@@ -79,8 +79,8 @@ body[data-present="1"] .intro { display: none; }
 .tbeta .pm { color: var(--ink-soft); }
 .tbeta .dead { text-decoration: line-through; color: var(--ink-soft); }
 .op {
-  align-self: start; padding-top: calc(2.6rem * var(--ui)); text-align: center;
-  font-size: calc(1.1rem * var(--ui)); color: var(--ink-soft);
+  align-self: start; padding-top: calc(2.4rem * var(--ui)); text-align: center;
+  font-size: calc(0.8rem * var(--ui)); color: var(--ink-soft);
 }
 
 /* Narrow: the row wraps into a block of small maps with the result last and wider. */
@@ -191,14 +191,6 @@ svg.map g.syms circle { fill-opacity: 0.68; stroke: none; pointer-events: none; 
   background: var(--ink);
 }
 .stripline .dot.lo, .stripline .dot.hi { border-color: var(--ink); }
-.const-term { justify-content: flex-start; }
-.constbox {
-  aspect-ratio: 7497 / 6401;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px dashed var(--edge); border-radius: calc(0.3rem * var(--ui));
-  font-size: calc(1.1rem * var(--ui)); font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
 .symkey { display: flex; align-items: center; gap: calc(0.4rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
 .symkey svg { width: calc(5rem * var(--ui)); height: auto; flex: 0 0 auto; }
 .stripline .dot:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
@@ -365,10 +357,12 @@ body[data-present="1"] footer { display: none; }
   <div class="main">
 
     <div class="eqrow" id="eqrow">
-      <div class="term const-term">
+      <div class="term" data-layer="const">
         <div class="tname">the constant</div>
-        <div class="constbox"><span id="constval">—</span></div>
-        <div class="tbeta"><span class="pm" id="constse"></span></div>
+        <svg class="map" id="m-const" viewBox="0 0 100 100" role="img"
+             aria-label="The constant, the same in every area"></svg>
+        <div class="tbeta"><span id="constval">—</span>
+          <span class="pm" id="constse"></span></div>
       </div>
       <div class="op">+</div>
       <div class="term" data-layer="hh">
@@ -1412,9 +1406,12 @@ body[data-present="1"] footer { display: none; }
   // look busy for being big. The terms add up.
   //   plain:  constant + households + income + residual = reported
   //   error:  constant + households + income + spatial error + residual = reported
-  // The constant is the same number in every area, so it appears as a number rather than
-  // as a map of one repeated value.
+  // The constant is the same number in every area, so its map is one circle size repeated.
+  // That is the point rather than a waste: circle area is proportional to value, so the
+  // areas across a row add up the way the numbers do, and the constant has to be there for
+  // the sum to be visible.
   var LAYERS = [
+    { id: "const", name: "the constant" },
     { id: "hh",    name: "households" },
     { id: "inc",   name: "income" },
     { id: "sperr", name: "spatial error" },
@@ -1440,7 +1437,7 @@ body[data-present="1"] footer { display: none; }
   // addition still reads. Area is proportional to the value, which means the radius goes
   // as its square root.
   function sharedScale(st) {
-    var pool = [], i, j, v, ids = ["hh", "inc", "sperr", "res", "be"];
+    var pool = [], i, j, v, ids = ["const", "hh", "inc", "sperr", "res", "be"];
     for (j = 0; j < ids.length; j++) {
       v = valuesFor(ids[j], st);
       for (i = 0; i < st.k; i++) if (isFinite(v[i]) && v[i]) pool.push(Math.abs(v[i]));
@@ -1466,7 +1463,9 @@ body[data-present="1"] footer { display: none; }
     order.sort(function (a, b) { return Math.abs(vals[b]) - Math.abs(vals[a]); });
     for (i = 0; i < order.length; i++) {
       var z = order[i], v = vals[z];
-      var r = sc.r * Math.sqrt(Math.min(Math.abs(v) / sc.max, 1.6));
+      // No clamp. Area has to stay strictly proportional to value or the circle areas
+      // across a row stop adding up the way the numbers do, which is the whole point.
+      var r = sc.r * Math.sqrt(Math.abs(v) / sc.max);
       if (r < 1) continue;
       var c = document.createElementNS(ns, "circle");
       c.setAttribute("cx", st.ag.pos[z * 2]);
