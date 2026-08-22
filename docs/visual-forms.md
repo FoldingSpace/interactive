@@ -5,7 +5,9 @@ together (`widget-pattern.md`), and how it gets checked (`review.md`). This one 
 to draw, and it exists because the graphical decisions recur across widgets while the
 subjects do not.
 
-Written from three builds. Expect it to be wrong somewhere by the fifth.
+Written from three builds. Expect it to be wrong somewhere by the fifth — and it already
+has been once: the boundary rule below replaced an earlier one that was recorded here as a
+finding. When that happens, say which won and why rather than quietly deleting the loser.
 
 ---
 
@@ -46,6 +48,27 @@ at these sizes a stroke is most of the symbol. About 0.68 opacity works.
 than the data is.
 
 ---
+
+## How fine the grid has to be
+
+**The narrowest thing that has to stay connected decides the cell size.** Not the file size,
+not what looks smooth. `least-cost` went 100 m, 50, 33⅓, 22²⁄₉, every step for the same
+reason: road allowances, rail and watercourses are narrower than the cell, so they rasterised
+into dotted lines and a route could not follow one — which mattered, because following
+existing corridors is one of the positions the widget exists to let a reader take. Blocks of
+housing and farmland were fine at every size. Ask what the finest *linear* feature is and
+whether anything depends on it being continuous.
+
+The cost is quadratic and the answer to it is never a coarser map. Twenty times the cells
+took a faster queue, then a worker, then sending the worker changes instead of the map — all
+of which are in `widget-pattern.md` and `libraries.md`, and all of which were cheaper than
+giving up the thing the resolution was for.
+
+**Source polygons do not tile perfectly.** At a fine enough cell, a centre lands in a sliver
+where two of them fail to meet. Fill those from their neighbours and print how many were
+filled; keep a hard failure for more than a trivial count, because a real hole — a window
+reaching outside the data — is a contiguous region rather than a scattering of single cells.
+Do this in the extraction tool, so it fails the build rather than shipping a gap.
 
 ## Small multiples
 
@@ -130,6 +153,27 @@ translucent tint over a set of cells fights whatever is underneath, and a tint t
 over pale farmland goes muddy over water. Fading the cells *outside* the region towards the
 page background leaves the region at full strength and its own colours, which is what a
 reader wants to look at anyway.
+
+**Measure the mark, not the box it sits in.** Reading `getBoundingClientRect()` on the
+element gives you the slot, not the ink. A sign sitting in a 40 px column and a title line
+17 px tall have different centres, so comparing element boxes reported perfect alignment
+while the sign floated eleven pixels below the words. Put a `Range` over the text node and
+take `getClientRects()[0]` — that is the line, and the line is what a reader sees. The same
+mistake in a different costume as trusting the values behind a drawing instead of the
+drawing.
+
+**Repeated marks go in their own column, not at the end of a phrase.** An operator written
+after each title lands wherever that phrase happens to end, so no two agree with each other.
+Put the mark in its own grid item and draw it as many times as it has to appear; then
+alignment is a property of the structure rather than a measurement to redo each time a label
+changes length. In the MAUP row each operator is one element carrying its sign twice, once
+level with the titles and once level with the maps, and the two share an x centre to within
+a tenth of a pixel because they cannot do otherwise.
+
+**A legend's rounded number must be drawn at the rounded number's size.** Round the value so
+it reads — a key of 256 and 64 says "a quarter" where 257 and 64 says nothing — then size the
+symbol from the value you printed, not from the value you rounded. Otherwise the key is
+wrong by exactly the rounding, which is the one error a legend must not have.
 
 **Contrast is measured, not eyeballed.** The 3:1 minimum for a graphical object applies to
 the line that shows where a pale area ends, which is easy to miss because the fill looks

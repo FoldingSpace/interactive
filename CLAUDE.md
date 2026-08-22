@@ -127,12 +127,23 @@ where anyone reads past the fifth. Grouped now. Every one was paid for.
   and both would have been slower or less portable. See `libraries.md`.
 - **A worker is for when scheduling can no longer hide the work**, not for anything that
   fits in a frame. It costs you every synchronous read, so find the place that needs a
-  settled answer before you move the solver, not after.
+  settled answer before you move the solver, not after. Algorithm, then decoupling, then
+  caching, then the worker — in that order. See `widget-pattern.md`.
+- **A stub DOM that disagrees with a browser is a bug in the stub.** Entities, `innerHTML`,
+  whitespace between inline elements: three found here, each because an assertion contradicted
+  what the page visibly does.
+- **Assert that the things you build are not empty.** A titled card with a collapsed body sat
+  live for months. One assertion catches that class of bug on the day it happens.
 - **Measure rather than eyeball** — layout, speed, and what a control actually demonstrates.
   Most real defects here were invisible until something was measured, and one control turned
   out to teach the opposite of its design intent.
 - **Check the rendered output, not only the numbers behind it.** Read attributes back off
   the SVG and confirm the picture makes the claim the model does.
+- **Measure the mark, not the box it sits in.** An element's rect is the slot; a `Range` over
+  its text node gives the line. Comparing boxes said "aligned" while the sign floated eleven
+  pixels below the words. See `visual-forms.md`.
+- **An independent check agrees about scalars and not about ties.** Cost, length and counts
+  will match; which of several tied answers got picked will not. Say which is which.
 - **Record verified numbers** in the widget's file in `docs/widgets/`, so a rebuild has
   something to fail against. Reproducing a known case is necessary and never sufficient: ask
   what bug would pass the test you just ran.

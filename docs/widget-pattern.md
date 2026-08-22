@@ -59,6 +59,40 @@ and, in Safari, throttled — about a hundred calls in thirty seconds, after whi
 A few seconds of painting reaches that. Write the URL a third of a second after things
 settle.
 
+### When the work stops fitting in a frame
+
+Four things in the order they are worth doing, learned taking one widget from 41,800 cells
+to 846,450 without losing sixty frames a second.
+
+**Change the algorithm before anything else.** A binary heap became Dial's buckets and a
+solve more than halved, in about thirty lines and with the answers bit-identical. Measure the
+alternative rather than assuming the library or the GPU is the answer; `libraries.md` records
+why neither was, here.
+
+**Separate the cheap redraw from the expensive computation.** Repainting a raster is about a
+millisecond and solving over it was thirty-five, so the land can follow the brush every frame
+while the result arrives a few times a second. What settles at the end is never stale,
+because the stroke ends with a flush.
+
+**Cache derived state against a version counter.** Bump the counter wherever the model
+actually changes and record it on the derived thing. Keeping a proposal changed nothing about
+the model and was paying for two solves anyway: 180 ms became 19.
+
+**Then a worker, and only then.** The trigger is measurable, not aesthetic: a solve reached
+two frames and no scheduling on one thread hides that. Build the worker body as a function
+that closes over nothing and stringify it into a Blob at load, so the widget stays one file
+with no second request. Two things to expect. Nothing is synchronous any more, so find the
+place that needs a settled answer *before* you move the solver — here it was the moment a
+proposal is kept, which must file the current numbers against the current route and not the
+previous one. And the first frame now paints before any result exists, so whatever reads the
+result has to tolerate its absence; showing the map with the number blank beats showing
+nothing.
+
+**Then stop sending it the whole world.** Copying an 846,450-cell array into every message
+was the last thing on the main thread big enough to cost a frame, and it cost four in
+ninety-one. Send the cells that changed, and fall back to the whole array when the list grows
+long or the data is reset.
+
 **Anything overlaid on an interactive canvas must not be inside the element you measure
 against.** A drawing banner placed inside the map box made the box taller than the canvas,
 so a press near the top mapped to a negative row and silently did nothing. Put the chrome

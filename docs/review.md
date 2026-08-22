@@ -92,6 +92,16 @@ three distinct values is a stronger test than any one of them being right.
 another route — a matrix formulation against a loop. Agreement to several decimals across
 every combination, not one.
 
+**And know which parts it can agree about.** Where a problem has ties, an independent
+implementation will match every scalar and differ on which of the tied answers it picked. A
+Python check of `least-cost` agrees with the widget on cost to four decimals, on length to
+the metre and on the count of cells exactly, and disagrees on *which* cells — because the two
+break ties differently, and so did the same widget before and after its queue changed. Read
+the scalars as claims about the world and the rest as a regression test on this
+implementation, and say which is which where you record them. If ties are possible at all,
+that is itself worth putting on the page: which answer you are shown is a property of the
+software, not of the subject.
+
 **But when the thing being checked is generated data, run the real code.** A
 reimplementation is right for checking a *formula*, where a second route is the whole
 point. It is wrong for checking a *generator*, where any drift makes the two disagree about
@@ -124,6 +134,12 @@ some cases and assumed of many more; test it rather than inherit it. Where a sim
 genuinely needed, know the floor of what it can resolve, and never report a value below
 that floor as a finding.
 
+**Assert that the things you build have something in them.** A titled card whose body is
+empty renders as a label over a collapsed div and reads as a rendering glitch. One in the
+MAUP widget had been empty for months, since the commit that removed the code filling it and
+left the element behind. `for each card: its body has text` would have caught it the day it
+broke, and is now the first thing that file asserts.
+
 ### Some of this can be a suite, and the part that can should be
 
 `tools/test/` runs before every deploy and is where anything repeatable belongs: recorded
@@ -152,6 +168,18 @@ widget's own flush. Two attempts at checking the cost bars here spun on a stale
 a release with nothing in between, so a painting stroke that works perfectly by hand drew a
 single dot and looked like a dead feature. Build the pointer events yourself when you are
 testing interpolation, and keep the hand test for whether it feels right.
+
+**A stub DOM disagrees with a browser in specific ways, and each disagreement is a bug in
+the stub.** Three turned up here, all found because an assertion contradicted what the page
+visibly does: HTML entities left raw so a test saw `&rsquo;` where a reader sees an
+apostrophe; `innerHTML` stripped to text instead of parsed, so spans a widget writes to mark
+a value never became nodes and "is anything marked?" always answered no; and whitespace-only
+text between two inline elements dropped, turning "= Theft of Bicycle" into
+"=Theft of Bicycle". Fix the stub. A test that passes against a stub the browser does not
+match is worse than no test.
+
+**A test that fails because it describes the layout you just replaced is the suite working.**
+Two did. Re-record rather than loosen.
 
 **A console keeps its errors across reloads.** A fixed error goes on being reported until the
 tab is replaced, which is a fast way to spend twenty minutes re-fixing something. Read the

@@ -7,6 +7,14 @@ must be checked against the project's own repository before anything ships publi
 Started 2026-08-19. Three widgets built so far and none needed a library, so the
 "in use" table is still empty and everything below it remains a candidate.
 
+Worth being exact about what that claim now covers, because the third widget uses more of
+the browser than the first two did. A Web Worker, `OffscreenCanvas`-free `ImageData`
+painting, `Blob` and `URL.createObjectURL`: all platform, none of it imported, none of it a
+network request. "No library" means nothing we did not write is downloaded. It has never
+meant we only use what a browser could do in 2010, and the line worth watching is whether a
+feature is old enough and universal enough that a URL printed on a slide still works in
+2031 — which workers are, comfortably.
+
 The empty table is a result about one kind of widget, not about the repository. A widget
 that computes something over made-up data has nothing to import. A widget that draws a
 real basemap, reprojects real coordinates, or queries a real file almost certainly does,

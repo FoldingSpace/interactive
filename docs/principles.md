@@ -201,6 +201,14 @@ p-value is about 0.042, so under those weights nothing can ever pass a corrected
 significance test, whatever the pattern. Instead of an empty map, the widget reports the
 smallest p-value reached and says a wider kernel gives finer ones.
 
+**An answer that is one of several the method cannot choose between.** `least-cost` draws a
+route; at its tightest setting one of the alternatives it offers shares barely a third of its
+length and costs the same to within a thousandth of a per cent. And changing the queue inside
+the solver — a detail with nothing geographic in it — moved half the route at a cost identical
+to every digit that can be printed. Where an optimisation has ties, which answer you are shown
+is a property of the software. Software normally shows one and says nothing, which is the
+strongest version of this section's problem: not a blank result but a confident one.
+
 **A choice that changes nothing.** The least-cost widget carries a preset called "keep
 away from homes" that moves the route by 0.2 km, because the cheapest route was already
 avoiding houses. Whether a value you assert has any consequence is a fact about the ground,
@@ -413,6 +421,21 @@ teaching material is worse than no citation.
 
 This applies to every explanation, caption, and document in the repository, not only to
 things labelled as a bibliography.
+
+### One sentence, one claim
+
+`maup.md` said the aspatial model draws "exactly zero circles — not small ones, none". The
+drawing part is exactly right: zero circle elements against 992. The values are not
+identically zero, though — they are floating-point noise below 7.11e-15, because the term is a
+subtraction of two quantities the code reaches by different routes. One sentence was standing
+for a claim about the picture and a claim about the arithmetic, and a reader could reasonably
+have taken either. Where a statement could be read two ways and only one of them is true,
+split it and assert both separately.
+
+The same discipline applies to recorded numbers. Reordering the terms of a sum changed a
+tolerance from 7.1e-15 to 1.42e-14, because floating-point addition is not associative.
+Neither figure is more correct; the new one is what a rebuild will now see, so it is the one
+recorded, with the reason beside it.
 
 ### The citation most likely to fail is the one attached to a framing
 
