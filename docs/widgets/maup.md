@@ -475,14 +475,25 @@ another and the circle areas can be compared straight across. Titles and labels 
 two lines each, which makes every term the same height and lets the plus and equals signs
 simply centre on the row.
 
-**The titles carry the operators too.** The plus and equals signs between the panels are
-vertically centred on the row, which is right for the maps and means the title line above
-them read as a list of five nouns rather than as a sum. Each title now ends in its own plus,
-and the result's begins with the equals, so reading straight across the top gives
-"household size contribution + income contribution + the model's constant term + spatial
-error we account for + residual error = Theft of Bicycle, reported". They are
-`aria-hidden`: each map already has its own label, and an operator read out mid-name is
-noise. Checked that adding them wraps nothing — all six titles are still two lines.
+**Each operator is drawn twice, in one element, in one column.** The signs between the
+panels are vertically centred on the maps, which is right for the maps and left the title
+line above reading as a list of five nouns rather than as a sum. So every operator column
+now holds its sign twice: once level with the titles, once level with the maps. Reading
+straight across the top gives "household size contribution + income contribution + the
+model's constant term + spatial error we account for + residual error = Theft of Bicycle,
+reported".
+
+The first attempt put the sign at the end of each title, inline. That reads correctly and
+lines up with nothing: an operator at the end of a phrase lands wherever that phrase happens
+to end, so no two agreed with each other or with the row's. Putting both copies inside the
+same grid item is what makes them line up by construction rather than by a measurement that
+would need redoing every time a title changes length. Measured after: each pair shares an x
+centre to within a tenth of a pixel, the five title signs are level with each other and with
+the centre of the title box, and the five map signs are level with the centre of the maps.
+
+They are `aria-hidden` — each map already has its own label, and an operator read out
+mid-name is noise. The narrow layout still drops the equals from flow and wraps two terms to
+a row, with each pair still sharing its column.
 
 **And they are level, which they were not.** The result's title is a size larger than the
 other five — deliberately, it is the answer — and the title box was `min-height: 1.2em * 2`,

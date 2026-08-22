@@ -94,22 +94,33 @@ module.exports = function (t) {
 
   t("the row reads the five terms in order, constant third", function (a) {
     var w = open();
-    // The titles carry the operators too, so the top of the row reads as the equation.
     var titles = w.doc.getElementById("eqrow").querySelectorAll(".tname").map(function (e) {
       return e.textContent.replace(/\s+/g, " ").trim();
     });
-    a.equal(titles[0], "household size contribution +", "first term, and a plus after it");
-    a.equal(titles[1], "income contribution +", "second term");
-    a.equal(titles[2], "the model\u2019s constant term +",
+    a.equal(titles[0], "household size contribution", "first term");
+    a.equal(titles[1], "income contribution", "second term");
+    a.equal(titles[2], "the model\u2019s constant term",
       "the constant sits third, left of the spatial error");
-    a.equal(titles[3], "spatial error we account for +", "fourth term");
-    a.equal(titles[4], "residual error", "fifth term, and no plus: an equals comes next");
-    a.ok(/^=\s/.test(titles[5]), "and the result is introduced by the equals: " + titles[5]);
-    // Read straight across, the titles are the equation.
-    a.equal(titles.join(" "),
+    a.equal(titles[3], "spatial error we account for", "fourth term");
+    a.equal(titles[4], "residual error", "fifth term");
+
+    // Each operator is drawn twice inside one element in one grid column: level with the
+    // titles and level with the maps. Being one element is what makes the two line up, so
+    // the structure is the thing worth asserting — the harness has no layout to measure.
+    var ops = w.doc.getElementById("eqrow").querySelectorAll(".op");
+    a.equal(ops.length, 5, "five operators for six terms");
+    ops.forEach(function (op, i) {
+      var want = (i === 4) ? "=" : "+";
+      a.equal(op.querySelector("b").textContent, want, "operator " + i + " on the title line");
+      a.equal(op.querySelector("i").textContent, want, "operator " + i + " on the map line");
+    });
+    // Read straight across, terms and operators are the equation.
+    var across = [];
+    titles.forEach(function (t, i) { across.push(t); if (ops[i]) across.push(ops[i].querySelector("b").textContent); });
+    a.equal(across.join(" "),
       "household size contribution + income contribution + the model\u2019s constant term + "
-      + "spatial error we account for + residual error = " + titles[5].replace(/^=\s*/, ""),
-      "the title line scans left to right as the equation");
+      + "spatial error we account for + residual error = " + titles[5],
+      "the row scans left to right as the equation");
     a.equal(w.win.MAUP_TEST.layers.map(function (l) { return l.id; }).join(","),
       "hh,inc,const,sperr,res,be", "and the layer list says the same");
   });

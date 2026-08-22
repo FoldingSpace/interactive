@@ -77,17 +77,26 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 /* The same operators as the row's, in the title line, so the top of the row reads as the
    equation it is. Hidden from screen readers: the map's own label already names the term,
    and an operator read out mid-name is noise. */
-.tname .top { font-weight: 700; color: var(--ink); }
 .tbeta {
   font-size: calc(0.75rem * var(--ui)); color: var(--ink); line-height: 1.25;
   font-variant-numeric: tabular-nums; min-height: calc(1.25em * 2);
 }
 .tbeta .pm { color: var(--ink-soft); }
 .tbeta .dead { text-decoration: line-through; color: var(--ink-soft); }
+/* Each operator appears twice in its own column: once level with the titles so the top of
+   the row reads as the equation, once level with the maps. Being one element in one grid
+   column is what makes the two line up, rather than a measurement that would need redoing
+   every time a title changes length. b, i and u carry no meaning here; they are the
+   shortest tags going, and the row is repeated five times. */
 .op {
-  align-self: center; text-align: center;
+  align-self: stretch; text-align: center;
   font-size: calc(0.8rem * var(--ui)); font-weight: 700; color: var(--ink);
+  display: flex; flex-direction: column;
 }
+.op b, .op i, .op u { display: flex; align-items: center; justify-content: center; font-style: normal; text-decoration: none; }
+.op b { height: calc(2.16rem * var(--ui)); }      /* the title box */
+.op i { flex: 1; }                                 /* the map */
+.op u { height: calc(1.875rem * var(--ui)); }      /* the number line */
 
 /* Narrow: the row wraps into a block of small maps with the result last and wider. */
 @media (max-width: 55.99rem) {
@@ -372,42 +381,42 @@ body[data-present="1"] footer { display: none; }
 
     <div class="eqrow" id="eqrow">
       <div class="term" data-layer="hh">
-        <div class="tname">household size contribution <span class="top" aria-hidden="true">+</span></div>
+        <div class="tname">household size contribution</div>
         <svg class="map" id="m-hh" viewBox="0 0 100 100" role="img"
              aria-label="The household size contribution, mapped"></svg>
         <div class="tbeta" id="b-hh">—</div>
       </div>
-      <div class="op">+</div>
+      <div class="op"><b>+</b><i>+</i><u></u></div>
       <div class="term" data-layer="inc">
-        <div class="tname">income contribution <span class="top" aria-hidden="true">+</span></div>
+        <div class="tname">income contribution</div>
         <svg class="map" id="m-inc" viewBox="0 0 100 100" role="img"
              aria-label="The income contribution, mapped"></svg>
         <div class="tbeta" id="b-inc">—</div>
       </div>
-      <div class="op">+</div>
+      <div class="op"><b>+</b><i>+</i><u></u></div>
       <div class="term" data-layer="const">
-        <div class="tname">the model&rsquo;s constant term <span class="top" aria-hidden="true">+</span></div>
+        <div class="tname">the model&rsquo;s constant term</div>
         <svg class="map" id="m-const" viewBox="0 0 100 100" role="img"
              aria-label="The model&rsquo;s constant term, the same in every area"></svg>
         <div class="tbeta" id="constval">—</div>
       </div>
-      <div class="op">+</div>
+      <div class="op"><b>+</b><i>+</i><u></u></div>
       <div class="term" data-layer="sperr">
-        <div class="tname">spatial error we account for <span class="top" aria-hidden="true">+</span></div>
+        <div class="tname">spatial error we account for</div>
         <svg class="map" id="m-sperr" viewBox="0 0 100 100" role="img"
              aria-label="The spatial error the model accounts for, mapped"></svg>
         <div class="tbeta" id="b-sperr">—</div>
       </div>
-      <div class="op">+</div>
+      <div class="op"><b>+</b><i>+</i><u></u></div>
       <div class="term" data-layer="res">
         <div class="tname">residual error</div>
         <svg class="map" id="m-res" viewBox="0 0 100 100" role="img"
              aria-label="The residual error, mapped"></svg>
         <div class="tbeta" id="b-res">what is left over</div>
       </div>
-      <div class="op eq">=</div>
+      <div class="op eq"><b>=</b><i>=</i><u></u></div>
       <div class="term big-term" data-layer="be">
-        <div class="tname"><span class="top" aria-hidden="true">=</span> <span id="capa">reported</span></div>
+        <div class="tname" id="capa">reported</div>
         <svg class="map" id="m-be" viewBox="0 0 100 100" role="img"
              aria-labelledby="capa"></svg>
         <div class="symkey" id="symkey"></div>
