@@ -376,12 +376,13 @@ keeping them in presentation mode. The compact-projector threshold moved from 82
 That paragraph then went through two more revisions, both from the same complaint: it was
 saying the right thing obliquely. It first read "counts like these send officers somewhere
 and leave them elsewhere", which is coy about the mechanism and vague about which counts —
-the ones on this page do not send anyone anywhere. It now says that maps like this one help
-decide where patrols go, which is concrete, hedged to what can be defended, and short.
+the ones on this page do not send anyone anywhere. It now says that police use maps to decide
+where patrols go: a plain statement about the practice rather than a gesture at the page.
 
 The paragraph is now 39 words and three sentences that each do one job: where and when,
-the question, and why the answer is not idle. The instability is left to land on its own
-from the sentence that follows.
+the question, and why the answer is not idle. It ends on "see whether you get the same
+answer" rather than "see whether your answer survives", because a second-year reader should
+not have to work out what surviving means.
 
 The same audit caught a live error: the footer still credited "Residential break and enter
 incidents", the one category the widget refuses to model.
