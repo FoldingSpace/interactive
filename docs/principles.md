@@ -392,6 +392,14 @@ No widget goes in front of students without the passes described in `docs/review
 The pedagogical critique is the one that can send the work back for redesign, not just
 for polish.
 
+## 12b. How a thing gets drawn is its own body of practice
+
+Graphical decisions recur across widgets while their subjects do not, so they live in
+`docs/visual-forms.md`: quantities on areas, small multiples, showing that something
+decomposes, colour, and the audit to run after changing what is displayed. Two rules from it
+are load-bearing enough to repeat here. A count is never a choropleth. And a row of small
+multiples needs one shared scale, or it is a row of unrelated pictures.
+
 ## 13. What is at stake belongs on the face of the page
 
 A widget that teaches a method will be read as a widget about the method. If the point is

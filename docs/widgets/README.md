@@ -9,6 +9,8 @@ choice is gone and only the choice is left.
 | [Spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/) | [spatial-autocorrelation.md](spatial-autocorrelation.md) | Live |
 | [Drawing the lines: MAUP in Vancouver](https://foldingspace.github.io/interactive/maup/) | [maup.md](maup.md) | Live |
 
+Graphical decisions that recur across widgets are in `../visual-forms.md`, not here.
+
 ## What every one of these has to contain
 
 The order is up to you and the headings can be whatever suits the widget. These five have

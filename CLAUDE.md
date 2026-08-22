@@ -29,6 +29,7 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 ## Read first
 
 - `docs/principles.md` — the standing rules for everything built here.
+- `docs/visual-forms.md` — what to draw: quantities on areas, small multiples, decomposition, colour.
 - `docs/libraries.md` — what we use, what we have rejected, what we want to try.
 - `docs/attributions.md` — register of every borrowed dataset, basemap, image, and library.
 - `docs/review.md` — the passes a widget must survive before it goes in front of students.
@@ -108,3 +109,13 @@ Repository is `FoldingSpace/interactive`, pushed over an SSH deploy key; see
   records, and then retracted them. Get the paper.
 - What a widget is *for* goes in the reading flow, not behind an (i) and not in the footer.
   Presentation mode hides (i) panels, so anything only in them is missing from every lecture.
+- A count is not a rate. Never shade a polygon by a count; use graduated symbols or divide
+  by something, and know that the denominator is itself a claim. See `visual-forms.md`.
+- Check the rendered output, not only the numbers behind it. Read attributes back off the
+  SVG and verify the picture makes the claim the model does.
+- After changing what is displayed, audit each control for whether it still controls
+  something, and grep the captions, footer and licence line for claims that went stale.
+- Replacing a block of CSS or code wholesale silently takes everything else in it. List what
+  was in the block before replacing it; a layout rewrite here deleted an entire stylesheet.
+- Duplicate rules are why a fix does not take. Two identical `.readout` declarations
+  survived two attempts at the same bug.

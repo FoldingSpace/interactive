@@ -192,6 +192,17 @@ a particular configuration restores that configuration.
 
 ---
 
+### The picture, not only the numbers
+
+Check what was rendered, not what was computed. Read attributes back off the output and
+confirm the drawing makes the same claim the model does — a widget here had correct values
+drawn as circles that were wrong by up to 21 per cent, because of a clamp that looked like
+a tidiness fix.
+
+Then: is any quantity on an area a count shaded into a polygon? Does every panel in a row of
+small multiples share one scale? Does a control still control something, after whatever was
+changed? Do the captions, the footer and the licence line still describe what is modelled?
+
 ### What a reader sees with everything closed
 
 List it. Title, labels, any text not behind an (i), at every screen size and in presentation

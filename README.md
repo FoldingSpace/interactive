@@ -50,6 +50,7 @@ and nothing goes out without the checks in [docs/review.md](docs/review.md).
 | [docs/attributions.md](docs/attributions.md) | Every borrowed dataset, basemap, and library |
 | [docs/review.md](docs/review.md) | The passes a widget must survive before release |
 | [docs/deployment.md](docs/deployment.md) | How this repository is published, and why |
+| [docs/visual-forms.md](docs/visual-forms.md) | What to draw: quantities on areas, small multiples, decomposition, colour |
 | [docs/widget-pattern.md](docs/widget-pattern.md) | How a widget is put together, and how to start a new one |
 | [docs/widgets/](docs/widgets/) | One file per widget: what it teaches, how it works, the verified numbers, and its review record |
 

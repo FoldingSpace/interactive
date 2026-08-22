@@ -106,6 +106,17 @@ size through `calc()`.
    in `docs/libraries.md`.
 8. Run all five passes in `docs/review.md`.
 
+## What goes where
+
+Four documents, and they answer different questions. `principles.md` is why we build these
+and what a widget must be. This file is how one is put together in code. `visual-forms.md`
+is what to draw once you know what you are showing. `review.md` is how any of it gets
+checked. When a lesson turns up, the question is which of those four it belongs to; a lesson
+recorded in two places goes stale in one of them.
+
+`libraries.md`, `attributions.md` and `deployment.md` are registers rather than guidance:
+what we tried, what we borrowed, how it ships.
+
 ## What the first build taught that carries over
 
 Measure rather than eyeball, for layout, for speed, and for what a control demonstrates.
