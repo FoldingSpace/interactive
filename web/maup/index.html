@@ -62,31 +62,31 @@ body[data-present="1"] .intro { display: none; }
 .main { display: flex; flex-direction: column; gap: calc(0.9rem * var(--ui)); }
 .eqrow {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr) auto) minmax(0, 2.1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr) auto) minmax(0, 1fr);
   align-items: start;
   gap: calc(0.4rem * var(--ui));
 }
 .term { display: flex; flex-direction: column; gap: calc(0.2rem * var(--ui)); min-width: 0; }
 .tname {
   font-size: calc(0.78rem * var(--ui)); font-weight: 600; color: var(--ink-soft);
-  line-height: 1.2;
+  line-height: 1.2; min-height: calc(1.2em * 2);
 }
 .big-term .tname { font-size: calc(0.9rem * var(--ui)); color: var(--ink); }
 .tbeta {
   font-size: calc(0.75rem * var(--ui)); color: var(--ink); line-height: 1.25;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums; min-height: calc(1.25em * 2);
 }
 .tbeta .pm { color: var(--ink-soft); }
 .tbeta .dead { text-decoration: line-through; color: var(--ink-soft); }
 .op {
-  align-self: start; padding-top: calc(2.4rem * var(--ui)); text-align: center;
+  align-self: center; text-align: center;
   font-size: calc(0.8rem * var(--ui)); color: var(--ink-soft);
 }
 
 /* Narrow: the row wraps into a block of small maps with the result last and wider. */
 @media (max-width: 55.99rem) {
   .eqrow { grid-template-columns: repeat(2, minmax(0, 1fr) auto); }
-  .eqrow .op { padding-top: calc(2.2rem * var(--ui)); }
+
   .eqrow .big-term { grid-column: 1 / -1; }
   .op.eq { display: none; }
 }
@@ -191,7 +191,7 @@ svg.map g.syms circle { fill-opacity: 0.68; stroke: none; pointer-events: none; 
   background: var(--ink);
 }
 .stripline .dot.lo, .stripline .dot.hi { border-color: var(--ink); }
-.symkey { display: flex; align-items: center; gap: calc(0.4rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
+.symkey { display: flex; align-items: center; min-height: calc(1.25em * 2); gap: calc(0.4rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
 .symkey svg { width: calc(5rem * var(--ui)); height: auto; flex: 0 0 auto; }
 .stripline .dot:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
 .stripends { display: flex; justify-content: space-between; font-size: calc(0.78rem * var(--ui)); color: var(--ink-soft); font-variant-numeric: tabular-nums; }

@@ -417,6 +417,11 @@ proportionality is the whole point.
 The polygons are now a base under the symbols, still with the dissemination-area hairlines
 under every grouping.
 
+All six maps are the same size, including the result, so no term looks more important than
+another and the circle areas can be compared straight across. Titles and labels are held to
+two lines each, which makes every term the same height and lets the plus and equals signs
+simply centre on the row.
+
 **The row's claim is checked, not assumed.** The terms sum to the observed counts within
 2.8e-14 at census tracts and 7.1e-15 across 995 dissemination areas, in both models, tested
 through `MAUP_TEST.valuesFor`. Under aspatial OLS the spatial error term has exactly zero
