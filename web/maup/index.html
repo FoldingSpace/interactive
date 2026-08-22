@@ -16,8 +16,7 @@
   /* The fine lines between dissemination areas. 3.18:1 against the page, which is the
      minimum for a graphical object, because the palest fills in both ramps are within
      1.1:1 of white and it is this line that shows where such an area ends. */
-  --map-line: #8a919b;
-  --zone-line: #16181d;     /* the heavier lines around the areas being analysed */
+  --zone-line: #6b7280;     /* the lines around the areas being analysed: grey, not black */
   --nodata: #d9dce0;
   --land: #eceef1;
   color-scheme: light dark;
@@ -26,9 +25,8 @@
   :root:not([data-theme="light"]) {
     --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
     --panel: #1e2128; --edge: #6e7682; --focus: #7cacff;
-    --map-line: #5d646e;   /* 3.03:1 against the dark page, same reasoning */
     --land: #23262c;
-    --zone-line: #e9ecf1; --nodata: #3a3f47;
+    --zone-line: #8b929c; --nodata: #3a3f47;
   }
 }
 * { box-sizing: border-box; }
@@ -135,16 +133,23 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 }
 
 /* ---- maps ----
-   The polygons are a base under the symbols now, not the data. Dissemination areas stay
-   drawn under every grouping, always hairline, so what an aggregation throws away is
-   never quite off the screen. */
+   The polygons are a base under the symbols, not the data, and the base is quiet enough to
+   see a small circle through. Only the units being analysed are outlined: the dissemination
+   areas used to be drawn under every coarser grouping as well, which put two sets of lines
+   under the symbols and, in near-black at 1.6, buried the small blue circles the income map
+   is mostly made of. Grey rather than black, one set of lines rather than two, and the
+   contrast measured rather than guessed — this has to carry from the back of a room. */
 svg.map {
   width: 100%; height: auto; display: block;
   background: var(--page); touch-action: manipulation;
 }
 svg.map path.area {
-  fill: var(--land); stroke: var(--map-line); stroke-width: 0.4;
-  vector-effect: non-scaling-stroke;
+  fill: var(--land); stroke: none;
+}
+/* At the finest grouping the dissemination areas *are* the units being analysed, so they
+   get the outline — thinner, because there are 996 of them. */
+body[data-zoning="da"] svg.map path.area {
+  stroke: var(--zone-line); stroke-width: 0.5; vector-effect: non-scaling-stroke;
 }
 svg.map path.zones {
   fill: none; stroke: var(--zone-line); stroke-width: 1.6;
@@ -194,7 +199,12 @@ svg.map g.syms circle { fill-opacity: 0.68; stroke: none; pointer-events: none; 
   background: var(--ink);
 }
 .stripline .dot.lo, .stripline .dot.hi { border-color: var(--ink); }
-.symkey { display: flex; align-items: center; height: calc(1.875rem * var(--ui)); gap: calc(0.4rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
+.symkey { display: flex; align-items: center; height: calc(1.875rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
+/* What the colours mean belongs to all six maps, so it sits under the row rather than in
+   the last panel. It stays at every size, including on a projector: it is the one thing a
+   reader needs before any of these maps says anything. */
+.rowkey { margin: calc(0.35rem * var(--ui)) 0 0; font-size: calc(0.82rem * var(--ui)); color: var(--ink-soft); }
+.rowkey b { color: var(--ink); font-weight: 600; }
 .symkey svg { display: block; height: calc(1.875rem * var(--ui)); width: auto; flex: 0 0 auto; }
 .stripline .dot:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
 .stripends { display: flex; justify-content: space-between; font-size: calc(0.78rem * var(--ui)); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
@@ -399,6 +409,8 @@ body[data-present="1"] footer { display: none; }
         <div class="symkey" id="symkey"></div>
       </div>
     </div>
+    <p class="rowkey">Circle area is the size of the number. In each term, <b>red</b> adds
+       to the prediction and <b>blue</b> takes away.</p>
 
     <div class="readout">
 
@@ -1523,6 +1535,7 @@ body[data-present="1"] footer { display: none; }
     var sc = sharedScale(st);
     LAYERS.forEach(function (L) { paint(L.id, st, sc); });
 
+    document.body.dataset.zoning = zoning;
     var outline = (zoning === "da") ? "" : zoneOutline(st.zone, -1);
     LAYERS.forEach(function (L) { ZLINES[L.id].setAttribute("d", outline); });
 
@@ -1539,13 +1552,12 @@ body[data-present="1"] footer { display: none; }
     var keyBig = Math.max(4, 4 * Math.round(sc.max / 4));
     var rBig = 16 * Math.sqrt(keyBig / sc.max), rSml = rBig / 2;
     var cxBig = 2 + rBig, cxSml = cxBig + rBig + 34 + rSml;
-    key.innerHTML = '<svg viewBox="0 0 150 40" aria-hidden="true">' +
+    key.innerHTML = '<svg viewBox="0 0 108 40" aria-hidden="true">' +
       '<circle cx="' + cxBig.toFixed(2) + '" cy="' + (38 - rBig).toFixed(2) + '" r="' + rBig.toFixed(2) + '" fill="' + POS + '" fill-opacity="0.72"/>' +
       '<text x="' + (cxBig + rBig + 3).toFixed(2) + '" y="' + (40 - rBig).toFixed(2) + '" font-size="13" fill="currentColor">' + keyBig + '</text>' +
       '<circle cx="' + cxSml.toFixed(2) + '" cy="' + (38 - rSml).toFixed(2) + '" r="' + rSml.toFixed(2) + '" fill="' + POS + '" fill-opacity="0.72"/>' +
       '<text x="' + (cxSml + rSml + 3).toFixed(2) + '" y="' + (40 - rSml).toFixed(2) + '" font-size="13" fill="currentColor">' + (keyBig / 4) + '</text>' +
-      '<circle cx="140" cy="34" r="4" fill="' + NEG + '" fill-opacity="0.72"/></svg>' +
-      "<span>red more, blue less</span>";
+      '</svg>';
 
     // Each term carries its coefficient and the uncertainty on it. A beta printed alone
     // reads as a fact; printed with its standard error it reads as an estimate.

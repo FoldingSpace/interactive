@@ -440,8 +440,16 @@ rendered SVG rather than off the values behind it. That required dropping a clam
 been limiting the largest circles: any cap on radius breaks the proportionality, and the
 proportionality is the whole point.
 
-The polygons are now a base under the symbols, still with the dissemination-area hairlines
-under every grouping.
+The polygons are a base under the symbols, and quiet enough to see a small circle through.
+**They were not.** Two sets of lines were drawn under every symbol — dissemination-area
+hairlines under every grouping, plus the units being analysed in near-black at 1.6 — and on
+the income map, which is mostly small blue circles, the boundaries won. Now only the units
+being analysed are outlined, in grey: measured, 4.16:1 against the land where the black was
+about 16:1, which is still well past the 3:1 a graphical object needs and past it by enough
+for a projector. At the finest grouping the dissemination areas *are* the units, so they get
+the outline, thinner because there are 996 of them.
+
+`--map-line` went with the hairlines rather than being left as a token nothing reads.
 
 **Two terms were renamed to say what they are.** "Spatial error" became **"spatial error we
 account for"** and "residuals" became **"residual error"**, which puts the distinction

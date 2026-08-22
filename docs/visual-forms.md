@@ -140,9 +140,28 @@ boundary carrying it was at 2.6:1.
 
 ## Base and figure
 
-When symbols carry the data, the polygons become a base: a light fill, a hairline, and
-nothing competing. The finest units stay drawn under every coarser grouping, so what an
-aggregation throws away is never quite off the screen.
+When symbols carry the data, the polygons become a base: a light fill, one set of lines, and
+nothing competing.
+
+**Draw one set of boundaries, not two, and draw them in grey.** This file used to say the
+finest units should stay drawn under every coarser grouping, so that what an aggregation
+throws away is never quite off the screen. That is a good idea and it lost to a better one.
+Two sets of lines under the symbols — hairlines for the fine units and heavier lines for the
+units being analysed — is twice the visual noise at the exact scale the symbols work at, and
+when the heavier set was near-black it buried the small circles outright. A map whose
+smallest values cannot be seen has stopped being a map of those values.
+
+So: only the units being analysed are outlined, and the line is a grey with measured
+contrast rather than a black. In the MAUP widget that took the boundary from about 16:1
+against the land to 4.16:1 — still comfortably past the 3:1 a graphical object needs, and
+past it by enough to survive a projector, which is the case that decides it. The small blue
+circles on the income map are legible now and were not before.
+
+**A legend belongs to whatever it explains.** That widget's colour key sat inside the last
+panel of a row of six, because that panel had room when it was written. It explains all six.
+Moved under the row it is readable at every width, stops overflowing its panel on a narrow
+window, and no longer competes for space with the size key that genuinely is about that
+panel.
 
 Open question, standing: the base says nothing about *where* this is. A reader gets shapes
 without learning that the dark cluster is downtown. Naming two or three places would fix it
