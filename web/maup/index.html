@@ -135,11 +135,15 @@ body[data-present="1"] .intro { display: none; }
 /* A projector has no room for everything, and less of it the shorter the screen. Things
    go in order of how little a lecturer drives them: the left map's own view, then the
    hover readout, then the choice of category, which is normally set in the URL on the
-   slide. All of them come back at normal size. */
+   slide. All of them come back at normal size.
+   The threshold is 960 rather than 820 because the line about what is at stake stays on
+   screen in presentation mode and costs about 60 px. That line is not negotiable: the (i)
+   panels are hidden on a projector, so without it a lecture would show the statistics and
+   none of the argument. */
 @media (min-width: 56rem) {
   body[data-present="1"] #fs-left { display: none; }
 }
-@media (min-width: 56rem) and (max-height: 820px) {
+@media (min-width: 56rem) and (max-height: 960px) {
   body[data-present="1"] .readout .stat:last-child { display: none; }
   body[data-present="1"] #fs-crime { display: none; }
   body[data-present="1"] .mapa,
@@ -167,6 +171,12 @@ body[data-present="1"] .intro { display: none; }
   body[data-present="1"] .readout .stat:nth-child(4) { order: 2; }
   body[data-present="1"] .readout .stat:nth-child(3) { order: 3; grid-column: 1 / -1; }
   body[data-present="1"] .big { font-size: calc(2.2rem * var(--ui)); }
+  body[data-present="1"] .stakes {
+    font-size: calc(0.8rem * var(--ui));
+    line-height: 1.35;
+    padding-left: calc(0.5rem * var(--ui));
+  }
+  body[data-present="1"] .main { gap: calc(0.7rem * var(--ui)); }
 }
 
 /* ---- maps ---- */
@@ -313,6 +323,18 @@ svg.map path:focus-visible { outline: none; }
 .help-panel p { margin: calc(0.55rem * var(--ui)) 0 0; }
 .refs b { color: var(--ink); font-weight: 600; }
 
+.stakes {
+  margin: 0; max-width: 46em;
+  font-size: calc(0.95rem * var(--ui));
+  border-left: calc(3px * var(--ui)) solid var(--edge);
+  padding-left: calc(0.7rem * var(--ui));
+}
+/* This one stays on a projector. The (i) panels do not, so if the stakes were only in
+   them a lecture would show the statistics and none of the argument. */
+body[data-present="1"] .stakes {
+  font-size: calc(0.88rem * var(--ui));
+  max-width: none;
+}
 .selfnote {
   margin: 0; color: var(--ink-soft); font-size: calc(0.85rem * var(--ui)); max-width: 46em;
 }
@@ -331,8 +353,13 @@ body[data-present="1"] footer { display: none; }
 <div class="wrap">
 
   <h1>Drawing the lines: the same city, different areas</h1>
-  <p class="intro">Does who lives in an area predict where incidents get reported to police?
-     Change how the city is cut into areas and see whether your answer survives it.</p>
+  <p class="intro">Does who lives in an area predict where police record incidents? This is
+     Vancouver, 2015 and 2016. Cut the city up a different way and see whether your answer
+     survives it.</p>
+  <p class="stakes">Counts like these send officers somewhere and leave them elsewhere, and
+     they are how a neighbourhood gets described when money is handed out. The areas they are
+     counted in were drawn by an agency for its own reasons. Every number here is a record,
+     not an event.</p>
 
   <div class="main">
 
@@ -617,8 +644,8 @@ body[data-present="1"] footer { display: none; }
      off the screen.</p>
 
   <footer>
-    <p>Residential break and enter incidents reported to police, 2015&ndash;2016: City of
-       Vancouver, under the Open Government Licence &ndash; Vancouver. Boundaries,
+    <p>Incidents reported to police, 2015&ndash;2016: City of Vancouver, under the Open
+       Government Licence &ndash; Vancouver. Boundaries,
        households and income: adapted from Statistics Canada, 2016 Census boundary files
        and census attribute data, 2016. This does not constitute an endorsement by
        Statistics Canada of this product.</p>

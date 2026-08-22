@@ -341,8 +341,21 @@ within 2e-12; p-values checked against three closed forms. One error was caught 
 documentation rather than the code: a spread of R<sup>2</sup> values was written down before
 it was computed, and the computed range is wider than the invented one.
 
-**Text — pass.** Scanned against the anti-AI list, then read again for plainness. 1,929
-words in total, 243 of them visible before any (i) is opened. Mean sentence 13.5 words.
+**Text — changes requested, and made.** Scanned against the anti-AI list, then read again
+for plainness, then audited for whether the stakes were actually on screen. They were not.
+Everything visible before opening an (i) was a title, a methods question, four control
+labels and two grey lines in the footer — and presentation mode hides the (i) buttons, so
+a lecture would have shown the statistics and none of the argument. The word Vancouver did
+not appear anywhere on the face of the page.
+
+Fixed by putting 47 words above the maps, in the reading flow rather than the footer, and
+keeping them in presentation mode: counts like these send officers somewhere and leave them
+elsewhere, they are how a neighbourhood gets described when money is handed out, the areas
+were drawn by an agency for its own reasons, and every number is a record rather than an
+event. The compact-projector threshold moved from 820 px to 960 px to pay for the height.
+
+The same audit caught a live error: the footer still credited "Residential break and enter
+incidents", the one category the widget refuses to model.
 
 **Accessibility — pass, with one fix.** Contrast measured: body text 17.8:1, soft labels
 6.3:1, captions 7.0:1, buttons 17.8:1, area outlines 17.8:1. The dissemination-area hairline
