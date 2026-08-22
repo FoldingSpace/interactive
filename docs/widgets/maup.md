@@ -380,9 +380,9 @@ the ones on this page do not send anyone anywhere. It now says that police use m
 where patrols go: a plain statement about the practice rather than a gesture at the page.
 
 The paragraph is now 39 words and three sentences that each do one job: where and when,
-the question, and why the answer is not idle. It ends on "see whether you get the same
-answer" rather than "see whether your answer survives", because a second-year reader should
-not have to work out what surviving means.
+the question, and why the answer is not idle. It ends on "see how the picture changes",
+which asks the reader to look rather than to check, and fits a row of maps better than a
+sentence about answers did.
 
 The same audit caught a live error: the footer still credited "Residential break and enter
 incidents", the one category the widget refuses to model.
