@@ -227,4 +227,5 @@ function makeDocument(vars) {
   return doc;
 }
 
-module.exports = { Node: Node, makeDocument: makeDocument, makeEvent: makeEvent, build: build };
+module.exports = { Node: Node, makeDocument: makeDocument, makeEvent: makeEvent, build: build,
+                   decode: decode };

@@ -19,7 +19,7 @@ function parseHTML(html, doc) {
     var text = body.slice(i, m.index);
     i = re.lastIndex;
     if (text.trim() && stack.length) {
-      var t = doc.createTextNode(text.replace(/\s+/g, " "));
+      var t = doc.createTextNode(dom.decode(text.replace(/\s+/g, " ")));
       stack[stack.length - 1].appendChild(t);
     }
     if (m[0].indexOf("<!--") === 0) continue;
@@ -40,7 +40,7 @@ function parseHTML(html, doc) {
     var ar = /([-a-zA-Z0-9_:]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g, a;
     while ((a = ar.exec(attrs)) !== null) {
       var val = a[2] !== undefined ? a[2] : a[3] !== undefined ? a[3] : a[4] !== undefined ? a[4] : "";
-      el.setAttribute(a[1], val);
+      el.setAttribute(a[1], dom.decode(val));
     }
     stack[stack.length - 1].appendChild(el);
     if (!VOID[tag] && !selfClose) stack.push(el);

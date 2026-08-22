@@ -426,6 +426,14 @@ identical, the grid columns are blind to which term sits in them, and there are 
 where the row wraps two terms to a line, the pairing changes from [constant, households] to
 [households, income].
 
+**The key names its own sizes.** Two circles with their values beside them, and the value
+is rounded to a multiple of four so the smaller reads as exactly a quarter of the larger:
+256 and 64, not 257 and 64. The circle is then drawn at the size that rounded value really
+has on the maps — area goes with value, so radius goes with its square root — rather than at
+a fixed size with a rounded number next to it, which would make the key off by whatever the
+rounding was. It used to be three circles followed by two numbers in a trailing list, and a
+reader had to pair them off by guessing.
+
 **The circle areas add exactly.** Signed areas of the five terms equal the area of the
 result, to zero relative error, in both models and at both real scales, measured off the
 rendered SVG rather than off the values behind it. That required dropping a clamp that had
@@ -456,6 +464,19 @@ All six maps are the same size, including the result, so no term looks more impo
 another and the circle areas can be compared straight across. Titles and labels are held to
 two lines each, which makes every term the same height and lets the plus and equals signs
 simply centre on the row.
+
+**And they are level, which they were not.** The result's title is a size larger than the
+other five — deliberately, it is the answer — and the title box was `min-height: 1.2em * 2`,
+computed against each element's own font size. So the result's box came out 0.288rem taller
+and its map sat five pixels below the other five, in every state, since the row was built.
+Five pixels is nothing to look at and it costs the row the one thing it is for: the areas
+cannot be read straight across if the maps are not on a line. The min-height is now fixed in
+rem at two lines of the larger size, so all six boxes match and the bigger title still reads
+as the answer.
+
+Measured after: map tops equal across all six and term heights equal across all six, in
+presentation mode and out of it, at 118 areas and at 996. The harness in `tools/test` cannot
+see this — it has no layout — so it stays a browser check, and it is in the list below.
 
 **The row's claim is checked, not assumed.** The terms sum to the observed counts within
 **2.84e-14 at 118 census tracts** and **1.42e-14 across 995 dissemination areas**, tested

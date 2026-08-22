@@ -92,14 +92,15 @@ module.exports = function (t) {
       "the constant has a p-value, which is why it can be tested");
   });
 
-  t("the row reads households, income, constant, spatial error, residual error", function (a) {
+  t("the row reads the five terms in order, constant third", function (a) {
     var w = open();
     var names = w.doc.getElementById("eqrow").querySelectorAll(".tname").map(function (e) {
       return e.textContent.trim();
     });
-    a.equal(names[0], "households", "first term");
-    a.equal(names[1], "income", "second term");
-    a.equal(names[2], "the constant", "the constant sits third, left of the spatial error");
+    a.equal(names[0], "household size contribution", "first term");
+    a.equal(names[1], "income contribution", "second term");
+    a.equal(names[2], "the model\u2019s constant term",
+      "the constant sits third, left of the spatial error");
     a.equal(names[3], "spatial error we account for", "fourth term");
     a.equal(names[4], "residual error", "fifth term");
     a.equal(w.win.MAUP_TEST.layers.map(function (l) { return l.id; }).join(","),
@@ -129,13 +130,37 @@ module.exports = function (t) {
     a.ok(worst < 1e-13, "spatial error is " + worst.toExponential(2) + ", which is noise not signal");
     a.equal(w.doc.getElementById("m-sperr").querySelectorAll("circle").length, 0,
       "and nothing is drawn: not small circles, none");
-    a.equal(w.doc.getElementById("b-sperr").textContent, "nothing: this model has none",
+    a.equal(w.doc.getElementById("b-sperr").textContent, "nothing: this model assumes none",
       "and the panel says so rather than going blank");
     click(w, "Spatial error model");
-    a.equal(w.doc.getElementById("b-sperr").textContent, "unknown neighbourhood effects",
+    a.equal(w.doc.getElementById("b-sperr").textContent, "neighbourhood effects of unknown origin",
       "the spatial model names what the term stands in for");
     a.ok(w.doc.getElementById("m-sperr").querySelectorAll("circle").length > 900,
       "and the spatial model does draw the term");
+  });
+
+  t("the symbol key puts each number beside its own circle, and the two divide", function (a) {
+    var w = open();
+    ["Dissemination areas", "Census tracts"].forEach(function (z) {
+      click(w, z);
+      var svg = w.doc.getElementById("symkey").querySelector("svg");
+      var texts = svg.querySelectorAll("text"), circles = svg.querySelectorAll("circle");
+      a.equal(texts.length, 2, z + ": two labelled sizes");
+      var big = +texts[0].textContent, small = +texts[1].textContent;
+      a.equal(small * 4, big, z + ": the smaller circle is a quarter of the bigger, " + big + " and " + small);
+      a.equal(big % 4, 0, z + ": the bigger is a multiple of four so the quarter is whole (" + big + ")");
+      // each label sits immediately to the right of the circle it belongs to, which is the
+      // whole point: the numbers used to be a trailing list you had to pair off by guessing
+      var r0 = +circles[0].getAttribute("r"), r1 = +circles[1].getAttribute("r");
+      var gap0 = +texts[0].getAttribute("x") - (+circles[0].getAttribute("cx") + r0);
+      var gap1 = +texts[1].getAttribute("x") - (+circles[1].getAttribute("cx") + r1);
+      a.ok(gap0 > 0 && gap0 < 8, z + ": the big number sits just right of its circle (gap " + gap0.toFixed(1) + ")");
+      a.ok(gap1 > 0 && gap1 < 8, z + ": the small number sits just right of its circle (gap " + gap1.toFixed(1) + ")");
+      a.ok(+circles[1].getAttribute("cx") - r1 > +texts[0].getAttribute("x"),
+        z + ": and the second pair starts after the first number, not on top of it");
+      // area goes with the value, so the radius goes with its square root: half for a quarter
+      a.ok(Math.abs(r1 * 2 - r0) < 0.02, z + ": a quarter of the value is half the radius (" + r0 + ", " + r1 + ")");
+    });
   });
 
   t("the page still refuses the category its lab asks about", function (a) {

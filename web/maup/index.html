@@ -67,7 +67,13 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 .term { display: flex; flex-direction: column; gap: calc(0.2rem * var(--ui)); min-width: 0; }
 .tname {
   font-size: calc(0.78rem * var(--ui)); font-weight: 600; color: var(--ink-soft);
-  line-height: 1.2; min-height: calc(1.2em * 2);
+  line-height: 1.2;
+  /* Fixed in rem, not two of its own ems. The result's title is a size larger, so an em
+     min-height made its box taller than the other five and pushed its map five pixels
+     below them — which quietly cost the row the one thing it is for, comparing areas
+     straight across. 2.16rem is two lines at the larger size, so all six boxes match and
+     the bigger title still reads as the answer. */
+  min-height: calc(2.16rem * var(--ui));
 }
 .big-term .tname { font-size: calc(0.9rem * var(--ui)); color: var(--ink); }
 .tbeta {
@@ -188,8 +194,8 @@ svg.map g.syms circle { fill-opacity: 0.68; stroke: none; pointer-events: none; 
   background: var(--ink);
 }
 .stripline .dot.lo, .stripline .dot.hi { border-color: var(--ink); }
-.symkey { display: flex; align-items: center; min-height: calc(1.25em * 2); gap: calc(0.4rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
-.symkey svg { width: calc(5rem * var(--ui)); height: auto; flex: 0 0 auto; }
+.symkey { display: flex; align-items: center; height: calc(1.875rem * var(--ui)); gap: calc(0.4rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
+.symkey svg { display: block; height: calc(1.875rem * var(--ui)); width: auto; flex: 0 0 auto; }
 .stripline .dot:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
 .stripends { display: flex; justify-content: space-between; font-size: calc(0.78rem * var(--ui)); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .stripnote { font-size: calc(0.8rem * var(--ui)); color: var(--ink-soft); margin-top: calc(0.15rem * var(--ui)); }
@@ -352,23 +358,23 @@ body[data-present="1"] footer { display: none; }
 
     <div class="eqrow" id="eqrow">
       <div class="term" data-layer="hh">
-        <div class="tname">households</div>
+        <div class="tname">household size contribution</div>
         <svg class="map" id="m-hh" viewBox="0 0 100 100" role="img"
-             aria-label="The households term, mapped"></svg>
+             aria-label="The household size contribution, mapped"></svg>
         <div class="tbeta" id="b-hh">—</div>
       </div>
       <div class="op">+</div>
       <div class="term" data-layer="inc">
-        <div class="tname">income</div>
+        <div class="tname">income contribution</div>
         <svg class="map" id="m-inc" viewBox="0 0 100 100" role="img"
-             aria-label="The income term, mapped"></svg>
+             aria-label="The income contribution, mapped"></svg>
         <div class="tbeta" id="b-inc">—</div>
       </div>
       <div class="op">+</div>
       <div class="term" data-layer="const">
-        <div class="tname">the constant</div>
+        <div class="tname">the model&rsquo;s constant term</div>
         <svg class="map" id="m-const" viewBox="0 0 100 100" role="img"
-             aria-label="The constant, the same in every area"></svg>
+             aria-label="The model&rsquo;s constant term, the same in every area"></svg>
         <div class="tbeta" id="constval">—</div>
       </div>
       <div class="op">+</div>
@@ -430,7 +436,7 @@ body[data-present="1"] footer { display: none; }
       </div>
 
       <div class="stat">
-        <div class="label">Which terms hold up
+        <div class="label">Which terms (don&rsquo;t) hold up
           <button class="info" data-info="info-eq" aria-expanded="false" aria-controls="info-eq"
                   title="How do I read the row?">i</button>
         </div>
@@ -1378,9 +1384,9 @@ body[data-present="1"] footer { display: none; }
   // areas across a row add up the way the numbers do, and the constant has to be there for
   // the sum to be visible.
   var LAYERS = [
-    { id: "hh",    name: "households" },
-    { id: "inc",   name: "income" },
-    { id: "const", name: "the constant" },
+    { id: "hh",    name: "household size contribution" },
+    { id: "inc",   name: "income contribution" },
+    { id: "const", name: "the model's constant term" },
     { id: "sperr", name: "spatial error we account for" },
     { id: "res",   name: "residual error" },
     { id: "be",    name: "reported" }
@@ -1525,12 +1531,21 @@ body[data-present="1"] footer { display: none; }
 
     // A key of two nested circles: the biggest and a quarter of it.
     var key = document.getElementById("symkey");
-    key.innerHTML = '<svg viewBox="0 0 120 44" aria-hidden="true">' +
-      '<circle cx="26" cy="26" r="16" fill="' + POS + '" fill-opacity="0.72"/>' +
-      '<circle cx="60" cy="34" r="8" fill="' + POS + '" fill-opacity="0.72"/>' +
-      '<circle cx="80" cy="38" r="4" fill="' + NEG + '" fill-opacity="0.72"/></svg>' +
-      '<span>' + Math.round(sc.max) + " &middot; " + Math.round(sc.max / 4) +
-      " &middot; red more, blue less</span>";
+    // A round number for the big circle, chosen as a multiple of four so the quarter is a
+    // whole number too: 256 and 64 read as a pair, 257 and 64 do not. The circle is then
+    // drawn at the size that value really has on the maps — area goes with the value, so
+    // the radius goes with its square root — rather than at a fixed size with a rounded
+    // label beside it, which would make the key off by whatever the rounding was.
+    var keyBig = Math.max(4, 4 * Math.round(sc.max / 4));
+    var rBig = 16 * Math.sqrt(keyBig / sc.max), rSml = rBig / 2;
+    var cxBig = 2 + rBig, cxSml = cxBig + rBig + 34 + rSml;
+    key.innerHTML = '<svg viewBox="0 0 150 40" aria-hidden="true">' +
+      '<circle cx="' + cxBig.toFixed(2) + '" cy="' + (38 - rBig).toFixed(2) + '" r="' + rBig.toFixed(2) + '" fill="' + POS + '" fill-opacity="0.72"/>' +
+      '<text x="' + (cxBig + rBig + 3).toFixed(2) + '" y="' + (40 - rBig).toFixed(2) + '" font-size="13" fill="currentColor">' + keyBig + '</text>' +
+      '<circle cx="' + cxSml.toFixed(2) + '" cy="' + (38 - rSml).toFixed(2) + '" r="' + rSml.toFixed(2) + '" fill="' + POS + '" fill-opacity="0.72"/>' +
+      '<text x="' + (cxSml + rSml + 3).toFixed(2) + '" y="' + (40 - rSml).toFixed(2) + '" font-size="13" fill="currentColor">' + (keyBig / 4) + '</text>' +
+      '<circle cx="140" cy="34" r="4" fill="' + NEG + '" fill-opacity="0.72"/></svg>' +
+      "<span>red more, blue less</span>";
 
     // Each term carries its coefficient and the uncertainty on it. A beta printed alone
     // reads as a fact; printed with its standard error it reads as an estimate.
@@ -1569,9 +1584,8 @@ body[data-present="1"] footer { display: none; }
     }
     var spatialOn = (modelMode === "err");
     document.getElementById("b-sperr").textContent =
-      spatialOn ? "unknown neighbourhood effects" : "nothing: this model has none";
-    document.getElementById("b-res").textContent =
-      spatialOn ? "what is left once that is out" : "what is left over";
+      spatialOn ? "neighbourhood effects of unknown origin" : "nothing: this model assumes none";
+    document.getElementById("b-res").textContent = "what is left over";
 
     document.getElementById("moran").textContent = sig(st.I, 3);
     // Only the unsurprising result is worth a word here. Everything else is in the panel.
