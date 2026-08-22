@@ -487,9 +487,18 @@ The first attempt put the sign at the end of each title, inline. That reads corr
 lines up with nothing: an operator at the end of a phrase lands wherever that phrase happens
 to end, so no two agreed with each other or with the row's. Putting both copies inside the
 same grid item is what makes them line up by construction rather than by a measurement that
-would need redoing every time a title changes length. Measured after: each pair shares an x
-centre to within a tenth of a pixel, the five title signs are level with each other and with
-the centre of the title box, and the five map signs are level with the centre of the maps.
+would need redoing every time a title changes length.
+
+**And the sign goes on the title's first line, not in the middle of the title box.** The box
+is two lines tall and the text sits at the top of it, so centring the sign in the box put it
+below a one-line title and between the lines of a two-line one — horizontally aligned and
+visibly floating. It takes the title's own line box instead, at the top, matching its font
+size and line height.
+
+Measured after, against the first line's client rect rather than the element's box, which is
+the mistake that hid this the first time: each pair shares an x centre to within a tenth of a
+pixel; each title sign sits on the title's first line with **zero** difference at all five;
+each map sign sits at the centre of its map to within 0.1 px.
 
 They are `aria-hidden` — each map already has its own label, and an operator read out
 mid-name is noise. The narrow layout still drops the equals from flow and wraps two terms to
