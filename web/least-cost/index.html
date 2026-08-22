@@ -248,16 +248,16 @@ body[data-present="1"] .help-panel { display: none; }
         <span class="mix" id="mix"></span>
       </div>
       <div class="help-panel" id="info-len" hidden>
-        <p>This route is built from square cells and can only travel in eight directions:
-          along the sides and along the diagonals. A real line can run at any angle. A route
-          that wants to go at 22.5 degrees has to be made of steps that cannot, and comes
-          out up to 8.2% longer than the straight line it is copying.</p>
+        <p>This route is built from square cells, so it can only travel in eight
+          directions: along the sides and along the diagonals. A real line can run at any
+          angle. To go at 22.5 degrees it has to zigzag between two of the eight, and the
+          zigzag makes it up to 8.2% longer than the straight line it is copying.</p>
         <p>The general point is older than this page. A path found on a grid never settles
           onto the path you would draw on open ground, and how far apart they end up depends
           on which moves the grid allows. Eight is only one choice.</p>
-        <p>This route is nearly on the diagonal, where the error is smallest: measured
-          against a true straight line between the same two points, the grid adds 0.5%.
-          Turn the map and the same method would be less kind.</p>
+        <p>This route runs close to the diagonal, where the error is smallest. Measured
+          against a true straight line between the same two points, the grid adds 0.5%
+          here. Send the route in another direction and the same method adds more.</p>
         <p class="refs"><b>For more, see:</b> Goodchild, M. F. 1977. An evaluation of
           lattice solutions to the problem of corridor location. <i>Environment and
           Planning A</i> 9(7), 727&ndash;738.</p>
@@ -278,9 +278,10 @@ body[data-present="1"] .help-panel { display: none; }
         <p>The line on the map is the cheapest route. It is not the only cheap one. This
           control keeps the land that a route could cross while still costing almost the
           same, and fades everything else.</p>
-        <p>The band is usually wide. In the Langley version of this problem, land covering
-          24.7 square kilometres can carry a route within one part in a thousand of the
-          cheapest. Software draws one line and gives no sign of that.</p>
+        <p>The band is usually wide. Turn it on and read the area printed beside the
+          length: tens of square kilometres of land can carry a route costing within one
+          part in a thousand of the cheapest. Software draws one line and gives no sign
+          that the rest of the band is there.</p>
         <p>The routes are found the same way twice: costs are added up outward from the
           substation, then outward from the plant. Add the two together and each cell holds
           the cost of the best route that goes through it.</p>
@@ -321,7 +322,7 @@ body[data-present="1"] .help-panel { display: none; }
         <div class="help-panel" id="info-preset" hidden>
           <p>Four sets of numbers, each one a position somebody could hold. None of them
             is the right answer. Load one, look at where the line goes, then decide whether
-            you would sign your name to it.</p>
+            you would defend it.</p>
           <p>Watch what &ldquo;keep away from homes&rdquo; does. It barely moves the line,
             because the cheapest route was already avoiding houses. A value you state
             loudly can still change nothing, and that depends on the land, not on how
@@ -354,9 +355,9 @@ body[data-present="1"] .help-panel { display: none; }
         removed.</p>
       <p>Do not take this too far. There is a long argument in geography about whether
         putting a map in front of people widens a decision or only appears to, and one of
-        the sharper objections is that software of this kind lends the illusion of control
-        while the control stays where it was. Five proposals side by side can look like a
-        debate and change nothing about who signs.</p>
+        the sharper objections is that software like this can make people feel involved in
+        a decision while the decision stays exactly where it was. Five proposals side by
+        side can look like a debate and change nothing about who decides.</p>
       <p class="refs"><b>For more, see:</b> Sieber, R. 2006. Public participation
         geographic information systems: a literature review and framework. <i>Annals of the
         Association of American Geographers</i> 96(3), 491&ndash;507. And Elwood, S. 2006.
@@ -373,10 +374,10 @@ body[data-present="1"] .help-panel { display: none; }
       Vancouver Land Use 2016</a>, used under the Metro Vancouver Open Government Licence.
       Grouped into eight classes for this page; the grouping is ours, not theirs.
       220 &times; 190 cells of 100 m, NAD83 / UTM zone 10N.</p>
-    <p>The line starts at a real utility site at 124 St and 86 Ave in Surrey, which the
-      land use data classes as a utility yard. The plant at the other end is not real. It
-      stands in for something that would be proposed at Campbell Heights, where the
-      industrial district's expansion into farmland is an argument that is happening.</p>
+    <p>The line starts where the land use data records a utility yard, at 124 St and 86 Ave
+      in Surrey. The plant at the other end is not real. It stands in for something that
+      might be proposed at Campbell Heights, where the industrial district's expansion into
+      farmland is an argument that is happening now.</p>
     <p>Made by Luke Bergmann with Claude.
       <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
   </footer>
