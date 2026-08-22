@@ -417,6 +417,15 @@ area is proportional to value, so the signed areas across a row add the way the 
 and the constant has to be drawn for that sum to be visible. Its number and standard error
 sit underneath like every other term's.
 
+**It sits third, not first: households + income + constant + spatial error + residual error.**
+Addition commutes, so nothing in the arithmetic cares, and reading order does. The two terms
+a student is there to argue about now open the row instead of following a number that is the
+same everywhere. Nothing in the code depended on the position — the four `+` operators are
+identical, the grid columns are blind to which term sits in them, and there are no
+`nth-child` rules — but three comments named the old order and are corrected, and on a phone,
+where the row wraps two terms to a line, the pairing changes from [constant, households] to
+[households, income].
+
 **The circle areas add exactly.** Signed areas of the five terms equal the area of the
 result, to zero relative error, in both models and at both real scales, measured off the
 rendered SVG rather than off the values behind it. That required dropping a clamp that had
@@ -425,6 +434,14 @@ proportionality is the whole point.
 
 The polygons are now a base under the symbols, still with the dissemination-area hairlines
 under every grouping.
+
+**Two terms were renamed to say what they are.** "Spatial error" became **"spatial error we
+account for"** and "residuals" became **"residual error"**, which puts the distinction
+between them in the labels instead of leaving it to be inferred. Under the spatial model the
+first now reads **"unknown neighbourhood effects"** rather than "what runs together" — the
+old phrase described the statistical symptom, and the new one names what the term is
+standing in for. Under aspatial OLS it still reads "nothing: this model has none", which is
+the point of keeping the empty panel.
 
 The text above the row is one paragraph of 42 words running the full measure. It used to be
 two blocks that did not connect — a question, then a separate paragraph starting "counts
@@ -441,9 +458,48 @@ two lines each, which makes every term the same height and lets the plus and equ
 simply centre on the row.
 
 **The row's claim is checked, not assumed.** The terms sum to the observed counts within
-2.8e-14 at census tracts and 7.1e-15 across 995 dissemination areas, in both models, tested
-through `MAUP_TEST.valuesFor`. Under aspatial OLS the spatial error term has exactly zero
+**2.84e-14 at 118 census tracts** and **1.42e-14 across 995 dissemination areas**, tested
+through `MAUP_TEST.valuesFor`.
+
+Those are the figures after the constant moved. The dissemination-area one was 7.1e-15
+before, and doubling is expected rather than alarming: floating-point addition is not
+associative, so summing the same five terms in a different order lands a bit differently in
+the last place. Both are noise at 1e-14 on values of order hundreds. Recorded as the new
+numbers because the old ones will never come back.
+
+Under aspatial OLS the spatial error term has exactly zero
 circles — not small ones, none — because that model assigns nothing to spatial structure.
+
+### The card beside the row was empty for months
+
+"Reading the row" was a titled box with nothing in it. The commit that turned the printed
+equation into this row of maps deleted the code that filled `#eqnote` and left the `#eqnote`
+div behind, so the card rendered as a label, an (i), and a collapsed empty div. Nothing
+referenced the id anywhere in 1,767 lines. It is **"Which terms hold up"** now, and it says
+which ones are crossed out, what crossing out means, and that income is in thousands.
+
+Checked in presentation mode, which is where the old arrangement failed worst: the card's
+body is visible, every (i) panel is hidden, and the crossed-out coefficient is still on
+screen with its explanation two centimetres away.
+
+That matters more than a tidy-up, because **the strikethrough had no visible explanation at
+all.** A crossed-out coefficient means p is 0.05 or more. The only text saying so was inside
+the (i) of this very card — the one card with no visible body to draw anyone to its (i) —
+and presentation mode hides every (i) panel, so a lecture showed the mark with no route to
+its meaning anywhere on screen. The explanation is now in the card's always-visible body.
+
+**And the constant now gets the same test as the other two.** It has a p-value and always
+had; it was simply written out by different code that never checked it. A rule applied to two
+numbers of three, with nothing saying why the third was exempt, reads as arbitrary. It also
+now prints as a plain number rather than with a multiplication sign, because it multiplies
+nothing.
+
+Three pieces of debris from the same old commit went with it: an uncalled `term()` helper,
+and two dead CSS rules — one of which was not dead but misdirected. `.eq` had been written
+for the printed equation; with that gone it was landing on `<div class="op eq">`, the equals
+sign between the residuals and the result, and beating `.op` on source order. The equals has
+been a size larger than the plus signs by accident, with a stray top margin nudging it off
+centre. It is now a size larger on purpose, `.op.eq`, and centred.
 
 Two bugs found while building this, both from earlier edits rather than this one: the layout
 rewrite had deleted the entire maps stylesheet, so the polygons were rendering as black

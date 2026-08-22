@@ -54,7 +54,7 @@ body[data-present="1"] { --ui: 1.15; }
 h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 
 /* ---- layout ----
-   An equation of maps: constant + households + income + spatial error + residuals =
+   An equation of maps: households + income + constant + spatial error + residual error =
    reported. Every term is in reports per square kilometre and shares one colour scale, so
    the addition can be checked by eye. Controls sit underneath, out of the way of it. */
 .main { display: flex; flex-direction: column; gap: calc(0.9rem * var(--ui)); }
@@ -78,7 +78,7 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 .tbeta .dead { text-decoration: line-through; color: var(--ink-soft); }
 .op {
   align-self: center; text-align: center;
-  font-size: calc(0.8rem * var(--ui)); color: var(--ink-soft);
+  font-size: calc(0.8rem * var(--ui)); font-weight: 700; color: var(--ink);
 }
 
 /* Narrow: the row wraps into a block of small maps with the result last and wider. */
@@ -198,9 +198,10 @@ svg.map g.syms circle { fill-opacity: 0.68; stroke: none; pointer-events: none; 
   .stripline .dot { min-width: 18px; min-height: 18px; }
 }
 .big { font-size: calc(2.2rem * var(--ui)); font-weight: 650; line-height: 1.05; font-variant-numeric: tabular-nums; }
-.eq { font-size: calc(0.95rem * var(--ui)); margin-top: calc(0.35rem * var(--ui)); font-variant-numeric: tabular-nums; }
-.eq .term { white-space: nowrap; }
-.eq .dead { color: var(--ink-soft); text-decoration: line-through; }
+/* The equals is a size up from the plus signs, on purpose. It used to be that size by
+   accident: a leftover .eq rule from the printed equation this row replaced was landing on
+   <div class="op eq"> and beating .op on source order, stray top margin and all. */
+.op.eq { font-size: calc(0.95rem * var(--ui)); }
 .sub { font-size: calc(0.85rem * var(--ui)); color: var(--ink-soft); margin-top: calc(0.2rem * var(--ui)); }
 .pick-line { font-size: calc(0.88rem * var(--ui)); min-height: calc(2.6em * var(--ui)); }
 .pick-line .none { color: var(--ink-soft); }
@@ -350,14 +351,6 @@ body[data-present="1"] footer { display: none; }
   <div class="main">
 
     <div class="eqrow" id="eqrow">
-      <div class="term" data-layer="const">
-        <div class="tname">the constant</div>
-        <svg class="map" id="m-const" viewBox="0 0 100 100" role="img"
-             aria-label="The constant, the same in every area"></svg>
-        <div class="tbeta"><span id="constval">—</span>
-          <span class="pm" id="constse"></span></div>
-      </div>
-      <div class="op">+</div>
       <div class="term" data-layer="hh">
         <div class="tname">households</div>
         <svg class="map" id="m-hh" viewBox="0 0 100 100" role="img"
@@ -372,17 +365,24 @@ body[data-present="1"] footer { display: none; }
         <div class="tbeta" id="b-inc">—</div>
       </div>
       <div class="op">+</div>
+      <div class="term" data-layer="const">
+        <div class="tname">the constant</div>
+        <svg class="map" id="m-const" viewBox="0 0 100 100" role="img"
+             aria-label="The constant, the same in every area"></svg>
+        <div class="tbeta" id="constval">—</div>
+      </div>
+      <div class="op">+</div>
       <div class="term" data-layer="sperr">
-        <div class="tname">spatial error</div>
+        <div class="tname">spatial error we account for</div>
         <svg class="map" id="m-sperr" viewBox="0 0 100 100" role="img"
-             aria-label="The spatial part of the error, mapped"></svg>
+             aria-label="The spatial error the model accounts for, mapped"></svg>
         <div class="tbeta" id="b-sperr">—</div>
       </div>
       <div class="op">+</div>
       <div class="term" data-layer="res">
-        <div class="tname">residuals</div>
+        <div class="tname">residual error</div>
         <svg class="map" id="m-res" viewBox="0 0 100 100" role="img"
-             aria-label="The residuals, mapped"></svg>
+             aria-label="The residual error, mapped"></svg>
         <div class="tbeta" id="b-res">what is left over</div>
       </div>
       <div class="op eq">=</div>
@@ -430,11 +430,11 @@ body[data-present="1"] footer { display: none; }
       </div>
 
       <div class="stat">
-        <div class="label">Reading the row
+        <div class="label">Which terms hold up
           <button class="info" data-info="info-eq" aria-expanded="false" aria-controls="info-eq"
-                  title="How do I read this?">i</button>
+                  title="How do I read the row?">i</button>
         </div>
-        <div class="sub" id="eqnote"></div>
+        <div class="sub" id="eqnote">—</div>
         <div class="help-panel" id="info-eq" hidden>
           <p>One equation for the whole city. It predicts how many incidents of the chosen
              kind were reported in an area, from two things: how many private households the
@@ -463,16 +463,16 @@ body[data-present="1"] footer { display: none; }
       </div>
 
       <div class="stat">
-        <div class="label">Are the errors clustered in space? (Moran's I)
+        <div class="label">Are the residual errors clustered in space? (Moran's I)
           <button class="info" data-info="info-moran" aria-expanded="false" aria-controls="info-moran"
-                  title="Why test the errors?">i</button>
+                  title="Why test the residual errors?">i</button>
         </div>
         <div class="big" id="moran">—</div>
         <div class="sub" id="moranp"></div>
         <div class="help-panel" id="info-moran" hidden>
-          <p>The model's errors should be scattered. If areas where it guesses too low sit
-             next to other areas where it guesses too low, something with a geography to it
-             is missing from the model.</p>
+          <p>The residual errors are what the model failed to account for, and they should
+             be scattered. If areas where it guesses too low sit next to other areas where it
+             guesses too low, something with a geography to it is missing from the model.</p>
           <p>Moran's I measures that clustering: near 0 means scattered, positive means
              neighbours resemble each other. Neighbours here are areas that touch, each
              counted equally.</p>
@@ -481,9 +481,9 @@ body[data-present="1"] footer { display: none; }
              officers are sent, how readily an incident is reported, and how it is written up
              all vary across a city. Part of what clusters here is the recording rather than
              the thing recorded, and no amount of care with the statistics separates them.</p>
-          <p>The p-value comes from shuffling the errors between areas 999 times and asking
-             how often chance alone beats what we see. Treat it as a rough guide: the errors
-             are left over from a model already fitted to this data, so the shuffling is not
+          <p>The p-value comes from shuffling the residual errors between areas 999 times
+             and asking how often chance alone beats what we see. Treat it as a rough guide:
+             they are left over from a model already fitted to this data, so the shuffling is not
              quite testing what it appears to.</p>
           <p class="refs"><b>For more, see:</b> Cliff, A. D. and Ord, J. K. (1972) Testing
              for spatial autocorrelation among regression residuals. <i>Geographical
@@ -1371,18 +1371,18 @@ body[data-present="1"] footer { display: none; }
   // Every layer is a term of the fitted equation, in counts. Counts are drawn as circles
   // sized by value, not as shaded areas: shading a polygon by a count makes a big area
   // look busy for being big. The terms add up.
-  //   plain:  constant + households + income + residual = reported
-  //   error:  constant + households + income + spatial error + residual = reported
+  //   plain:  households + income + constant + residual error = reported
+  //   error:  households + income + constant + spatial error we account for + residual error = reported
   // The constant is the same number in every area, so its map is one circle size repeated.
   // That is the point rather than a waste: circle area is proportional to value, so the
   // areas across a row add up the way the numbers do, and the constant has to be there for
   // the sum to be visible.
   var LAYERS = [
-    { id: "const", name: "the constant" },
     { id: "hh",    name: "households" },
     { id: "inc",   name: "income" },
-    { id: "sperr", name: "spatial error" },
-    { id: "res",   name: "residuals" },
+    { id: "const", name: "the constant" },
+    { id: "sperr", name: "spatial error we account for" },
+    { id: "res",   name: "residual error" },
     { id: "be",    name: "reported" }
   ];
 
@@ -1404,7 +1404,7 @@ body[data-present="1"] footer { display: none; }
   // addition still reads. Area is proportional to the value, which means the radius goes
   // as its square root.
   function sharedScale(st) {
-    var pool = [], i, j, v, ids = ["const", "hh", "inc", "sperr", "res", "be"];
+    var pool = [], i, j, v, ids = LAYERS.map(function (L) { return L.id; });
     for (j = 0; j < ids.length; j++) {
       v = valuesFor(ids[j], st);
       for (i = 0; i < st.k; i++) if (isFinite(v[i]) && v[i]) pool.push(Math.abs(v[i]));
@@ -1534,21 +1534,42 @@ body[data-present="1"] footer { display: none; }
 
     // Each term carries its coefficient and the uncertainty on it. A beta printed alone
     // reads as a fact; printed with its standard error it reads as an estimate.
-    function beta(el, v, se, p, digits) {
+    function beta(el, v, se, p, digits, times) {
       var e = document.getElementById(el);
       if (!m) { e.textContent = "—"; return; }
-      e.innerHTML = '<span class="' + (p !== null && p >= 0.05 ? "dead" : "") + '">&times; ' +
-        v.toFixed(digits) + '</span> <span class="pm">&plusmn; ' + se.toFixed(digits) + "</span>";
+      // The constant multiplies nothing, so it prints as a number rather than "x 25.3".
+      e.innerHTML = '<span class="' + (p !== null && p >= 0.05 ? "dead" : "") + '">'
+        + (times ? "&times; " : "") + v.toFixed(digits)
+        + '</span> <span class="pm">&plusmn; ' + se.toFixed(digits) + "</span>";
     }
     if (m) {
-      document.getElementById("constval").textContent = m.b[0].toFixed(1);
-      document.getElementById("constse").innerHTML = "&plusmn; " + m.se[0].toFixed(1);
-      beta("b-hh", m.b[1], m.se[1], m.p[1], 5);
-      beta("b-inc", m.b[2], m.se[2], m.p[2], 3);
+      // The constant gets the same test as the others. Exempting it made the crossing-out
+      // look arbitrary: a rule applied to two numbers of three, with nothing saying why the
+      // third was spared.
+      beta("constval", m.b[0], m.se[0], m.p[0], 1, false);
+      beta("b-hh", m.b[1], m.se[1], m.p[1], 5, true);
+      beta("b-inc", m.b[2], m.se[2], m.p[2], 3, true);
+    }
+    // What the crossing-out means, said where the crossing-out is rather than only inside
+    // an (i) that presentation mode removes. This card was empty for a while: the code that
+    // filled it went when the printed equation became a row of maps, and the box stayed.
+    var eqnote = document.getElementById("eqnote");
+    if (!m) {
+      eqnote.textContent = "\u2014";
+    } else {
+      var dead = [];
+      if (m.p[0] >= 0.05) dead.push("the constant");
+      if (m.p[1] >= 0.05) dead.push("households");
+      if (m.p[2] >= 0.05) dead.push("income");
+      eqnote.textContent = dead.length === 0
+        ? "Nothing is crossed out: every number here is bigger than chance alone would "
+          + "easily produce. Income is in thousands of dollars."
+        : "Crossed out means it could easily be chance. Crossed out here: "
+          + dead.join(" and ") + ". Income is in thousands of dollars.";
     }
     var spatialOn = (modelMode === "err");
     document.getElementById("b-sperr").textContent =
-      spatialOn ? "what runs together" : "nothing: this model has none";
+      spatialOn ? "unknown neighbourhood effects" : "nothing: this model has none";
     document.getElementById("b-res").textContent =
       spatialOn ? "what is left once that is out" : "what is left over";
 
@@ -1588,12 +1609,6 @@ body[data-present="1"] footer { display: none; }
 
     showPick();
     writeURL();
-  }
-
-  function term(b, p, digits, name) {
-    var sign = b < 0 ? "&minus; " : "+ ";
-    var body = sign + Math.abs(b).toFixed(digits) + " &times; " + name;
-    return '<span class="term' + (p >= 0.05 ? " dead" : "") + '">' + body + "</span>";
   }
 
   function showPick() {
@@ -1653,7 +1668,7 @@ body[data-present="1"] footer { display: none; }
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {
         modelMode = mo.id; stripCache = null; render();
-        liveEl.textContent = mo.label + ". Moran's I of the errors is now " +
+        liveEl.textContent = mo.label + ". Moran's I of the residual errors is now " +
           (isFinite(state.I) ? state.I.toFixed(3) : "not available") + ".";
       });
       mbtn[mo.id] = b; hm.appendChild(b);
