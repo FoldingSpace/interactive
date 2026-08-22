@@ -369,11 +369,19 @@ labels and two grey lines in the footer — and presentation mode hides the (i) 
 a lecture would have shown the statistics and none of the argument. The word Vancouver did
 not appear anywhere on the face of the page.
 
-Fixed by putting 47 words above the maps, in the reading flow rather than the footer, and
-keeping them in presentation mode: counts like these send officers somewhere and leave them
-elsewhere, they are how a neighbourhood gets described when money is handed out, the areas
-were drawn by an agency for its own reasons, and every number is a record rather than an
-event. The compact-projector threshold moved from 820 px to 960 px to pay for the height.
+Fixed by putting the stakes above the maps, in the reading flow rather than the footer, and
+keeping them in presentation mode. The compact-projector threshold moved from 820 px to
+960 px to pay for the height.
+
+That paragraph then went through two more revisions, both from the same complaint: it was
+saying the right thing obliquely. It first read "counts like these send officers somewhere
+and leave them elsewhere", which is coy about the mechanism and vague about which counts —
+the ones on this page do not send anyone anywhere. It now says that maps like this one help
+decide where patrols go, which is concrete, hedged to what can be defended, and short.
+
+The paragraph is now 39 words and three sentences that each do one job: where and when,
+the question, and why the answer is not idle. The instability is left to land on its own
+from the sentence that follows.
 
 The same audit caught a live error: the footer still credited "Residential break and enter
 incidents", the one category the widget refuses to model.
