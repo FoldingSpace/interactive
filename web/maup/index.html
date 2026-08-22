@@ -52,8 +52,6 @@ body[data-present="1"] { --ui: 1.15; }
   gap: calc(0.9rem * var(--ui));
 }
 h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
-.intro { margin: 0; color: var(--ink-soft); max-width: 44em; }
-body[data-present="1"] .intro { display: none; }
 
 /* ---- layout ----
    An equation of maps: constant + households + income + spatial error + residuals =
@@ -113,7 +111,6 @@ body[data-present="1"] .intro { display: none; }
   body[data-present="1"] .stat { padding: calc(0.5rem * var(--ui)) calc(0.7rem * var(--ui)); }
   body[data-present="1"] .info { display: none; }
   body[data-present="1"] .help-panel { display: none; }
-  body[data-present="1"] #fs-left { display: none; }
   body[data-present="1"] fieldset {
     padding: calc(0.25rem * var(--ui)) calc(0.55rem * var(--ui)) calc(0.5rem * var(--ui));
   }
@@ -271,7 +268,7 @@ svg.map path:focus-visible { outline: none; }
 .refs b { color: var(--ink); font-weight: 600; }
 
 .stakes {
-  margin: 0; max-width: 46em;
+  margin: 0; max-width: 78em;
   font-size: calc(0.95rem * var(--ui));
   border-left: calc(3px * var(--ui)) solid var(--edge);
   padding-left: calc(0.7rem * var(--ui));
@@ -346,13 +343,9 @@ body[data-present="1"] footer { display: none; }
 <div class="wrap">
 
   <h1>Drawing the lines: the same city, different areas</h1>
-  <p class="intro">Does who lives in an area predict where police record incidents? This is
-     Vancouver, 2015 and 2016. Cut the city up a different way and see whether your answer
-     survives it.</p>
-  <p class="stakes">Counts like these send officers somewhere and leave them elsewhere, and
-     they are how a neighbourhood gets described when money is handed out. The areas they are
-     counted in were drawn by an agency for its own reasons. Every number here is a record,
-     not an event.</p>
+  <p class="stakes">Vancouver, 2015 and 2016. Does who lives in an area predict where police
+     record an incident? Counts like these send officers somewhere and leave them elsewhere,
+     so the answer matters. Cut the city up a different way and see whether yours survives.</p>
 
   <div class="main">
 
@@ -597,26 +590,6 @@ body[data-present="1"] footer { display: none; }
         </div>
       </fieldset>
 
-      <fieldset id="fs-left">
-        <legend>Left map shows
-          <button class="info" data-info="info-left" aria-expanded="false" aria-controls="info-left"
-                  title="What are these?">i</button>
-        </legend>
-        <div class="row" id="viewbtns" role="group" aria-label="What the left map shows"></div>
-        <div class="help-panel" id="info-left" hidden>
-          <p>Reports are counts of recorded incidents in the chosen category. Households is
-             the number of private households in the area. Income is the median household
-             income.</p>
-          <p>When areas are grouped, counts are added up and income is averaged across the
-             areas being grouped, weighted by how many households each holds. An average of
-             medians is not itself a median, so the income of a grouped area here is close
-             to, but not the same as, the figure the census publishes for it. For census
-             tracts the two agree closely, and the difference still moves R<sup>2</sup>
-             from 0.160 to 0.188.</p>
-          <p>Every set of areas here is built the same way, so that comparing them is a
-             comparison of boundaries and nothing else.</p>
-        </div>
-      </fieldset>
 
       <fieldset>
         <legend>Neighbours are
@@ -1282,24 +1255,18 @@ body[data-present="1"] footer { display: none; }
     { id: "r118", label: "Random areas",        n: "118" },
     { id: "r40",  label: "Random areas",        n: "40" }
   ];
-  var VIEWS = [
-    { id: "be",  label: "Reports",    cap: "" },   // filled in from the chosen category
-    { id: "hh",  label: "Households", cap: "Private households" },
-    { id: "inc", label: "Income",     cap: "Median household income" }
-  ];
 
   var params = new URLSearchParams(location.search);
   // Captured now, because render() rewrites the URL and drops anything at its default.
   // Read later, this would be empty for a link that happened to match the defaults.
   var ARRIVED_WITH_STATE = location.search.length > 0;
-  var zoning = "da", seed = 1, view = "be", present = false;
+  var zoning = "da", seed = 1, present = false;
   var wkind = "touch";
   var crime = D.types[0].key;
   var modelMode = params.get("m") === "err" ? "err" : "ols";
   if (params.get("c") && D.crime[params.get("c")]) crime = params.get("c");
   BE = D.crime[crime];
   if (params.get("z") && ZONINGS.some(function (z) { return z.id === params.get("z"); })) zoning = params.get("z");
-  if (params.get("v") && VIEWS.some(function (v) { return v.id === params.get("v"); })) view = params.get("v");
   if (params.get("w") && WKINDS.some(function (v) { return v.id === params.get("w"); })) wkind = params.get("w");
   var sp = parseInt(params.get("s"), 10); if (sp > 0 && sp < 1e6) seed = sp;
   present = params.get("present") === "1";
@@ -1615,9 +1582,6 @@ body[data-present="1"] footer { display: none; }
     Object.keys(mbtn).forEach(function (id) {
       mbtn[id].setAttribute("aria-pressed", id === modelMode ? "true" : "false");
     });
-    VIEWS.forEach(function (v) {
-      vbtn[v.id].setAttribute("aria-pressed", v.id === view ? "true" : "false");
-    });
     WKINDS.forEach(function (v) {
       wbtn[v.id].setAttribute("aria-pressed", v.id === wkind ? "true" : "false");
     });
@@ -1658,7 +1622,6 @@ body[data-present="1"] footer { display: none; }
     if (zoning === "r118" || zoning === "r40") { if (seed !== 1) p.set("s", String(seed)); }
     if (crime !== D.types[0].key) p.set("c", crime);
     if (modelMode !== "ols") p.set("m", modelMode);
-    if (view !== "be") p.set("v", view);
     if (wkind !== "touch") p.set("w", wkind);
     if (present) p.set("present", "1");
     var q = p.toString();
@@ -1666,7 +1629,7 @@ body[data-present="1"] footer { display: none; }
   }
 
   // ------------------------------------------------------------------- controls
-  var zbtn = {}, vbtn = {}, wbtn = {}, cbtn = {}, mbtn = {};
+  var zbtn = {}, wbtn = {}, cbtn = {}, mbtn = {};
   (function buildControls() {
     var host = document.getElementById("zonebtns");
     ZONINGS.forEach(function (z) {
@@ -1707,14 +1670,6 @@ body[data-present="1"] footer { display: none; }
       });
       cbtn[t.key] = b; hc.appendChild(b);
     });
-    var h2 = document.getElementById("viewbtns");
-    VIEWS.forEach(function (v) {
-      var b = document.createElement("button");
-      b.className = "opt"; b.type = "button"; b.textContent = v.label;
-      b.setAttribute("aria-pressed", "false");
-      b.addEventListener("click", function () { view = v.id; render(); });
-      vbtn[v.id] = b; h2.appendChild(b);
-    });
     var h3 = document.getElementById("viewbbtns");
     WKINDS.forEach(function (v) {
       var b = document.createElement("button");
@@ -1739,7 +1694,7 @@ body[data-present="1"] footer { display: none; }
   });
 
   document.getElementById("reset").addEventListener("click", function () {
-    zoning = "da"; seed = 1; view = "be"; wkind = "touch"; picked = -1;
+    zoning = "da"; seed = 1; wkind = "touch"; picked = -1;
     crime = D.types[0].key; BE = D.crime[crime]; modelMode = "ols"; stripCache = null;
     render();
     liveEl.textContent = "Back to dissemination areas.";

@@ -417,6 +417,15 @@ proportionality is the whole point.
 The polygons are now a base under the symbols, still with the dissemination-area hairlines
 under every grouping.
 
+The text above the row is one paragraph of 42 words running the full measure. It used to be
+two blocks that did not connect — a question, then a separate paragraph starting "counts
+like these" before counts had been mentioned — set to a 46em measure that wrapped at half
+the page width now that the maps run its whole width. What was cut is in the splash, which
+is where it was always meant to go.
+
+The left-map control went with it. Every map is now a fixed term of the equation, so there
+was nothing left for it to switch: four control groups rather than five.
+
 All six maps are the same size, including the result, so no term looks more important than
 another and the circle areas can be compared straight across. Titles and labels are held to
 two lines each, which makes every term the same height and lets the plus and equals signs
