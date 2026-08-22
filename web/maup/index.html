@@ -602,7 +602,7 @@ body[data-present="1"] footer { display: none; }
           <p>Moran's I asks whether neighbouring areas resemble each other, so it cannot be
              worked out until you say what a neighbour is. Nothing in the data answers that.</p>
           <p><strong>Touching</strong> counts areas that share a boundary or a corner.
-             <strong>Touching, and theirs</strong> adds the neighbours of those neighbours.
+             <strong>Touching, and those touching them</strong> adds the neighbours of those neighbours.
              <strong>All, by 1/distance</strong> counts every area in the city, weighted by
              how far away it is, which is closer to what Tobler actually said: near things
              are more related, not that far things are unrelated.</p>
@@ -872,7 +872,7 @@ body[data-present="1"] footer { display: none; }
   // is left implicit and its weights are recomputed when needed rather than stored.
   var WKINDS = [
     { id: "touch",  label: "Touching" },
-    { id: "touch2", label: "Touching, and theirs" },
+    { id: "touch2", label: "Touching, and those touching them" },
     { id: "invd",   label: "All, by 1/distance" }
   ];
 

@@ -77,11 +77,59 @@ Object.defineProperty(Node.prototype, "textContent", {
     if (this.children.length === 0) return this._text;
     return this.children.map(function (c) { return c.textContent; }).join("");
   },
-  set: function (v) { this.children = []; this._text = String(v); }
+  set: function (v) { this.children = []; this._html = undefined; this._text = String(v); }
 });
+// Entities and tags both matter: widgets write spans through innerHTML to mark a value,
+// and a test that asks whether anything is marked needs those spans to become nodes. An
+// earlier version stripped the tags and left the entities raw, which made the stub disagree
+// with the browser about both.
+var ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', nbsp: "\u00a0", times: "\u00d7",
+                 plusmn: "\u00b1", minus: "\u2212", mdash: "\u2014", ndash: "\u2013",
+                 middot: "\u00b7", ldquo: "\u201c", rdquo: "\u201d", rsquo: "\u2019",
+                 lsquo: "\u2018", hellip: "\u2026", deg: "\u00b0" };
+function decode(t) {
+  return String(t).replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, function (whole, name) {
+    if (name.charAt(0) === "#") {
+      var n = name.charAt(1) === "x" || name.charAt(1) === "X"
+        ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
+      return isNaN(n) ? whole : String.fromCharCode(n);
+    }
+    return Object.prototype.hasOwnProperty.call(ENTITIES, name) ? ENTITIES[name] : whole;
+  });
+}
+function parseFragment(html, into) {
+  var stack = [into], i = 0, re = /<(\/?)([a-zA-Z][-a-zA-Z0-9]*)((?:\s+[-a-zA-Z0-9_:]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*(\/?)>/g, m;
+  var doc = into.ownerDoc;
+  function text(t) {
+    if (!t) return;
+    var n = new Node("#text"); n.ownerDoc = doc; n._text = decode(t);
+    stack[stack.length - 1].appendChild(n);
+  }
+  while ((m = re.exec(html)) !== null) {
+    text(html.slice(i, m.index));
+    i = re.lastIndex;
+    if (m[1]) {
+      for (var k = stack.length - 1; k > 0; k--) {
+        if (stack[k].tagName === m[2].toUpperCase()) { stack.length = k; break; }
+      }
+      continue;
+    }
+    var el = new Node(m[2]); el.ownerDoc = doc;
+    var ar = /([-a-zA-Z0-9_:]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g, at;
+    while ((at = ar.exec(m[3] || "")) !== null) {
+      el.setAttribute(at[1], at[2] !== undefined ? at[2] : at[3] !== undefined ? at[3] : at[4] || "");
+    }
+    stack[stack.length - 1].appendChild(el);
+    if (!m[4] && !{ br: 1, hr: 1, img: 1, input: 1 }[m[2].toLowerCase()]) stack.push(el);
+  }
+  text(html.slice(i));
+}
 Object.defineProperty(Node.prototype, "innerHTML", {
-  get: function () { return this._text; },
-  set: function (v) { this.children = []; this._text = String(v).replace(/&times;/g, "x").replace(/<[^>]*>/g, ""); }
+  get: function () { return this._html === undefined ? this.textContent : this._html; },
+  set: function (v) {
+    this.children = []; this._text = ""; this._html = String(v);
+    parseFragment(String(v), this);
+  }
 });
 Object.defineProperty(Node.prototype, "firstChild", {
   get: function () { return this.children[0] || null; }

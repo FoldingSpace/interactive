@@ -57,10 +57,19 @@ function cssVars(html) {
   return out;
 }
 
-function widgetScript(html) {
-  // The last script block is the widget; earlier ones hold inlined data.
-  var parts = html.split("<script>");
-  return parts.slice(1).map(function (p) { return p.split("</script>")[0]; }).join("\n");
+function widgetScript(html, dir) {
+  // Inline blocks in order, with any <script src="..."> sibling pulled in where it sits.
+  // One widget keeps its data in a data.js next to the page rather than inlined.
+  var out = [], re = /<script(?:\s+src="([^"]+)")?\s*>([\s\S]*?)<\/script>/g, m;
+  while ((m = re.exec(html)) !== null) {
+    if (m[1]) {
+      if (/^https?:/.test(m[1])) throw new Error("remote script in a widget: " + m[1]);
+      out.push(fs.readFileSync(path.join(dir, m[1]), "utf8"));
+    } else {
+      out.push(m[2]);
+    }
+  }
+  return out.join("\n");
 }
 
 function load(file, opts) {
@@ -87,6 +96,8 @@ function load(file, opts) {
     setTimeout: function (fn, ms) { timers.push(fn); return timers.length; },
     clearTimeout: function () {},
     URLSearchParams: URLSearchParams,
+    atob: function (b64) { return Buffer.from(b64, "base64").toString("binary"); },
+    btoa: function (bin) { return Buffer.from(bin, "binary").toString("base64"); },
     // A worker that runs the widget's real solver source, but delivers its replies through
     // the same queue as setTimeout. Tests therefore have to flush to see a route, which is
     // what a browser makes them wait a tick for too — the async ordering gets exercised
@@ -114,7 +125,7 @@ function load(file, opts) {
   doc.defaultView = win;
 
   vm.createContext(win);
-  vm.runInContext(widgetScript(html), win, { filename: file });
+  vm.runInContext(widgetScript(html, path.dirname(file)), win, { filename: file });
 
   // Animation frames only run when a test asks for them, so a test can look at the state
   // between a click and its redraw if it wants to.

@@ -467,8 +467,17 @@ associative, so summing the same five terms in a different order lands a bit dif
 the last place. Both are noise at 1e-14 on values of order hundreds. Recorded as the new
 numbers because the old ones will never come back.
 
-Under aspatial OLS the spatial error term has exactly zero
-circles — not small ones, none — because that model assigns nothing to spatial structure.
+Under aspatial OLS the spatial error map draws **zero circles** — not small ones, none —
+because that model assigns nothing to spatial structure. The spatial error model draws 992
+of them.
+
+Be careful which claim that is. The *drawing* is empty; the *values* are not identically
+zero, they are floating-point noise below 7.11e-15, because the term is a subtraction of two
+quantities the code arrives at by different routes. On counts of order 1 to 100 that is
+nothing, and a circle scaled from it would have a radius around a hundred-millionth of the
+largest, so the widget draws none. An earlier version of this file said "exactly zero
+circles" and meant the picture; a reader could reasonably have taken it as a claim about the
+arithmetic, and the test now asserts both separately.
 
 ### The card beside the row was empty for months
 

@@ -34,6 +34,19 @@ resolution.
 The runner is 40 lines for the same reason. `a.ok`, `a.equal`, `a.close`. If a suite ever
 needs more than that, write it in the suite.
 
+## What the stub does and does not do
+
+It parses the markup, runs the scripts (following a `<script src>` sibling, which one widget
+uses for its data), and gives the page a DOM with events, a canvas that records what was
+painted, `getComputedStyle` backed by the real custom properties, animation frames and timers
+you drive by hand, and a Worker that runs the widget's own worker source and replies through
+the timer queue. `innerHTML` is parsed into nodes and entities are decoded, because widgets
+mark values by writing spans and a test asking whether anything is marked needs those spans
+to exist.
+
+It does not lay anything out. Every `getBoundingClientRect` is whatever the test sets, so
+nothing here can tell you a control is 3 px tall or a column has collapsed.
+
 ## Adding a suite
 
 Name it `<widget>.test.js` and export a function taking `t(name, fn)`. `fn` receives the
