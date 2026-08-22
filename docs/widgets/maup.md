@@ -249,6 +249,10 @@ be drawn *deliberately* to produce a wanted answer. Random draws show the answer
 unstable; a "draw me the boundaries that maximise R<sup>2</sup>" button would show it is
 steerable, which is the sharper and more uncomfortable version.
 
+**The maps are not keyboard navigable.** Pointing at an area shows its numbers; there is
+no keyboard route to the same thing. Making 996 polygons tabbable is not the answer. A
+list, or arrow-key movement between areas, would be.
+
 **Whether the crime-data critique lands.** It is now in the captions, the equation, the
 category panel, the residual panel and the Moran panel rather than only in the footer.
 Whether a student who came to move sliders actually takes it in is not something this
@@ -286,4 +290,55 @@ then compare with numpy. That is how every number in the tables above was checke
 
 ## Review record
 
-To be completed against `docs/review.md`.
+```
+Widget: maup
+Reviewed: 2026-08-21
+```
+
+**Pedagogical critique — changes requested, and made.** Three, each of which changed the
+build rather than the wording. The widget originally modelled residential break and enter
+and so displayed the answers to three of the lab's graded questions on the open web; the
+category was removed and four others put in its place. The crime-data critique was a footer
+disclaimer; it moved into the captions, the equation, and four of the six explanation
+panels. Mischief was the default and is no longer: a negative income coefficient on a
+category whose name sounds like a judgement of people is the one result here most open to
+being read as a claim about who lives where.
+
+**Correctness — pass.** Every statistic computed twice by routes sharing no code: the
+widget's own source run in Node, and numpy by matrix algebra. Twelve OLS fits agree to
+4e-14 across four categories and three sets of areas; the spatial lag fits reproduce an
+independent numpy two-stage least squares to every digit; p-values check against three
+closed forms. The one external check available, the household total of 310,033, matches the
+constant the lab hard-codes.
+
+What the tests would not have caught, and how that was handled: reproducing a single
+R<sup>2</sup> would survive treating income as dollars rather than thousands, so the
+coefficients are recorded too. A wrong random zoning would still produce plausible numbers,
+so the household-count spread is recorded against the real tracts' spread.
+
+One error was caught in this file rather than in the code: a spread of R<sup>2</sup> values
+for bicycle theft was written down before it was computed. The computed range is wider than
+the invented one. Nothing else in the tables was asserted before it was measured.
+
+**Text — pass, after the pedagogical pass rewrote most of it.** Read for the anti-AI rules
+and for a reader with little background. The one place the reading level rises is the
+two-stage estimation paragraph, which is unavoidable and sits behind an (i).
+
+**Accessibility — pass, with one fix.** Contrast measured rather than eyeballed: body text
+17.8:1, soft labels 6.3:1, captions 7.0:1, buttons 17.8:1, area-of-analysis outlines
+17.8:1. The dissemination-area hairline measured 2.6:1, below the 3:1 minimum for a
+graphical object, and it matters here because the palest fill in both ramps is within 1.1:1
+of the page — the line is what shows where such an area ends. Darkened to 3.18:1 in light
+and 3.03:1 in dark. Touch targets are 44px under a coarse pointer, (i) buttons 25px against
+a 24px minimum. Both ramps are ColorBrewer schemes marked safe for the commonest colour
+blindness. Every control has an accessible name, changes are announced in a live region,
+and the maps carry `role="img"` with the caption as the label.
+
+Known gap: the maps are not keyboard navigable. The hover readout is a supplement — every
+number it shows is also derivable from the visible maps and the readout — but a keyboard or
+screen-reader user cannot inspect a single area. Recorded as a limit, not a pass.
+
+**Device and room — pass.** No horizontal overflow and nothing clipped at 375×812,
+1280×900, 1280×720 and 1920×1080, in both presentation and normal mode, light and dark.
+Every control exercised in sequence on a phone viewport with every resulting fit finite.
+Not yet checked on the lecture machine or in a compressed recording.

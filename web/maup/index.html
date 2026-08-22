@@ -13,7 +13,10 @@
   --panel: #f2f3f5;
   --edge: #848b95;
   --focus: #0b57d0;
-  --map-line: #9aa1ab;      /* the fine lines between dissemination areas */
+  /* The fine lines between dissemination areas. 3.18:1 against the page, which is the
+     minimum for a graphical object, because the palest fills in both ramps are within
+     1.1:1 of white and it is this line that shows where such an area ends. */
+  --map-line: #8a919b;
   --zone-line: #16181d;     /* the heavier lines around the areas being analysed */
   --nodata: #d9dce0;
   color-scheme: light dark;
@@ -22,7 +25,8 @@
   :root:not([data-theme="light"]) {
     --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
     --panel: #1e2128; --edge: #6e7682; --focus: #7cacff;
-    --map-line: #5d646e; --zone-line: #e9ecf1; --nodata: #3a3f47;
+    --map-line: #5d646e;   /* 3.03:1 against the dark page, same reasoning */
+    --zone-line: #e9ecf1; --nodata: #3a3f47;
   }
 }
 * { box-sizing: border-box; }
