@@ -28,8 +28,9 @@ install.
 
 - [**Least cost, whose cost?**](https://foldingspace.github.io/interactive/least-cost/)
   — a power line has to reach a new plant, and the route it takes is decided by nine numbers
-  nobody measured. Say what crossing farmland, houses, parks or water is worth avoiding and
-  the line moves; draw a park where there was none and it moves again. Keep a route and it
+  that are somebody's values rather than anybody's measurements. Say what crossing farmland,
+  houses, parks or water is worth avoiding and the line moves; draw a park where there was
+  none and it moves again. Keep a route and it
   carries the table that produced it, so a set of proposals can be compared with their reasons
   attached. One control draws six more routes the same numbers score almost the same, because
   the single confident line is the method's most misleading habit — and swapping the queue

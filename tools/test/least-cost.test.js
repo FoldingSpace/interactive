@@ -262,9 +262,12 @@ module.exports = function (t) {
     var fs = require("fs");
     var html = fs.readFileSync(FILE, "utf8");
     var body = html.slice(html.indexOf("<body>"));
-    ["Cheapest to build", "near tie", "Near ties"].forEach(function (bad) {
+    ["Cheapest to build", "near tie", "Near ties", "Nobody measured"].forEach(function (bad) {
       a.equal(body.indexOf(bad), -1, 'the page no longer says "' + bad + '"');
     });
-    a.ok(body.indexOf("Nobody measured them") > 0, "the page says nobody measured them");
+    a.ok(body.indexOf("Values are complex and vary by perspective") > 0,
+      "the page says the values are contested rather than absent");
+    a.ok(body.indexOf("nobody looked up any land prices") > 0,
+      "the costs panel still says plainly what these numbers are not");
   });
 };
