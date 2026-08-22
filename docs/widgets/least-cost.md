@@ -40,7 +40,7 @@ Government Licence. Already in NAD83 / UTM zone 10N, so nothing is reprojected.
 DMTI CanMap Route Logistics, which the lab uses, is licensed data and cannot go on a public
 site. That constraint turned out to improve the widget rather than limit it.
 
-**Window:** 504000–526000 E, 5428500–5447500 N. 660 × 570 cells of 33⅓ m, that size chosen so 660 cells is exactly the 22 km width. Entirely inside
+**Window:** 504000–526000 E, 5428500–5447500 N. 990 × 855 cells of 22²⁄₉ m, that size chosen so 990 cells is exactly the 22 km width. Entirely inside
 Metro Vancouver, so there are no holes, and clear of every reserve and treaty boundary in
 the region's own `Jurisdiction` field — checked, not assumed. An earlier plan ran to Roberts
 Bank; the causeway's shore end sits inside Tsawwassen First Nation lands, and a cost surface
@@ -49,12 +49,12 @@ moved rather than the question fudged. This does not make the land it does cross
 uncontested.
 
 **Endpoints.** The start is a real utility site at 124 St and 86 Ave in Surrey, cell
-(row 73, col 154). Metro Vancouver's own data classifies that exact cell **T400, "Utility,
+(row 109, col 231). Metro Vancouver's own data classifies that exact cell **T400, "Utility,
 Communication and Work Yards"**, which is what the widget's wording rests on — checked
 against the open dataset rather than inherited from the licensed one, and stated as a
 utility site rather than as a named company's substation, because the open data does not
 say whose it is. The plant is not real: it stands in for something that would be proposed
-at Campbell Heights, cell (row 450, col 540), where the industrial district's expansion
+at Campbell Heights, cell (row 675, col 810), where the industrial district's expansion
 into farmland is a live argument.
 
 **Classes.** Twenty-nine Metro Vancouver codes grouped into eight, plus roads. The grouping
@@ -62,30 +62,37 @@ is ours and the widget says so. Shares of the window:
 
 | Class | Codes | Share |
 |---|---|---|
-| Houses | S100, S110, S120, S130, S131, S135, S410, S230, S235 | 29.1% |
-| Farmland | A500 | 22.1% |
+| Houses | S100, S110, S120, S130, S131, S135, S410, S230, S235 | 28.9% |
+| Farmland | A500 | 22.2% |
 | Water | R200 | 14.1% |
 | Parks and protected | R100, W400 | 13.1% |
-| Road and rail | S500, T100, T200, T300 | 11.2% |
+| Road and rail | S500, T100, T200, T300 | 11.4% |
 | Industry | S300, M300, S600, T400 | 3.8% |
 | Open land | U100 | 3.3% |
 | Shops and offices | S200, S202, S204 | 1.9% |
 | Schools and civic | S400, S420, S450, S460 | 1.2% |
 
-**Cells started at 100 m and went to 50 and then to 33⅓, both times for the same reason.**
-Blocks of housing and farmland rasterise fine at any of these; everything linear does not.
-Road allowances, rail and watercourses are narrower than 100 m, so at that size they came
-out as dotted lines and a route could not follow one — which mattered, because "follow what
-is built" is one of the three positions the widget offers. At 50 m the main grid joined up
-and the lanes through the farmland still broke. At 33⅓ m the rural network is connected.
+**Cells went 100 → 50 → 33⅓ → 22²⁄₉, every time for the same reason.** Blocks of housing
+and farmland rasterise fine at any of these; everything linear does not. Road allowances,
+rail and watercourses are narrower than 100 m, so at that size they came out as dotted lines
+and a route could not follow one — which mattered, because "follow what is built" is one of
+the three positions the widget offers. 50 m joined up the main grid, 33⅓ m most of the rural
+lanes, and 22²⁄₉ m the rest.
 
-376,200 cells, nine times the first attempt. The answer to that was never a coarser map; it
-was a faster solver and then a worker.
+846,450 cells, twenty times the first attempt. The answer was never a coarser map; it was a
+faster queue, then a worker, then sending the worker changes instead of the map.
+
+**One cell needed filling.** At this size a cell centre can land in a sliver where two
+source polygons fail to meet — one did, at row 268, col 478 in the 33⅓ m grid, deep inside
+the window and ringed by shops, roads and civic land. `tools/lab4-extract.py` fills holes
+like that from their neighbours and says how many it filled, and still refuses to build a
+grid with more than one in ten thousand missing, because a genuine hole would be a
+contiguous region rather than a scattering of single cells.
 
 ## How it computes
 
 Eight-neighbour Dijkstra. Stepping between two cells costs the mean of their two values
-times the distance between their centres — 33⅓ m orthogonally, 33⅓√2 m diagonally — which is
+times the distance between their centres — 22²⁄₉ m orthogonally, 22²⁄₉√2 m diagonally — which is
 what ArcGIS's Distance Accumulation does with a cost raster, and what the lab's numbers
 assume.
 
@@ -150,10 +157,10 @@ it. They agree to the displayed precision in every case.
 
 | Numbers | Length | Route composition |
 |---|---|---|
-| The opening state | 20.4 km | 57% farmland, 23% industry, 9% open land |
-| Protect farmland | 24.3 km | 35% road and rail, 33% open land, 28% industry |
-| Follow what is built | 24.5 km | 84% road and rail, 14% open land, 2% industry |
-| Keep away from homes | 22.9 km | 33% farmland, 29% open land, 26% industry |
+| The opening state | 20.9 km | 62% farmland, 21% industry, 5% open land |
+| Protect farmland | 23.5 km | 40% road and rail, 32% open land, 27% industry |
+| Follow what is built | 23.1 km | 84% road and rail, 15% open land, 1% industry |
+| Keep away from homes | 23.2 km | 32% farmland, 30% industry, 27% open land |
 
 Tables, in the order farmland, houses, shops, industry, civic, parks, water, open, roads:
 
@@ -177,17 +184,23 @@ more. Nothing here is a construction cost and no land prices were looked up, so 
 offering the cheapest build claimed something the widget cannot support. "Numbers back to the
 start" restores those numbers without naming them as a position anybody holds.
 
-**Accumulated cost at the plant, opening state: 316031.8685**, over a 499-cell route
-measuring 20.425 km. That figure is the anchor and a rebuild should reproduce it first. It
-was confirmed by a Python implementation sharing no code with the widget, agreeing to every
-printed digit, and is unchanged by the move into a worker.
+**Accumulated cost at the plant, opening state: 340922.7927**, over a 786-cell route
+measuring 20.850 km. That figure is the anchor and a rebuild should reproduce it first. A
+Python implementation sharing no code with the widget agrees on all three to every printed
+digit.
+
+It does **not** agree on the composition — it reports 59% farmland, 21% industry, 7% open
+land where the widget reports 62/21/5. Same cost, same length, same number of cells,
+different cells. That is the tie result again, now systematic: Python uses a heap and the
+widget uses buckets, and where routes tie the queue decides. Read cost and length as claims
+about the world, and the compositions as a regression test on this implementation.
 
 **Similar proposals**, opening state. The band areas:
 
 ```
-within 0.1% of the optimum    11.4 km²    5 routes drawn, longest 20.9 km   (+3%)
-within 1%                     38.0 km²    5 routes drawn, longest 23.6 km   (+15%)
-within 5%                     72.0 km²    6 routes drawn, longest 30.3 km   (+48%)
+within 0.1% of the optimum     9.6 km²    4 routes drawn, longest 21.2 km   (+2%)
+within 1%                     35.3 km²    6 routes drawn, longest 24.2 km   (+16%)
+within 5%                     70.3 km²    6 routes drawn, longest 32.0 km   (+53%)
 ```
 
 The "+" figures are how much further the longest alternative runs **on the ground** for that
@@ -223,11 +236,13 @@ worst case, for a route running at 22.5° to the grid, is **8.239%**. This corri
 close to 45°, where the error is smallest — which is itself the point, since the error is a
 property of the direction, not of the landscape.
 
-**Timing**, measured in the page, not in a harness. During a brush stroke over 376,200
-cells: median frame 16.7 ms, 90th percentile 17.5, 99th 17.8, **zero frames over 25 ms**. A
-flat 60 frames a second for the whole stroke.
+**Timing**, measured in the page, not in a harness. During a brush stroke over 846,450
+cells: median frame 16.7 ms, 99th percentile 19.7, **zero frames over 25 ms in 96**. A flat
+60 frames a second for the whole stroke. Turning the similar proposals on takes 224 ms,
+which is off the main thread but long enough that the readout says "Working out the
+others…" rather than sitting silent.
 
-Four things got it there, in the order they mattered.
+Five things got it there, in the order they mattered.
 
 **The queue**, binary heap to Dial's buckets, better than 2× and exact.
 
@@ -240,6 +255,12 @@ model and was paying for two solves anyway; that alone took it from 180 ms to 19
 **Then the worker**, once a solve reached two frames and no amount of scheduling on one
 thread would hide it. Before the worker, at this resolution, 12 frames in 83 ran over 25 ms
 and a stroke averaged 52 fps. After it, none do.
+
+**And then sending the worker changes rather than the map.** A brush stroke alters a few
+hundred cells; copying all 846,450 into every message was the last thing on the main thread
+big enough to cost a frame, and it cost four in 91. The widget keeps a list of changed cells
+and sends that instead, falling back to the whole map when the list gets long or the map is
+reset. Zero slow frames after.
 
 The cost of the worker is that nothing is synchronous any more. `whenSettled` replaced
 `flush`, and keeping a proposal now waits — usually for nothing, because the answer is

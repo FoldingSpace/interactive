@@ -18,25 +18,26 @@ Why these choices, since none of them are forced:
            side for a route to wander. Entirely inside Metro Vancouver, so there are no
            holes, and clear of every reserve and treaty boundary in the region's
            Jurisdiction field.
-  Cells    33 1/3 m, chosen so that 660 cells is exactly the 22 km width. It began at
+  Cells    22 2/9 m, chosen so that 990 cells is exactly the 22 km width. It began at
            100 m, which was fine for blocks of housing and farmland and wrong for
            everything linear: road allowances, rail and watercourses are narrower than
-           that, so they rasterised into dotted lines and a route could not follow one. At
-           50 m the main grid joined up but the lanes through the farmland still broke.
-           At 33 1/3 m the rural network is connected. 376200 cells.
+           that, so they rasterised into dotted lines and a route could not follow one.
+           50 m joined up the main grid, 33 1/3 m most of the rural lanes, and 22 2/9 m
+           the rest. 846450 cells, and the solver runs in a worker to keep up.
   Classes  Metro Vancouver's 29 codes grouped into 8. The grouping is a claim and is
            printed in the widget.
 """
 
 import json, os, sys, urllib.parse, urllib.request, time
+import numpy as np
 from osgeo import gdal, ogr
 gdal.UseExceptions(); ogr.UseExceptions()
 
 SERVICE = ("https://services6.arcgis.com/56eqCzQ5SZhBaDST/arcgis/rest/services/"
            "Landuse_2016___Code_Description_No_Outlines/FeatureServer/1/query")
 
-X0, Y1, W, H = 504000, 5447500, 660, 570
-CELL = 100.0 / 3          # 33 1/3 m: 660 x 33 1/3 is exactly the 22 km window
+X0, Y1, W, H = 504000, 5447500, 990, 855
+CELL = 200.0 / 9          # 22 2/9 m: 990 cells is exactly the 22 km window
 
 # Class 0 is unused: it means "no land use polygon here", and the window has none.
 CLASSES = [
@@ -111,9 +112,32 @@ def main():
         lyr.SetAttributeFilter(None)
 
     a = mem.GetRasterBand(1).ReadAsArray()
+
+    # Adjacent polygons in the source do not tile perfectly, so at fine cell sizes the
+    # occasional cell centre lands in a sliver between two of them. Those get filled from
+    # whatever surrounds them. A real hole -- a window reaching outside Metro Vancouver --
+    # would be a contiguous region, not a scattering of single cells, so the count is what
+    # tells the two apart and a run says which happened.
     holes = int((a == 0).sum())
-    if holes:
-        raise SystemExit("%d cells have no land use polygon; the window is wrong" % holes)
+    limit = max(16, a.size // 10000)
+    if holes > limit:
+        raise SystemExit("%d cells have no land use polygon, over the %d allowed for "
+                         "sliver gaps; the window is probably wrong" % (holes, limit))
+    filled = 0
+    while holes:
+        rs, cs = np.where(a == 0)
+        for r, c in zip(rs, cs):
+            near = a[max(0, r - 1):r + 2, max(0, c - 1):c + 2]
+            near = near[near > 0]
+            if near.size:
+                a[r, c] = np.bincount(near).argmax()
+                filled += 1
+        if int((a == 0).sum()) == holes:
+            raise SystemExit("%d cells have no land use polygon and no neighbour to take "
+                             "one from" % holes)
+        holes = int((a == 0).sum())
+    if filled:
+        sys.stderr.write("  filled %d sliver cell(s) from their neighbours\n" % filled)
 
     counts = {c: int((a == c).sum()) for c, _, _ in CLASSES}
     for c, name, _ in CLASSES:

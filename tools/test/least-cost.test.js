@@ -9,7 +9,7 @@ var L = require("./load.js");
 var dom = require("./dom.js");
 
 var FILE = path.join(__dirname, "..", "..", "web", "least-cost", "index.html");
-var W = 660, H = 570, CELL = 100 / 3, SUB = "73,154", DST = "450,540";
+var W = 990, H = 855, CELL = 200 / 9, SUB = "109,231", DST = "675,810";
 var SCALE = 1;   // pixels per cell for the pretend canvas, so pointer maths is exact
 
 function open(search) {
@@ -72,8 +72,8 @@ function readDrawing(w) {
       whollyInBand: P.every(function (q) { return inBand[q.r * W + q.c] === 1; })
     };
   }
-  var heavy = lines.filter(function (p) { return p.getAttribute("stroke-width") === "5.7"; });
-  var thin = lines.filter(function (p) { return p.getAttribute("stroke-width") === "2.7"; });
+  var heavy = lines.filter(function (p) { return p.getAttribute("stroke-width") === "8.6"; });
+  var thin = lines.filter(function (p) { return p.getAttribute("stroke-width") === "4.1"; });
   return {
     cells: heavy.length ? pts(heavy[0]).map(function (q) { return q.r * W + q.c; }) : [],
     best: heavy.length ? evaluate(pts(heavy[0])) : null,
@@ -118,30 +118,32 @@ function bandOn(w, tol) {
 // --- the tests -------------------------------------------------------------------------
 module.exports = function (t) {
 
-  // The composition assertions below are deliberately exact, and they are the most
-  // fragile thing in this file — on purpose. Changing the queue inside the solver from a
-  // binary heap to buckets left the accumulated cost bit-identical and moved half the
-  // route, because the two routes tie. Any change that moves the line should have to come
-  // and re-record these, and read this comment while doing it.
+  // The composition assertions below are deliberately exact, and they are the most fragile
+  // thing in this file — on purpose. They are also the only figures an independent
+  // reimplementation does NOT reproduce: a Python check agrees with the widget on cost to
+  // four decimals, on length to the metre and on the cell count exactly, and disagrees on
+  // which cells, because the routes tie and the two break ties differently. So read these
+  // as a regression test on this implementation, and read cost and length as the claims
+  // about the world. Any change that moves the line has to come and re-record them.
   t("opens showing a route, and it is the recorded one", function (a) {
     var w = open();
-    a.equal(w.doc.getElementById("len").textContent, "20.4", "opening length");
+    a.equal(w.doc.getElementById("len").textContent, "20.9", "opening length");
     a.equal(w.doc.getElementById("mix").textContent,
-      "Crosses 57% farmland, 23% industry, 9% open land.", "opening composition");
+      "Crosses 62% farmland, 21% industry, 5% open land.", "opening composition");
     var d = readDrawing(w);
     a.equal(d.best.from, SUB, "route starts at the substation");
     a.equal(d.best.to, DST, "route ends at the plant");
     a.equal(d.best.illegal, 0, "every step is an eight-neighbour move");
-    a.close(d.best.km, 20.44, 0.02, "drawn length matches the model");
-    a.close(d.best.cost, 316031.87, 0.5, "drawn route re-costs to the recorded optimum");
+    a.close(d.best.km, 20.85, 0.02, "drawn length matches the model");
+    a.close(d.best.cost, 340922.79, 0.5, "drawn route re-costs to the recorded optimum");
   });
 
   t("the three presets give the recorded routes", function (a) {
     var w = open();
     var want = [
-      ["Protect farmland", "24.3", "Crosses 35% road and rail, 33% open land, 28% industry."],
-      ["Follow what is built", "24.5", "Crosses 84% road and rail, 14% open land, 2% industry."],
-      ["Keep away from homes", "22.9", "Crosses 33% farmland, 29% open land, 26% industry."]
+      ["Protect farmland", "23.5", "Crosses 40% road and rail, 32% open land, 27% industry."],
+      ["Follow what is built", "23.1", "Crosses 84% road and rail, 15% open land, 1% industry."],
+      ["Keep away from homes", "23.2", "Crosses 32% farmland, 30% industry, 27% open land."]
     ];
     var buttons = w.doc.querySelectorAll("#presets .act");
     a.equal(buttons.length, 3, "three presets, and none of them a cost claim");
@@ -238,11 +240,11 @@ module.exports = function (t) {
     w.doc.querySelectorAll("#presets .act")[0].click(); w.settle();
     w.doc.getElementById("pin").click(); w.settle();
     var first = w.doc.querySelector(".pin .stats").textContent;
-    a.ok(/^24\.3 km/.test(first), "the kept card carries the route it was kept from: " + first);
+    a.ok(/^23\.5 km/.test(first), "the kept card carries the route it was kept from: " + first);
     w.doc.querySelectorAll("#presets .act")[1].click(); w.settle();
     w.doc.getElementById("pin").click(); w.settle();
     var cards = w.doc.querySelectorAll(".pin .stats").map(function (e) { return e.textContent; });
-    a.ok(/^24\.3 km/.test(cards[0]) && /^24\.5 km/.test(cards[1]),
+    a.ok(/^23\.5 km/.test(cards[0]) && /^23\.1 km/.test(cards[1]),
       "two kept proposals stay distinct: " + cards.join(" | "));
     var names = w.doc.querySelectorAll(".pin input").map(function (e) { return e.getAttribute("value") || e.value; });
     a.equal(names[0], "Protect farmland", "a preset supplies the name it was loaded under");
@@ -257,9 +259,9 @@ module.exports = function (t) {
     a.ok(url.indexOf("c=120.60.20.10.40.125.200.1.20") > 0, "the numbers are in the link");
     a.ok(url.indexOf("k=") > 0, "the kept proposal is in the link");
     var back = open(url);
-    a.equal(back.doc.getElementById("len").textContent, "24.3", "reopening restores the route");
+    a.equal(back.doc.getElementById("len").textContent, "23.5", "reopening restores the route");
     a.equal(back.doc.querySelectorAll(".pin").length, 1, "reopening restores the kept proposal");
-    a.equal(back.doc.querySelector(".pin .stats").textContent.slice(0, 7), "24.3 km",
+    a.equal(back.doc.querySelector(".pin .stats").textContent.slice(0, 7), "23.5 km",
       "the restored proposal carries its route");
   });
 
@@ -275,7 +277,7 @@ module.exports = function (t) {
     w.doc.getElementById("reset").click(); w.settle();
     a.equal(w.doc.body.dataset.hinting, "1", "reset offers it again");
     a.equal(w.doc.getElementById("mapbox").dataset.armed, "0", "reset disarms");
-    a.equal(w.doc.getElementById("len").textContent, "20.4", "reset returns the opening route");
+    a.equal(w.doc.getElementById("len").textContent, "20.9", "reset returns the opening route");
   });
 
   t("nothing on the page claims these numbers were measured", function (a) {
