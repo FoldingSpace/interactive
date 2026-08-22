@@ -3,6 +3,7 @@ name: Publish web/ to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -15,7 +16,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Nothing is published until this passes. The suite loads each widget's shipped HTML,
+  # runs its own script, and checks what the page draws rather than what it computes —
+  # see tools/test/ and docs/review.md.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node tools/test/run.js
+
   deploy:
+    needs: test
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -40,7 +40,7 @@ Government Licence. Already in NAD83 / UTM zone 10N, so nothing is reprojected.
 DMTI CanMap Route Logistics, which the lab uses, is licensed data and cannot go on a public
 site. That constraint turned out to improve the widget rather than limit it.
 
-**Window:** 504000–526000 E, 5428500–5447500 N. 220 × 190 cells of 100 m. Entirely inside
+**Window:** 504000–526000 E, 5428500–5447500 N. 440 × 380 cells of 50 m. Entirely inside
 Metro Vancouver, so there are no holes, and clear of every reserve and treaty boundary in
 the region's own `Jurisdiction` field — checked, not assumed. An earlier plan ran to Roberts
 Bank; the causeway's shore end sits inside Tsawwassen First Nation lands, and a cost surface
@@ -49,12 +49,12 @@ moved rather than the question fudged. This does not make the land it does cross
 uncontested.
 
 **Endpoints.** The start is a real utility site at 124 St and 86 Ave in Surrey, cell
-(row 24, col 51). Metro Vancouver's own data classifies that exact cell **T400, "Utility,
+(row 48, col 103). Metro Vancouver's own data classifies that exact cell **T400, "Utility,
 Communication and Work Yards"**, which is what the widget's wording rests on — checked
 against the open dataset rather than inherited from the licensed one, and stated as a
 utility site rather than as a named company's substation, because the open data does not
 say whose it is. The plant is not real: it stands in for something that would be proposed
-at Campbell Heights, cell (row 150, col 180), where the industrial district's expansion
+at Campbell Heights, cell (row 300, col 360), where the industrial district's expansion
 into farmland is a live argument.
 
 **Classes.** Twenty-nine Metro Vancouver codes grouped into eight, plus roads. The grouping
@@ -62,20 +62,28 @@ is ours and the widget says so. Shares of the window:
 
 | Class | Codes | Share |
 |---|---|---|
-| Houses | S100, S110, S120, S130, S131, S135, S410, S230, S235 | 28.5% |
-| Farmland | A500 | 21.8% |
+| Houses | S100, S110, S120, S130, S131, S135, S410, S230, S235 | 29.1% |
+| Farmland | A500 | 22.2% |
 | Water | R200 | 14.1% |
-| Parks and protected | R100, W400 | 12.9% |
-| Road and rail | S500, T100, T200, T300 | 12.4% |
-| Industry | S300, M300, S600, T400 | 3.8% |
+| Parks and protected | R100, W400 | 13.1% |
+| Road and rail | S500, T100, T200, T300 | 11.1% |
+| Industry | S300, M300, S600, T400 | 3.9% |
 | Open land | U100 | 3.3% |
 | Shops and offices | S200, S202, S204 | 1.9% |
 | Schools and civic | S400, S420, S450, S460 | 1.2% |
 
+**Cells started at 100 m and that was wrong.** Blocks of housing and farmland were fine;
+everything linear was not. Road allowances, rail and watercourses are narrower than 100 m,
+so at that size they rasterised into dotted lines and a route could not follow one — which
+mattered, because "follow what is built" is one of the three positions the widget offers.
+At 50 m they are continuous and that route runs along them in clean right angles. The cost
+is four times the cells, 167,200, and the answer to that was a faster solver rather than a
+coarser map.
+
 ## How it computes
 
 Eight-neighbour Dijkstra. Stepping between two cells costs the mean of their two values
-times the distance between their centres — 100 m orthogonally, 100√2 m diagonally — which is
+times the distance between their centres — 50 m orthogonally, 50√2 m diagonally — which is
 what ArcGIS's Distance Accumulation does with a cost raster, and what the lab's numbers
 assume.
 
@@ -104,9 +112,21 @@ A candidate is rejected if more than 85% of its cells are already covered by som
 and the next candidate in that stage is tried. Without that, two routes at the 5% setting
 overlapped by 99% and drew as one line.
 
-A binary heap on typed arrays, with a settled flag rather than a decrease-key. A cell can be
-pushed more than once; the flag is what stops it being expanded twice. Reading the key off
-the heap entry instead would use a stale distance.
+**The queue is Dial's buckets, not a binary heap**, which is where the speed came from when
+the grid got four times finer. Each cell is filed in the bucket for its distance and the
+buckets are emptied in order, so a push and a pop are constant-time array operations rather
+than O(log n). Measured over these 167,200 cells: 28.9 ms with the heap, 13.5 ms with
+buckets.
+
+Buckets are exact only while a bucket is no wider than the smallest possible step, which
+here is one cell of the cheapest land to the next: `VMIN × CELL`, and `VMIN` is 1, so 50 m
+is safe whatever a reader sets. Checked rather than assumed — against the heap, over five
+tables including all-equal and alternating extremes, all 167,200 accumulated costs came out
+identical. At twice that width, 42,528 cells disagreed.
+
+A settled flag rather than a decrease-key. A cell can be queued more than once; the flag is
+what stops it being expanded twice, and reading the key off the queue entry instead would
+use a stale distance.
 
 ## Verified numbers
 
@@ -118,10 +138,10 @@ it. They agree to the displayed precision in every case.
 
 | Numbers | Length | Route composition |
 |---|---|---|
-| The opening state | 19.9 km | 56% farmland, 25% industry, 8% open land |
-| Protect farmland | 26.3 km | 32% open land, 30% industry, 21% houses |
-| Follow what is built | 28.1 km | 65% road and rail, 21% open land, 8% industry |
-| Keep away from homes | 20.1 km | 50% farmland, 29% industry, 11% open land |
+| The opening state | 23.3 km | 65% farmland, 19% industry, 5% open land |
+| Protect farmland | 26.9 km | 32% industry, 32% open land, 23% houses |
+| Follow what is built | 27.4 km | 67% road and rail, 25% open land, 5% industry |
+| Keep away from homes | 23.8 km | 31% farmland, 29% industry, 29% open land |
 
 Tables, in the order farmland, houses, shops, industry, civic, parks, water, open, roads:
 
@@ -137,31 +157,32 @@ more. Nothing here is a construction cost and no land prices were looked up, so 
 offering the cheapest build claimed something the widget cannot support. "Numbers back to the
 start" restores those numbers without naming them as a position anybody holds.
 
-**Other checked cases**, all against Python:
-
-```
-farmland 120, rest at start        24.9 km   36% open land, 30% industry
-roads 2, rest at start             23.2 km   59% farmland, 32% road and rail
-houses 20, rest at start           19.7 km   57% farmland, 21% industry
-accumulated cost, opening state    300320.8
-```
+**Accumulated cost at the plant, opening state: 342042.506987.** That figure is the anchor:
+it is identical under both queue implementations and is what a rebuild should reproduce
+first.
 
 **Similar proposals**, opening state. The band areas:
 
 ```
-within 0.1% of the optimum    1322 cells    13.2 km²
-within 1%                     4198 cells    42.0 km²
-within 5%                     7625 cells    76.3 km²   (Python prints 76.2; same 7625 cells,
-                                                         the two languages round 76.25 apart)
+within 0.1% of the optimum    14.6 km²    4 routes drawn, longest 23.6 km   (+1%)
+within 1%                     40.8 km²    6 routes drawn, longest 26.7 km   (+15%)
+within 5%                     75.7 km²    6 routes drawn, longest 40.4 km   (+73%)
 ```
 
-The drawn routes, and how much longer they run on the ground than the 19.95 km answer:
+The "+" figures are how much further the longest alternative runs **on the ground** for that
+much more cost. At 5% a reader can see a route 73% longer that the numbers score within a
+twentieth of the answer.
 
-```
-0.1%   4 routes   19.95, 20.21, 20.24, 20.24 km
-1%     5 routes   20.47, 22.91, 22.92, 22.92, 22.95 km   longest +15%
-5%     5 routes   21.88, 25.03, 26.10, 32.85, 34.69 km   longest +74%
-```
+**Swapping the queue moved half the route at identical cost, and that is the widget's own
+thesis arriving uninvited.** Heap and buckets both give accumulated cost 342042.506987 at
+the plant — a difference of exactly zero — and both give a 386-cell route. The two routes
+share 189 of those 386 cells. **49%.** An implementation detail with nothing geographic in
+it decides half of where the line goes, because the two are tied. This is on the page now,
+in the similar-proposals panel.
+
+It also means the composition figures in this file are the most fragile thing in it, and
+deliberately so: the test suite asserts them exactly, so anything that moves the line has to
+come and re-record them.
 
 **These were checked as drawings, not as numbers.** The polylines were read back out of the
 rendered SVG; the land classes were read back off the painted canvas by matching pixels to
@@ -171,15 +192,9 @@ every step is an eight-neighbour move, every route runs cell (24,51) to cell (15
 route lies wholly inside the shaded band, and every route is inside the selected tolerance.
 Costs over the minimum:
 
-```
-0.1%   0.000, 0.086, 0.098, 0.098 %
-1%     0.637, 0.988, 0.989, 0.991, 0.998 %
-5%     1.992, 4.297, 4.394, 4.736, 4.908 %
-```
-
-**The 0.000% is real and is the best thing in the widget.** At the 0.1% setting one drawn
-route has 157 cells, exactly as many as the answer, shares only 61 of them — 39% — and costs
-the same to within a thousandth of one per cent. Not a near miss: a tie, decided silently.
+The suite asserts this at all three tolerances, on the unedited map and again after four
+brush strokes and five changed values. The check is in `tools/test/least-cost.test.js`; it
+runs in CI and nothing publishes without it.
 
 **Grid bias.** The straight line between the two endpoints is 18032.5 m. The same line
 measured eight-connected on this grid is 18119.1 m, an overstatement of **0.480%**. The
@@ -187,10 +202,21 @@ worst case, for a route running at 22.5° to the grid, is **8.239%**. This corri
 close to 45°, where the error is smallest — which is itself the point, since the error is a
 property of the direction, not of the landscape.
 
-**Timing**, measured in the page, not in a harness. A full flush — two Dijkstras over 41800
-cells, a repaint of the whole canvas, and a DOM rebuild — settles at about 15 ms after the
-JIT warms up; the first two calls are 22 to 43 ms. During a brush stroke the band solve is
-skipped and the median frame is 16.7 ms, so painting holds 60 frames per second.
+**Timing**, measured in the page, not in a harness. Over 167,200 cells: one solve plus a
+full repaint and DOM rebuild is 19 ms; turning the similar proposals on — two solves plus
+seven spreads plus the sampling — is 53 ms. During a brush stroke the median frame is
+16.7 ms and the 90th percentile is 18.9 ms, so painting holds 60 frames per second.
+
+Three things got it there, in the order they mattered. **The queue**, heap to buckets, 2×.
+**Painting and solving were separated**: repainting the land is 0.7 ms and solving is 13, so
+while a stroke is in progress the land follows the brush every frame and the route re-solves
+a few times a second, with a flush at the end so nothing stale settles. **The band caches
+against a model version** — keeping a proposal changes nothing about the model, and was
+paying for two solves anyway. That one alone took keeping a proposal from 180 ms to 19.
+
+For scale: at 100 m with a heap, a band flush was 15 ms. At 50 m with buckets it is 53. Four
+times the data for three and a half times the work, and everything that happens during a
+drag is unchanged at 60 fps.
 
 ## Why the choices are what they are
 

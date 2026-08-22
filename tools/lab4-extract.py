@@ -18,9 +18,11 @@ Why these choices, since none of them are forced:
            side for a route to wander. Entirely inside Metro Vancouver, so there are no
            holes, and clear of every reserve and treaty boundary in the region's
            Jurisdiction field.
-  Cells    100 m. Fine enough that Surrey's housing, the Serpentine farmland and the
-           section-line road grid all read; coarse enough that 41800 cells solve inside
-           one animation frame and a finger can paint.
+  Cells    50 m. It began at 100 m, which was fine for the blocks of housing and farmland
+           and wrong for everything linear: road allowances, rail and watercourses are
+           narrower than that, so they came out as dotted lines and a route could not
+           follow one. Halving the cell quadruples the count to 167200, which still solves
+           inside an animation frame.
   Classes  Metro Vancouver's 29 codes grouped into 8. The grouping is a claim and is
            printed in the widget.
 """
@@ -32,7 +34,7 @@ gdal.UseExceptions(); ogr.UseExceptions()
 SERVICE = ("https://services6.arcgis.com/56eqCzQ5SZhBaDST/arcgis/rest/services/"
            "Landuse_2016___Code_Description_No_Outlines/FeatureServer/1/query")
 
-X0, Y1, CELL, W, H = 504000, 5447500, 100, 220, 190
+X0, Y1, CELL, W, H = 504000, 5447500, 50, 440, 380
 
 # Class 0 is unused: it means "no land use polygon here", and the window has none.
 CLASSES = [

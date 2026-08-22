@@ -32,8 +32,9 @@ install.
   the line moves; draw a park where there was none and it moves again. Keep a route and it
   carries the table that produced it, so a set of proposals can be compared with their reasons
   attached. One control draws six more routes the same numbers score almost the same, because
-  the single confident line is the method's most misleading habit — at the tightest setting
-  one of them shares barely a third of its length with the answer and costs no more.
+  the single confident line is the method's most misleading habit — and swapping the queue
+  inside the solver, a detail with nothing geographic in it, moves half the answer onto
+  different ground at exactly the same cost.
 
 ## How they are built
 
@@ -45,6 +46,10 @@ has to be prepared, that happens once on our machine — see `tools/` — and wh
 result. Every widget opens with defaults already set and something already drawn, works
 on a phone and on a projector, can be embedded in an `iframe`, and can be linked by a
 plain URL that carries its configuration.
+
+`node tools/test/run.js` runs before anything is published, and gates the deploy. It loads
+each widget's shipped HTML, runs its own script, and checks what the page draws rather than
+what it computes.
 
 A new widget starts by copying `template/`, a working skeleton that already meets several
 of those requirements. What to keep and what to replace is in

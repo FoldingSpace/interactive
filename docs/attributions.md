@@ -79,7 +79,7 @@ here is necessarily copyrightable in the first place.
 - Used in: `web/least-cost`
 - Added: 2026-08-21
 - Notes: not reprojected — it is published in NAD83 / UTM zone 10N (EPSG:26910), which is
-  the grid's own projection. Modified: clipped to a 220 x 190 window of 100 m cells and
+  the grid's own projection. Modified: clipped to a 440 x 380 window of 50 m cells and
   the 29 land use codes grouped into 8 classes plus roads. That grouping is an editorial
   choice, is listed in `docs/widgets/least-cost.md`, and the page says it is ours. Cells
   are burned in a fixed order so the narrow and specific overwrite the broad — a school

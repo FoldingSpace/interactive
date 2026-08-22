@@ -44,6 +44,38 @@ and parsing it in the browser. That needs a TIFF reader, which is a runtime depe
 save about 30 KB before compression on a file the server already gzips. Digits in the HTML
 keep the widget a single file that works from `file://`.
 
+### Shortest paths: a library, or WebGPU?
+
+Both asked, both answered no, and the reasons generalise.
+
+**A graph library.** `ngraph.path` and friends are good and would lose here. They are built
+for general graphs with object nodes and hash maps, and the cost of that indirection is
+exactly what a grid lets you avoid: the whole state is four typed arrays indexed by
+`row * W + col`, and neighbours are arithmetic rather than a lookup. The win available was
+never in the library, it was in the queue.
+
+**The queue was the win.** Replacing the binary heap with Dial's buckets took a solve over
+167,200 cells from 28.9 ms to 13.5. Constant-time push and pop instead of O(log n), about
+thirty lines, exact as long as a bucket is no wider than the smallest possible step. Measure
+before reaching for anything larger: the second implementation of the right algorithm beat
+every library that was on the table.
+
+**WebGPU.** Tempting and wrong for this. Dijkstra expands in cost order, which is inherently
+sequential; the GPU-shaped alternatives are Bellman-Ford relaxation sweeps or a fast
+iterative eikonal solve, which do far more total work in the hope of doing it in parallel.
+At 167,200 cells the problem is small enough that setup and readback would eat the gain.
+Three further objections, any one of which decides it: WebGPU is not available everywhere
+and a widget has to run in whatever browser a student already has; a URL printed on a slide
+should still work in 2031, and a GPU API is a worse bet than typed arrays for that; and an
+eikonal solver would quietly *change the answer*, because it approximates continuous
+distance rather than the eight-direction lattice — losing the very artefact the widget
+teaches about in its length panel.
+
+**What is still on the table**, if a widget ever needs more: move the solve into a Web
+Worker. That does not make it faster, it makes the main thread never wait, which is what
+`principles.md` section 4 actually asks for. Not needed yet — the expensive path is 53 ms
+on a click, and everything that happens during a drag is inside a frame.
+
 ## Platform features we do rely on
 
 No libraries, but the widgets are not written in 2005 either. These are the browser

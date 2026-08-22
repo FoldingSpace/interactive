@@ -124,6 +124,19 @@ some cases and assumed of many more; test it rather than inherit it. Where a sim
 genuinely needed, know the floor of what it can resolve, and never report a value below
 that floor as a finding.
 
+### Some of this can be a suite, and the part that can should be
+
+`tools/test/` runs before every deploy and is where anything repeatable belongs: recorded
+values, the invariants a drawing has to satisfy, and every regression already found. It
+loads a widget's shipped HTML, runs the widget's own script against a stub DOM, and reads
+the routes back off the SVG and the map back off the canvas pixels — so it checks the
+picture, not the model. Writing the checks down turned three of the passes below from
+something to remember into something that fails.
+
+What it cannot do is the rest of this file. Layout, contrast against real rendering, how a
+drag feels, whether the argument lands. Do not let a green suite stand in for opening it on
+a phone.
+
 ### Testing an interface is not the same as using one
 
 Three rounds of confusing results here came from the harness rather than the widget, and all

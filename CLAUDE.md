@@ -12,10 +12,16 @@ CLAUDE.md      this file
 docs/          principles, libraries, attributions, review — documentation for us
   widgets/     one file per widget: what it teaches, the verified numbers, the review record
 template/      a working skeleton to copy when starting a widget; not published
+tools/         data extraction, and the test suite that gates the deploy
 web/           the published site
   index.html   the list of widgets
   <widget>/    one folder per widget, named for what it shows
 ```
+
+Run `node tools/test/run.js` before pushing. CI runs it too and nothing publishes if it
+fails. The suite loads a widget's shipped HTML, runs its own script in a small stub DOM, and
+checks what the page **draws** — routes read back off the SVG, land read back off the canvas
+pixels — rather than what it computes. See `tools/test/README.md`.
 
 There is no `web/shared/`. Each widget is a single self-contained file, and shared code
 waits until a second widget needs the same thing — see `docs/widget-pattern.md`.
@@ -116,6 +122,9 @@ where anyone reads past the fifth. Grouped now. Every one was paid for.
 
 ### What to check
 
+- **Measure before optimising, and measure the alternative too.** Swapping a binary heap for
+  a bucket queue more than halved a solve; a graph library and WebGPU were both considered
+  and both would have been slower or less portable. See `libraries.md`.
 - **Measure rather than eyeball** — layout, speed, and what a control actually demonstrates.
   Most real defects here were invisible until something was measured, and one control turned
   out to teach the opposite of its design intent.
