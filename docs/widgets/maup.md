@@ -388,3 +388,39 @@ ramps colourblind-safe. Live region announces every change.
 **Device and room — pass.** No overflow and nothing clipped at four viewport sizes in both
 modes, light and dark. Every control exercised in sequence on a phone with every resulting
 fit finite. Not yet checked on the lecture machine or in a compressed recording.
+
+## Next, and specified
+
+Four changes agreed and not yet built. They belong together, because the first three all
+follow from the same cartographic point.
+
+**Counts get graduated symbols, not choropleths, and no area normalisation.** A count is
+not a rate, so shading a polygon by it is wrong however it is scaled. Proportional circles
+at the area centres are the standard answer, and they simplify the equation row: everything
+stays in plain counts, so nothing is divided through by area and the intercept stops being
+a strange quantity per square kilometre. Zone centres are already computed (`ag.pos`), so
+this is a rendering change rather than a data one.
+
+Circle area proportional to the absolute value, radius as the square root, one scale factor
+shared across every map in the row so the addition stays checkable by eye. Colour carries
+the sign for the terms that can go negative.
+
+**Symbols get a little transparency and no outer stroke.** Overlapping circles have to
+read as overlapping.
+
+**The constant loses its map and keeps its place.** In count units it is the same number
+everywhere, so a map of it says nothing. It stays in the row as a number, in position, so
+the equation still reads left to right.
+
+**The polygons stay underneath** as a plain base with the hairlines, which also answers a
+standing gap: at the moment a reader gets shapes with no sense of Vancouver under them.
+
+What is already true and worth not breaking: the row closes arithmetically to 4.5e-13
+across 995 areas in both models and three zonings, checked through `MAUP_TEST.valuesFor`;
+the spatial error term is exactly zero under aspatial OLS so its symbols should vanish
+entirely rather than shrink to dots; and the shared scale is what makes the row legible as
+an equation rather than five unrelated pictures.
+
+Layout still needs a pass after that. The readout cards stack full width at desktop sizes
+where they were meant to sit in a row, the legend end labels want more room, and the
+vertical space under the map row is unused.
