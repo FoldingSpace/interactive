@@ -370,9 +370,9 @@ body[data-present="1"] footer { display: none; }
         </div>
         <div class="sub" id="nareas"></div>
         <div class="help-panel" id="info-r2" hidden>
-          <p>R<sup>2</sup> runs from 0 to 1. It is the share of the variation between areas
-             that the two predictors account for. At 0 the model tells you nothing; at 1 it
-             would predict every area exactly.</p>
+          <p>This is R<sup>2</sup>, written here as a percentage. It is the share of the
+             differences between areas that the two predictors account for. At 0 per cent the
+             model tells you nothing. At 100 per cent it would predict every area exactly.</p>
           <p>A higher R<sup>2</sup> does not mean a better description of the world. Grouping
              areas together usually raises it. Fotheringham and Wong grouped 871 Buffalo
              block groups into fewer and fewer zones: fit averaged about 0.4 at 800 zones
@@ -1399,12 +1399,14 @@ body[data-present="1"] footer { display: none; }
       d.className = "dot" + (isRandom() && r.seed === seed ? " here" : "") +
                     (i === 0 ? " lo" : i === runs.length - 1 ? " hi" : "");
       d.style.left = at(r.r2) + "%";
-      d.title = "R\u00b2 " + r.r2.toFixed(3);
-      d.setAttribute("aria-label", "Partition with R squared " + r.r2.toFixed(3));
+      d.title = Math.round(r.r2 * 100) + "%";
+      d.setAttribute("aria-label", "A way of drawing the areas that explains " +
+                     Math.round(r.r2 * 100) + " per cent");
       d.addEventListener("click", function () {
         zoning = (zoning === "r40") ? "r40" : "r118";
         seed = r.seed; picked = -1; render();
-        liveEl.textContent = "Loaded the partition with R squared " + r.r2.toFixed(3) + ".";
+        liveEl.textContent = "Loaded the arrangement that explains " +
+          Math.round(r.r2 * 100) + " per cent.";
       });
       line.appendChild(d);
     });
@@ -1416,14 +1418,15 @@ body[data-present="1"] footer { display: none; }
       mark.style.left = at(cur) + "%";
       line.appendChild(mark);
     }
-    document.getElementById("strip0").textContent = "0";
-    document.getElementById("strip1").textContent = "1";
+    document.getElementById("strip0").textContent = "0%";
+    document.getElementById("strip1").textContent = "100%";
     var nSig = runs.filter(function (r) { return r.pInc < 0.05; }).length;
     document.getElementById("stripnote").textContent =
       (zoning === "ct" ? "Real census tracts, against 20 arbitrary "
                        : "Where you are, against 20 ") +
       "ways of drawing " + (zoning === "r40" ? 40 : 118) + " areas: " +
-      lo.toFixed(2) + " to " + hi.toFixed(2) + ". Income holds up in " + nSig + " of the 20.";
+      Math.round(lo * 100) + "% to " + Math.round(hi * 100) + "%. Income holds up in " +
+      nSig + " of the 20.";
   }
 
   function isRandom() { return zoning === "r118" || zoning === "r40"; }
@@ -1447,7 +1450,10 @@ body[data-present="1"] footer { display: none; }
       view === "be" ? label + ", reported" : VIEWS.filter(function (v) { return v.id === view; })[0].cap;
     document.getElementById("capb").textContent = "What the model misses";
 
-    document.getElementById("r2").textContent = m ? sig(m.r2, 3) : "—";
+    // Shown as a percentage: "53%" is readable by someone meeting this for the first
+    // time, where "0.531" is not. The documented regression values stay as fractions.
+    document.getElementById("r2").textContent =
+      (m && isFinite(m.r2)) ? Math.round(m.r2 * 100) + "%" : "—";
     document.getElementById("nareas").textContent =
       st.k + " areas" + (zoning === "da" ? "" : ", built from 996 dissemination areas");
 
@@ -1562,7 +1568,7 @@ body[data-present="1"] footer { display: none; }
       b.addEventListener("click", function () {
         zoning = z.id; stripCache = null; picked = -1; render();
         liveEl.textContent = z.label + ", " + z.n + " of them. R squared " +
-          (state.model ? state.model.r2.toFixed(3) : "not available") + ".";
+          (state.model ? Math.round(state.model.r2 * 100) + " per cent explained" : "no fit") + ".";
       });
       zbtn[z.id] = b; host.appendChild(b);
     });
@@ -1588,7 +1594,7 @@ body[data-present="1"] footer { display: none; }
       b.addEventListener("click", function () {
         crime = t.key; BE = D.crime[crime]; stripCache = null; picked = -1; render();
         liveEl.textContent = t.label + ". R squared " +
-          (state.model ? state.model.r2.toFixed(3) : "not available") + ".";
+          (state.model ? Math.round(state.model.r2 * 100) + " per cent explained" : "no fit") + ".";
       });
       cbtn[t.key] = b; hc.appendChild(b);
     });
@@ -1620,7 +1626,7 @@ body[data-present="1"] footer { display: none; }
     picked = -1;
     render();
     liveEl.textContent = "New random areas. R squared " +
-      (state.model ? state.model.r2.toFixed(3) : "not available") + ".";
+      (state.model ? Math.round(state.model.r2 * 100) + " per cent explained" : "no fit") + ".";
   });
 
   document.getElementById("reset").addEventListener("click", function () {

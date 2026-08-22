@@ -231,8 +231,13 @@ figures: correlation 0.988, median difference $857. Using published figures for 
 aggregates for random areas would confound "different boundaries" with "different definition
 of income", which is the entire comparison.
 
-**The strip runs 0 to 1.** Stretching the axis to the observed spread would make any spread
-look total.
+**The strip runs 0 to 100 per cent.** Stretching the axis to the observed spread would make
+any spread look total.
+
+**R<sup>2</sup> is shown as a whole percentage.** "53%" is readable by someone meeting the
+idea for the first time; "0.531" is not. Two arrangements a few tenths of a point apart both
+read as 53%, which is a fair trade at the back of a room. The values recorded here stay as
+fractions, so the regression suite keeps its precision.
 
 **Colours.** ColorBrewer YlGn for quantities, RdBu for the residuals, both from the set the
 scheme's authors mark as safe for the commonest colour blindness.
