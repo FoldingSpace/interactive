@@ -54,159 +54,74 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 body[data-present="1"] .intro { display: none; }
 
 /* ---- layout ----
-   Narrow: the two maps sit side by side even on a phone. Stacked, they made the page
-   2255 px tall and put the controls three screens below the thing they control; the
-   whole point is comparing the two, and a small pair beats a tall single file. */
-.main {
+   An equation of maps: constant + households + income + spatial error + residuals =
+   reported. Every term is in reports per square kilometre and shares one colour scale, so
+   the addition can be checked by eye. Controls sit underneath, out of the way of it. */
+.main { display: flex; flex-direction: column; gap: calc(0.9rem * var(--ui)); }
+.eqrow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-areas: "mapa mapb" "readout readout" "controls controls";
-  gap: calc(0.9rem * var(--ui)) calc(0.5rem * var(--ui));
+  grid-template-columns: repeat(5, minmax(0, 1fr) auto) minmax(0, 2.1fr);
+  align-items: start;
+  gap: calc(0.4rem * var(--ui));
 }
-.mapa { grid-area: mapa; }
-.mapb { grid-area: mapb; }
-.readout { grid-area: readout; }
-.controls { grid-area: controls; }
-@media (min-width: 56rem) {
-  .main {
-    grid-template-columns: auto auto minmax(0, 1fr);
-    grid-template-areas: "mapa mapb readout"
-                         "mapa mapb controls";
-    align-content: start;
-    align-items: start;
-    gap: calc(1.1rem * var(--ui)) calc(1.5rem * var(--ui));
-  }
-  .mapa, .mapb { width: min(30vw, 46vh, 26rem); }
-  /* Lands the readout card's top edge on the maps' top edge, past the map captions. */
-  .readout .spacer { display: block; margin-bottom: calc(-0.45rem * var(--ui)); }
+.term { display: flex; flex-direction: column; gap: calc(0.2rem * var(--ui)); min-width: 0; }
+.tname {
+  font-size: calc(0.78rem * var(--ui)); font-weight: 600; color: var(--ink-soft);
+  line-height: 1.2;
+}
+.big-term .tname { font-size: calc(0.9rem * var(--ui)); color: var(--ink); }
+.tbeta {
+  font-size: calc(0.75rem * var(--ui)); color: var(--ink); line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+.tbeta .pm { color: var(--ink-soft); }
+.tbeta .dead { text-decoration: line-through; color: var(--ink-soft); }
+.op {
+  align-self: start; padding-top: calc(2.6rem * var(--ui)); text-align: center;
+  font-size: calc(1.1rem * var(--ui)); color: var(--ink-soft);
+}
 
-  /* Presenting: the controls run as one wide row beneath everything. Five groups of
-     buttons stacked in a column overflowed a 900 px screen by 360 px; across the full
-     width they cost about one line. */
-  body[data-present="1"] .main {
-    grid-template-columns: auto auto minmax(0, 1fr);
-    grid-template-areas: "mapa mapb readout"
-                         "controls controls controls";
-  }
-  body[data-present="1"] .controls {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: calc(0.5rem * var(--ui));
-  }
-  body[data-present="1"] .controls > fieldset { flex: 1 1 auto; min-width: 0; }
-  body[data-present="1"] .controls > .row { flex: 0 0 auto; align-self: center; }
+/* Narrow: the row wraps into a block of small maps with the result last and wider. */
+@media (max-width: 55.99rem) {
+  .eqrow { grid-template-columns: repeat(2, minmax(0, 1fr) auto); }
+  .eqrow .op { padding-top: calc(2.2rem * var(--ui)); }
+  .eqrow .big-term { grid-column: 1 / -1; }
+  .op.eq { display: none; }
+}
+
+.readout, .controls { display: flex; flex-direction: column; gap: calc(0.75rem * var(--ui)); }
+@media (min-width: 56rem) {
+  .readout { flex-direction: row; align-items: stretch; }
+  .readout > .stat { flex: 1 1 0; }
+  .controls { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+  .controls > fieldset { flex: 1 1 auto; min-width: 0; }
+  .controls > .row { flex: 0 0 auto; align-self: center; }
 
   body[data-present="1"] .wrap {
-    /* A projector is wider than the reading measure this page is capped to. Leaving the
-       cap on squeezed the readout and the controls into unreadable slivers at 1920. */
-    max-width: none;
-    height: 100vh;
-    /* A projector is far taller than this content needs. Hugging the top left half the
-       screen empty; centring puts the maps at eye height. */
-    justify-content: center;
-    padding-top: calc(0.5rem * var(--ui));
-    padding-bottom: calc(0.5rem * var(--ui));
-    gap: calc(0.5rem * var(--ui));
-    overflow: hidden;
-  }
-  body[data-present="1"] .main { gap: calc(1.1rem * var(--ui)); min-height: 0; }
-  body[data-present="1"] .readout .spacer { margin-bottom: calc(-0.2rem * var(--ui)); }
-  body[data-present="1"] .readout,
-  body[data-present="1"] .controls {
-    gap: calc(0.5rem * var(--ui));
-    max-height: 100%;
-    overflow-y: auto;
+    max-width: none; height: 100vh; justify-content: center;
+    padding-top: calc(0.5rem * var(--ui)); padding-bottom: calc(0.5rem * var(--ui));
+    gap: calc(0.5rem * var(--ui)); overflow: hidden;
   }
   body[data-present="1"] .stat { padding: calc(0.5rem * var(--ui)) calc(0.7rem * var(--ui)); }
-  body[data-present="1"] .big { font-size: calc(2.6rem * var(--ui)); }
-  /* Nobody reads an explanation from the back of a room, and the (i) buttons cost the
-     height that the controls need. They come back the moment presentation mode is off. */
   body[data-present="1"] .info { display: none; }
   body[data-present="1"] .help-panel { display: none; }
+  body[data-present="1"] #fs-left { display: none; }
   body[data-present="1"] fieldset {
     padding: calc(0.25rem * var(--ui)) calc(0.55rem * var(--ui)) calc(0.5rem * var(--ui));
   }
-  body[data-present="1"] .pick-line { min-height: calc(2.2em * var(--ui)); }
-  body[data-present="1"] .mapa,
-  body[data-present="1"] .mapb { width: min(30vw, 58vh); }
-}
-
-/* A projector has no room for everything, and less of it the shorter the screen. Things
-   go in order of how little a lecturer drives them: the left map's own view, then the
-   hover readout, then the choice of category, which is normally set in the URL on the
-   slide. All of them come back at normal size.
-   The threshold is 960 rather than 820 because the line about what is at stake stays on
-   screen in presentation mode and costs about 60 px. That line is not negotiable: the (i)
-   panels are hidden on a projector, so without it a lecture would show the statistics and
-   none of the argument. */
-@media (min-width: 56rem) {
-  body[data-present="1"] #fs-left { display: none; }
 }
 @media (min-width: 56rem) and (max-height: 960px) {
-  body[data-present="1"] .readout .stat:last-child { display: none; }
   body[data-present="1"] #fs-crime { display: none; }
-  body[data-present="1"] .mapa,
-  body[data-present="1"] .mapb { width: min(22vw, 34vh); }
-  /* Tighter buttons so three groups fit one row rather than three. */
-  body[data-present="1"] .opt,
-  body[data-present="1"] .act {
-    font-size: calc(0.8rem * var(--ui));
-    min-height: calc(2rem * var(--ui));
+  body[data-present="1"] .opt, body[data-present="1"] .act {
+    font-size: calc(0.8rem * var(--ui)); min-height: calc(2rem * var(--ui));
     padding: calc(0.2rem * var(--ui)) calc(0.45rem * var(--ui));
   }
   body[data-present="1"] legend { font-size: calc(0.8rem * var(--ui)); }
-  /* The readout, not the maps, sets the height of the top row. Pairing the two headline
-     numbers halves it and gives the controls the room they need. CSS order moves the
-     equation below them, which shifts the tab order away from the reading order — a fair
-     trade on a projector, where nobody is tabbing, and it does not apply at normal size. */
-  body[data-present="1"] .readout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: calc(0.5rem * var(--ui));
-    align-content: start;
-  }
-  body[data-present="1"] .readout .spacer { display: none; }
-  body[data-present="1"] .readout .stat:nth-child(2) { order: 1; }
-  body[data-present="1"] .readout .stat:nth-child(4) { order: 2; }
-  body[data-present="1"] .readout .stat:nth-child(3) { order: 3; grid-column: 1 / -1; }
-  body[data-present="1"] .big { font-size: calc(2.2rem * var(--ui)); }
   body[data-present="1"] .stakes {
-    font-size: calc(0.8rem * var(--ui));
-    line-height: 1.35;
+    font-size: calc(0.8rem * var(--ui)); line-height: 1.35;
     padding-left: calc(0.5rem * var(--ui));
   }
-  body[data-present="1"] .main { gap: calc(0.7rem * var(--ui)); }
 }
-
-/* ---- maps ---- */
-.mapa, .mapb { display: flex; flex-direction: column; gap: calc(0.3rem * var(--ui)); }
-.caption {
-  font-size: calc(0.85rem * var(--ui));
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-svg.map {
-  width: 100%;
-  height: auto;
-  display: block;
-  background: var(--page);
-  touch-action: manipulation;
-}
-/* Dissemination areas are always drawn, always hairline: at 996 of them anything
-   heavier eats the map, and when the analysis uses coarser areas they are the faint
-   detail underneath rather than the subject. */
-svg.map path.area { stroke: var(--map-line); stroke-width: 0.45; vector-effect: non-scaling-stroke; }
-/* One path holding every line that separates one area of analysis from the next. */
-svg.map path.zones { fill: none; stroke: var(--zone-line); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-svg.map path.pick  { fill: none; stroke: var(--focus); stroke-width: 3.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-.legend { display: flex; align-items: center; gap: calc(0.25rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
-.legend .sw { flex: 1 1 0; height: calc(0.75rem * var(--ui)); border: 1px solid var(--edge); }
-/* Compound, not descendant: this row IS a .legend. A descendant selector here
-   silently did nothing and the end labels bunched at the left. */
-.legend.ends { justify-content: space-between; }
-.legend.ends span { flex: 0 1 auto; }
-.legendwrap { display: flex; flex-direction: column; gap: calc(0.15rem * var(--ui)); }
 
 /* ---- readout ---- */
 .readout, .controls { display: flex; flex-direction: column; gap: calc(0.75rem * var(--ui)); }
@@ -409,21 +324,50 @@ body[data-present="1"] footer { display: none; }
 
   <div class="main">
 
-    <div class="mapa">
-      <div class="caption" id="capa">Reported incidents</div>
-      <svg class="map" id="mapa" viewBox="0 0 100 100" role="img" aria-labelledby="capa"></svg>
-      <div class="legendwrap">
-        <div class="legend" id="lega"></div>
-        <div class="legend ends"><span id="lega0"></span><span id="lega1"></span></div>
+    <div class="eqrow" id="eqrow">
+      <div class="term" data-layer="const">
+        <div class="tname">the constant</div>
+        <svg class="map" id="m-const" viewBox="0 0 100 100" role="img"
+             aria-label="The constant term, mapped"></svg>
+        <div class="tbeta" id="b-const">—</div>
       </div>
-    </div>
-
-    <div class="mapb">
-      <div class="caption" id="capb">What the model misses</div>
-      <svg class="map" id="mapb" viewBox="0 0 100 100" role="img" aria-labelledby="capb"></svg>
-      <div class="legendwrap">
-        <div class="legend" id="legb"></div>
-        <div class="legend ends"><span id="legb0"></span><span id="legb1"></span></div>
+      <div class="op">+</div>
+      <div class="term" data-layer="hh">
+        <div class="tname">households</div>
+        <svg class="map" id="m-hh" viewBox="0 0 100 100" role="img"
+             aria-label="The households term, mapped"></svg>
+        <div class="tbeta" id="b-hh">—</div>
+      </div>
+      <div class="op">+</div>
+      <div class="term" data-layer="inc">
+        <div class="tname">income</div>
+        <svg class="map" id="m-inc" viewBox="0 0 100 100" role="img"
+             aria-label="The income term, mapped"></svg>
+        <div class="tbeta" id="b-inc">—</div>
+      </div>
+      <div class="op">+</div>
+      <div class="term" data-layer="sperr">
+        <div class="tname">spatial error</div>
+        <svg class="map" id="m-sperr" viewBox="0 0 100 100" role="img"
+             aria-label="The spatial part of the error, mapped"></svg>
+        <div class="tbeta" id="b-sperr">—</div>
+      </div>
+      <div class="op">+</div>
+      <div class="term" data-layer="res">
+        <div class="tname">residuals</div>
+        <svg class="map" id="m-res" viewBox="0 0 100 100" role="img"
+             aria-label="The residuals, mapped"></svg>
+        <div class="tbeta" id="b-res">what is left over</div>
+      </div>
+      <div class="op eq">=</div>
+      <div class="term big-term" data-layer="be">
+        <div class="tname" id="capa">reported</div>
+        <svg class="map" id="m-be" viewBox="0 0 100 100" role="img"
+             aria-labelledby="capa"></svg>
+        <div class="legendwrap">
+          <div class="legend" id="lega"></div>
+          <div class="legend ends"><span id="lega0"></span><span id="lega1"></span></div>
+        </div>
       </div>
     </div>
 
@@ -431,17 +375,16 @@ body[data-present="1"] footer { display: none; }
       <span class="spacer"></span>
 
       <div class="stat">
-        <div class="label">How much of the pattern the model explains (R<sup>2</sup>)
+        <div class="label">How much of the pattern the model explains
+          <span class="big inline" id="r2">—</span>
           <button class="info" data-info="info-r2" aria-expanded="false" aria-controls="info-r2"
                   title="What is R squared?">i</button>
         </div>
-        <div class="big" id="r2">—</div>
         <div class="strip" id="strip" hidden>
           <div class="stripline" id="stripline"></div>
           <div class="stripends"><span id="strip0"></span><span id="strip1"></span></div>
           <div class="stripnote" id="stripnote"></div>
         </div>
-        <div class="sub" id="nareas"></div>
         <div class="help-panel" id="info-r2" hidden>
           <p>This is R<sup>2</sup>, written here as a percentage. It is the share of the
              differences between areas that the two predictors account for. At 0 per cent the
@@ -465,11 +408,10 @@ body[data-present="1"] footer { display: none; }
       </div>
 
       <div class="stat">
-        <div class="label">The model
+        <div class="label">Reading the row
           <button class="info" data-info="info-eq" aria-expanded="false" aria-controls="info-eq"
-                  title="How do I read this equation?">i</button>
+                  title="How do I read this?">i</button>
         </div>
-        <div class="eq" id="eq"></div>
         <div class="sub" id="eqnote"></div>
         <div class="help-panel" id="info-eq" hidden>
           <p>One equation for the whole city. It predicts how many incidents of the chosen
@@ -790,10 +732,13 @@ body[data-present="1"] footer { display: none; }
   // Centre of each dissemination area, for the distance-based neighbours. Taken from the
   // largest ring by the usual polygon centroid formula. No extra data needed: this comes
   // out of the geometry the page has already decoded.
+  var AREA = new Float64Array(N);            // square kilometres
   var CENT = (function () {
-    var c = new Float64Array(N * 2), f, r, k, pts, area, cx, cy, x1, y1, x2, y2, cr, best;
+    var c = new Float64Array(N * 2), f, r, k, pts, area, cx, cy, x1, y1, x2, y2, cr, best, tot;
+    // The grid is 2 m, so a unit of area is 4 m squared, and a million of those is a km.
+    var TO_KM2 = D.quant * D.quant / 1e6;
     for (f = 0; f < N; f++) {
-      best = null;
+      best = null; tot = 0;
       for (r = 0; r < GEOM[f].length; r++) {
         pts = GEOM[f][r]; area = 0; cx = 0; cy = 0;
         for (k = 0; k < pts.length; k += 2) {
@@ -803,9 +748,11 @@ body[data-present="1"] footer { display: none; }
           area += cr; cx += (x1 + x2) * cr; cy += (y1 + y2) * cr;
         }
         area *= 0.5;
+        tot += area;                          // signed, so holes subtract themselves
         if (area !== 0 && (!best || Math.abs(area) > best[2]))
           best = [cx / (6 * area), cy / (6 * area), Math.abs(area)];
       }
+      AREA[f] = Math.abs(tot) * TO_KM2;
       if (best) { c[f * 2] = best[0]; c[f * 2 + 1] = best[1]; }
     }
     return c;
@@ -884,12 +831,12 @@ body[data-present="1"] footer { display: none; }
   function aggregate(zone, k) {
     var be = new Float64Array(k), hh = new Float64Array(k), wsum = new Float64Array(k),
         winc = new Float64Array(k), cx = new Float64Array(k), cy = new Float64Array(k),
-        cnt = new Float64Array(k), cells = [], i, z;
+        cnt = new Float64Array(k), area = new Float64Array(k), cells = [], i, z;
     for (i = 0; i < k; i++) cells.push([]);
     for (i = 0; i < N; i++) {
       z = zone[i];
       cells[z].push(i);
-      cx[z] += CENT[i * 2]; cy[z] += CENT[i * 2 + 1]; cnt[z] += 1;
+      cx[z] += CENT[i * 2]; cy[z] += CENT[i * 2 + 1]; cnt[z] += 1; area[z] += AREA[i];
       if (!OK[i]) continue;
       be[z] += BE[i]; hh[z] += HH[i];
       wsum[z] += HH[i]; winc[z] += HH[i] * INC[i];
@@ -903,7 +850,8 @@ body[data-present="1"] footer { display: none; }
       pos[i * 2 + 1] = cnt[i] ? cy[i] / cnt[i] : 0;
       if (use[i]) idx.push(i);
     }
-    return { be: be, hh: hh, inc: inc, use: use, cells: cells, k: k, pos: pos, idx: idx };
+    return { be: be, hh: hh, inc: inc, use: use, cells: cells, k: k, pos: pos, idx: idx,
+             area: area };
   }
 
   function zoneNbr(zone, k) {
@@ -1215,9 +1163,17 @@ body[data-present="1"] footer { display: none; }
       se.push(Math.sqrt(Math.max(s2 * C[i][i], 0)));
       p.push(tTest(b[i] / se[i], dof));
     }
+    // `resid` is what the model treats as error, and is what Moran's I is computed on.
+    // `raw` is always y minus X b in the original units, so the maps in the equation row
+    // add up exactly whichever model is fitted.
+    var raw = new Float64Array(ag.k), rr;
+    for (j = 0; j < n; j++) {
+      rr = ag.be[idx[j]] - (b[0] + b[1] * ag.hh[idx[j]] + b[2] * ag.inc[idx[j]] / 1000);
+      raw[idx[j]] = rr;
+    }
     return { b: b, se: se, p: p, mode: mode, lambda: lambda,
              r2: sst > 0 ? 1 - ssr / sst : NaN,
-             resid: resid, sd: Math.sqrt(ssr / n), n: n, idx: idx };
+             resid: resid, raw: raw, sd: Math.sqrt(ssr / n), n: n, idx: idx };
   }
 
   // Kelejian and Prucha's generalised moments estimator for lambda. Three moment
@@ -1304,6 +1260,9 @@ body[data-present="1"] footer { display: none; }
   ];
 
   var params = new URLSearchParams(location.search);
+  // Captured now, because render() rewrites the URL and drops anything at its default.
+  // Read later, this would be empty for a link that happened to match the defaults.
+  var ARRIVED_WITH_STATE = location.search.length > 0;
   var zoning = "da", seed = 1, view = "be", present = false;
   var wkind = "touch";
   var crime = D.types[0].key;
@@ -1316,30 +1275,42 @@ body[data-present="1"] footer { display: none; }
   var sp = parseInt(params.get("s"), 10); if (sp > 0 && sp < 1e6) seed = sp;
   present = params.get("present") === "1";
 
-  var svgA = document.getElementById("mapa"), svgB = document.getElementById("mapb");
+  var MAPS = {}, PICKS = {}, ZLINES = {}, PATHS = {};
   var liveEl = document.getElementById("live");
-  var pathsA = [], pathsB = [], zoneLineA, zoneLineB, pickA, pickB;
   var picked = -1;
   var state = null;
 
   function buildMaps() {
-    var ns = "http://www.w3.org/2000/svg", f, p, q;
-    [svgA, svgB].forEach(function (svg) { svg.setAttribute("viewBox", "0 0 " + W + " " + H); });
-    for (f = 0; f < N; f++) {
-      var d = pathOf(GEOM[f]);
-      p = document.createElementNS(ns, "path"); p.setAttribute("d", d); p.setAttribute("class", "area");
-      q = document.createElementNS(ns, "path"); q.setAttribute("d", d); q.setAttribute("class", "area");
-      p.dataset.i = f; q.dataset.i = f;
-      svgA.appendChild(p); svgB.appendChild(q);
-      pathsA.push(p); pathsB.push(q);
-    }
-    zoneLineA = document.createElementNS(ns, "path"); zoneLineA.setAttribute("class", "zones");
-    zoneLineB = document.createElementNS(ns, "path"); zoneLineB.setAttribute("class", "zones");
-    pickA = document.createElementNS(ns, "path"); pickA.setAttribute("class", "pick");
-    pickB = document.createElementNS(ns, "path"); pickB.setAttribute("class", "pick");
-    svgA.appendChild(zoneLineA); svgB.appendChild(zoneLineB);
-    svgA.appendChild(pickA); svgB.appendChild(pickB);
+    var ns = "http://www.w3.org/2000/svg";
+    LAYERS.forEach(function (L) {
+      var svg = document.getElementById("m-" + L.id);
+      svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+      var list = [], f, p;
+      for (f = 0; f < N; f++) {
+        p = document.createElementNS(ns, "path");
+        p.setAttribute("d", PATHD[f]);
+        p.setAttribute("class", "area");
+        p.dataset.i = f;
+        svg.appendChild(p); list.push(p);
+      }
+      var zl = document.createElementNS(ns, "path"); zl.setAttribute("class", "zones");
+      var pk = document.createElementNS(ns, "path"); pk.setAttribute("class", "pick");
+      svg.appendChild(zl); svg.appendChild(pk);
+      MAPS[L.id] = svg; PATHS[L.id] = list; ZLINES[L.id] = zl; PICKS[L.id] = pk;
+      svg.addEventListener("pointermove", onPoint);
+      svg.addEventListener("pointerdown", onPoint);
+      svg.addEventListener("pointerleave", function (e) {
+        if (e.pointerType === "touch") return;
+        picked = -1; showPick();
+      });
+    });
   }
+
+  var PATHD = (function () {
+    var out = [], f;
+    for (f = 0; f < N; f++) out.push(pathOf(GEOM[f]));
+    return out;
+  })();
 
   function zoneOutline(zone, wantZone) {
     var d = "", e, i;
@@ -1397,46 +1368,55 @@ body[data-present="1"] footer { display: none; }
     return runs;
   }
 
+  // Every layer is a term of the fitted equation, divided through by area so the maps are
+  // comparable and so a count is never shaded dark for covering more ground. They add up.
+  //   plain:  constant + households + income + residual = reported
+  //   error:  constant + households + income + spatial error + residual = reported
+  // In the error model what was one error term splits in two: the part that runs together
+  // across neighbouring areas, and what is left once it is taken out.
+  var LAYERS = [
+    { id: "const", name: "the constant" },
+    { id: "hh",    name: "households" },
+    { id: "inc",   name: "income" },
+    { id: "sperr", name: "spatial error" },
+    { id: "res",   name: "residuals" },
+    { id: "be",    name: "reported" }
+  ];
+
   function valuesFor(which, st) {
-    var k = st.k, out = new Float64Array(k), i;
+    var k = st.k, out = new Float64Array(k), i, a, m = st.model;
     for (i = 0; i < k; i++) {
-      if (!st.ag.use[i]) { out[i] = NaN; continue; }
-      out[i] = which === "be" ? st.ag.be[i]
-             : which === "hh" ? st.ag.hh[i]
-             : which === "inc" ? st.ag.inc[i]
-             : (st.model ? st.model.resid[i] / (st.model.sd || 1) : NaN);
+      if (!st.ag.use[i] || !m) { out[i] = NaN; continue; }
+      a = st.ag.area[i];
+      if (!(a > 0)) { out[i] = NaN; continue; }
+      out[i] = which === "be"    ? st.ag.be[i] / a
+             : which === "hh"    ? m.b[1] * st.ag.hh[i] / a
+             : which === "inc"   ? m.b[2] * (st.ag.inc[i] / 1000) / a
+             : which === "const" ? m.b[0] / a
+             : which === "sperr" ? (m.raw[i] - m.resid[i]) / a
+             : m.resid[i] / a;
     }
     return out;
   }
 
-  function paint(paths, which, st, legEl, end0, end1) {
-    var k = st.k, vals = valuesFor(which, st), i, finite = [], v;
-    for (i = 0; i < k; i++) if (isFinite(vals[i])) finite.push(vals[i]);
-    var diverging = (which === "res");
-    var breaks, ramp = diverging ? DIV : SEQ;
-    if (diverging) {
-      breaks = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5];
-    } else {
-      breaks = quantileBreaks(finite);
+  // One scale for all five, symmetric about zero, so the addition can be checked by eye.
+  function sharedBreaks(st) {
+    var pool = [], i, j, v;
+    for (j = 0; j < LAYERS.length; j++) {
+      v = valuesFor(LAYERS[j].id, st);
+      for (i = 0; i < st.k; i++) if (isFinite(v[i])) pool.push(Math.abs(v[i]));
     }
+    if (!pool.length) return [0, 0, 0, 0, 0, 0];
+    pool.sort(function (a, b) { return a - b; });
+    var m = pool[Math.floor(pool.length * 0.98)] || pool[pool.length - 1] || 1;
+    return [-0.75 * m, -0.45 * m, -0.15 * m, 0.15 * m, 0.45 * m, 0.75 * m];
+  }
+
+  function paint(layer, st, breaks) {
+    var vals = valuesFor(layer, st), paths = PATHS[layer], i, v;
     for (i = 0; i < N; i++) {
       v = vals[st.zone[i]];
-      paths[i].setAttribute("fill", isFinite(v) ? ramp[classOf(v, breaks)] : "var(--nodata)");
-    }
-    // legend
-    legEl.textContent = "";
-    for (i = 0; i < ramp.length; i++) {
-      var s = document.createElement("span");
-      s.className = "sw"; s.style.background = ramp[i];
-      legEl.appendChild(s);
-    }
-    if (diverging) {
-      end0.textContent = "fewer than predicted";
-      end1.textContent = "more than predicted";
-    } else {
-      finite.sort(function (a, b) { return a - b; });
-      end0.textContent = fmtVal(which, finite[0]);
-      end1.textContent = fmtVal(which, finite[finite.length - 1]);
+      paths[i].setAttribute("fill", isFinite(v) ? DIV[classOf(v, breaks)] : "var(--nodata)");
     }
   }
 
@@ -1444,7 +1424,7 @@ body[data-present="1"] footer { display: none; }
     if (!isFinite(v)) return "no data";
     if (which === "inc") return "$" + Math.round(v / 1000) + "k";
     if (which === "hh") return Math.round(v).toLocaleString();
-    return String(Math.round(v));
+    return v >= 100 ? String(Math.round(v)) : v.toFixed(v < 10 ? 1 : 0);
   }
 
   function sig(x, digits) {
@@ -1508,51 +1488,55 @@ body[data-present="1"] footer { display: none; }
     state = compute();
     var st = state, m = st.model;
 
-    paint(pathsA, view, st, document.getElementById("lega"),
-          document.getElementById("lega0"), document.getElementById("lega1"));
-    paint(pathsB, "res", st, document.getElementById("legb"),
-          document.getElementById("legb0"), document.getElementById("legb1"));
-
-    // Zone lines are only worth drawing when they are not simply every line on the map.
-    var outline = (zoning === "da") ? "" : zoneOutline(st.zone, -1);
-    zoneLineA.setAttribute("d", outline);
-    zoneLineB.setAttribute("d", outline);
-
-    var label = D.types.filter(function (t) { return t.key === crime; })[0].label;
-    document.getElementById("capa").textContent =
-      view === "be" ? label + ", reported" : VIEWS.filter(function (v) { return v.id === view; })[0].cap;
-    document.getElementById("capb").textContent = "What the model misses";
-
-    // Shown as a percentage: "53%" is readable by someone meeting this for the first
-    // time, where "0.531" is not. The documented regression values stay as fractions.
     document.getElementById("r2").textContent =
       (m && isFinite(m.r2)) ? Math.round(m.r2 * 100) + "%" : "—";
-    document.getElementById("nareas").textContent =
-      st.k + " areas" + (zoning === "da" ? "" : ", built from 996 dissemination areas");
 
-    var eq = document.getElementById("eq");
+    var breaks = sharedBreaks(st);
+    LAYERS.forEach(function (L) { paint(L.id, st, breaks); });
+
+    // one key, under the result, since every map shares the scale
+    var leg = document.getElementById("lega");
+    leg.textContent = "";
+    DIV.forEach(function (c) {
+      var sw = document.createElement("span");
+      sw.className = "sw"; sw.style.background = c; leg.appendChild(sw);
+    });
+    document.getElementById("lega0").textContent = "fewer per km\u00b2";
+    document.getElementById("lega1").textContent = "more per km\u00b2";
+
+    var outline = (zoning === "da") ? "" : zoneOutline(st.zone, -1);
+    LAYERS.forEach(function (L) { ZLINES[L.id].setAttribute("d", outline); });
+
+    var label = D.types.filter(function (t) { return t.key === crime; })[0].label;
+    document.getElementById("capa").textContent = label + ", reported";
+    // Under the aspatial model this term is exactly zero everywhere, so its map comes out
+    // blank. That is the point: the model assigns nothing to spatial structure, and you
+    // can see it assign nothing.
+    var spatialOn = (modelMode === "err");
+    document.getElementById("b-sperr").textContent =
+      spatialOn ? "what runs together" : "nothing: this model has none";
+    document.getElementById("b-res").textContent =
+      spatialOn ? "what is left once that is out" : "what is left over";
+
+    // Each term carries its coefficient and the uncertainty on it. A beta printed alone
+    // reads as a fact; printed with its standard error it reads as an estimate.
+    function beta(el, v, se, p, digits) {
+      var e = document.getElementById(el);
+      if (!m) { e.textContent = "—"; return; }
+      e.innerHTML = '<span class="' + (p !== null && p >= 0.05 ? "dead" : "") + '">&times; ' +
+        v.toFixed(digits) + '</span> <span class="pm">&plusmn; ' + se.toFixed(digits) + "</span>";
+    }
     if (m) {
-      eq.innerHTML = '<span class="term">reports = ' + sig(m.b[0], 2) + "</span> " +
-        term(m.b[1], m.p[1], 5, "households") + " " + term(m.b[2], m.p[2], 3, "income");
-      var dead = [];
-      if (m.p[1] >= 0.05) dead.push("households");
-      if (m.p[2] >= 0.05) dead.push("income");
-      document.getElementById("eqnote").innerHTML =
-        "income in thousands of dollars &middot; " +
-        (dead.length === 0 ? "both predictors hold up"
-         : dead.length === 2 ? "neither predictor holds up"
-         : dead[0] + " could be chance");
-    } else {
-      eq.textContent = "—";
-      document.getElementById("eqnote").textContent = "";
+      document.getElementById("b-const").innerHTML =
+        m.b[0].toFixed(1) + ' <span class="pm">&plusmn; ' + m.se[0].toFixed(1) + "</span>";
+      beta("b-hh", m.b[1], m.se[1], m.p[1], 5);
+      beta("b-inc", m.b[2], m.se[2], m.p[2], 3);
     }
 
     document.getElementById("moran").textContent = sig(st.I, 3);
-    document.getElementById("moranp").innerHTML = isFinite(st.p)
-      ? (st.p < 0.0001 ? "p below 0.0001" : "p = " + st.p.toFixed(4)) +
-        " &middot; if the values were dealt out at random it would sit near " +
-        (-1 / (st.model.n - 1)).toFixed(3)
-      : "";
+    // Only the unsurprising result is worth a word here. Everything else is in the panel.
+    document.getElementById("moranp").textContent =
+      (isFinite(st.p) && st.p >= 0.05) ? "close enough to chance" : "";
 
     var deg = st.W.dense ? (st.model.n - 1)
             : (st.W.off[st.W.n] / st.W.n);
@@ -1600,12 +1584,12 @@ body[data-present="1"] footer { display: none; }
     var el = document.getElementById("pick"), st = state;
     if (picked < 0 || !st) {
       el.innerHTML = '<span class="none">Point at the map, or tap an area.</span>';
-      pickA.setAttribute("d", ""); pickB.setAttribute("d", "");
+      LAYERS.forEach(function (L) { PICKS[L.id].setAttribute("d", ""); });
       return;
     }
     var z = st.zone[picked];
-    pickA.setAttribute("d", zoneOutline(st.zone, z));
-    pickB.setAttribute("d", pickA.getAttribute("d"));
+    var d = zoneOutline(st.zone, z);
+    LAYERS.forEach(function (L) { PICKS[L.id].setAttribute("d", d); });
     var ag = st.ag, m = st.model;
     if (!ag.use[z]) { el.textContent = "This area has no published figures."; return; }
     var pred = m ? ag.be[z] - m.resid[z] : NaN;
@@ -1645,8 +1629,8 @@ body[data-present="1"] footer { display: none; }
       });
       zbtn[z.id] = b; host.appendChild(b);
     });
-    var MODELS = [{ id: "ols", label: "Each area on its own" },
-                  { id: "err", label: "What is left out has a shape" }];
+    var MODELS = [{ id: "ols", label: "Aspatial OLS regression" },
+                  { id: "err", label: "Spatial error model" }];
     var hm = document.getElementById("modelbtns");
     MODELS.forEach(function (mo) {
       var b = document.createElement("button");
@@ -1717,15 +1701,6 @@ body[data-present="1"] footer { display: none; }
     picked = i;
     showPick();
   }
-  [svgA, svgB].forEach(function (svg) {
-    svg.addEventListener("pointermove", onPoint);
-    svg.addEventListener("pointerdown", onPoint);
-    svg.addEventListener("pointerleave", function (e) {
-      if (e.pointerType === "touch") return;   // a tap should leave the reading up
-      picked = -1; showPick();
-    });
-  });
-
   var presentBtn = document.getElementById("present");
   function setPresent(on) {
     present = on;
@@ -1761,7 +1736,7 @@ body[data-present="1"] footer { display: none; }
   // somewhere specific, so it goes straight through.
   (function () {
     var el = document.getElementById("splash");
-    if (location.search) return;
+    if (ARRIVED_WITH_STATE) return;
     el.hidden = false;
     var go = document.getElementById("splash-go");
     go.focus();
@@ -1777,6 +1752,7 @@ body[data-present="1"] footer { display: none; }
   })();
 
   window.MAUP_TEST = { compute: compute, state: function () { return state; },
+                       valuesFor: valuesFor, layers: LAYERS,
                        setZoning: function (z, s) { zoning = z; if (s) seed = s; render(); } };
 })();
 </script>
