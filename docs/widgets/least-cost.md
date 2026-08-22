@@ -229,6 +229,12 @@ A student who never opens it may spend effort arguing about whether houses shoul
 That is the distributive question and it is the one students will ask first. Adding census
 data would answer it and would double the widget.
 
+**Nothing on screen says whose land this is.** The corridor was chosen partly to keep clear
+of a jurisdiction the method cannot represent, which is recorded above and makes the page's
+silence about territory louder rather than quieter. Adding a line to the footer is the
+obvious move and is close to the failure `principles.md` section 6 describes. Open question
+there; not this file's to settle.
+
 **Whether the framing lands.** The pin cards and the naming prompt are the whole argument
 that a route is a proposal. Untested with students.
 

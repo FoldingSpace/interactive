@@ -74,14 +74,11 @@ least-cost paths, from Lab 4. Each has a file in `docs/widgets/` carrying its ve
 numbers, review record, open threads and a "picking this up again" section. **Read that
 before changing one** — the recorded values are the regression suite.
 
-Neither lab widget is an answer key, and each refuses in a different way. The MAUP widget
-refuses the crime category the lab asks students to model. The least-cost widget uses a
-different city, a different destination and a different classification — Metro Vancouver's
-open land use, which has an agricultural class where the lab's licensed DMTI data has none,
-so nothing a student does there can reproduce the lab's surface. Both labs are worked
-through in full in `lab3-worked.md` and `lab4-worked.md` in the **local** working folder,
-outside this repository, because those files are the answer keys and this repository is
-public. Keep it that way.
+Neither lab widget is an answer key, and each refuses structurally rather than by asking
+students not to look — see `principles.md` section 15, which is the working order both
+followed. Both labs are worked through in full in `lab3-worked.md` and `lab4-worked.md` in
+the **local** working folder, outside this repository, because those files are the answer
+keys and this repository is public. Keep it that way.
 
 `template/` is a working skeleton to copy; `docs/widget-pattern.md` says what to keep and
 what changes when a widget needs a map, a data file, or an animation instead of pure
@@ -92,45 +89,69 @@ Repository is `FoldingSpace/interactive`, pushed over an SSH deploy key; see
 
 ## Working notes
 
+Nineteen of these accumulated as a flat list over three builds, which is past the point
+where anyone reads past the fifth. Grouped now. Every one was paid for.
+
+### Before building
+
+- **Settle the licence before the subject.** It decides what the widget can be about, and it
+  has already improved one of these rather than limiting it. `principles.md` section 10.
+- **Work the lab in full first** if the widget comes from one, keep the worked version out
+  of this repository, and make the widget structurally unable to answer the questions.
+  `principles.md` section 15.
+- **Prefer an exact answer to a simulated one** wherever a closed form exists, and know the
+  floor of what a simulation can resolve. `principles.md` section 7.
+
+### What breaks, and what it looks like when it does
+
+- **Replacing a block of CSS or code wholesale silently takes everything else in it.** List
+  what was in the block first; a layout rewrite here deleted an entire stylesheet.
+- **Duplicate rules are why a fix does not take.** Two identical `.readout` declarations
+  survived two attempts at the same bug.
+- **An author `display` rule beats the browser's `[hidden]`.** Caught three widgets here;
+  `template/` now declares `[hidden] { display: none !important; }` once, globally.
+- **Batching a redraw into an animation frame leaves state one frame behind**, and it fools
+  a test harness before it fools a user. Keep a `flush()` for wherever a settled answer is
+  read rather than drawn. `widget-pattern.md`.
+
+### What to check
+
+- **Measure rather than eyeball** — layout, speed, and what a control actually demonstrates.
+  Most real defects here were invisible until something was measured, and one control turned
+  out to teach the opposite of its design intent.
+- **Check the rendered output, not only the numbers behind it.** Read attributes back off
+  the SVG and confirm the picture makes the claim the model does.
+- **Record verified numbers** in the widget's file in `docs/widgets/`, so a rebuild has
+  something to fail against. Reproducing a known case is necessary and never sufficient: ask
+  what bug would pass the test you just ran.
+- **After changing what is displayed**, audit every control for whether it still controls
+  something, and grep the captions, footer and licence line for claims that went stale.
+- **Documentation goes stale exactly like code.** When a feature changes, grep the docs for
+  the numbers and for "every", "always" and "all". The README's "single self-contained file
+  with no build step" survived two builds that had already broken it.
+
+### What goes on the page
+
+- **What a widget is *for* goes in the reading flow**, not behind an (i) and not in the
+  footer. Presentation mode hides (i) panels, so anything only there is missing from every
+  lecture.
+- **A count is not a rate.** Never shade a polygon by a count; use graduated symbols or
+  divide by something, and know the denominator is itself a claim. `visual-forms.md`.
+- **A palette of more than about six categories has to be searched** under simulated colour
+  blindness, weighted by how much ground each class covers, not chosen by eye.
+  `visual-forms.md`.
+- **A citation is not checked until you have read the thing.** An adversarial agent
+  fabricated a full set of verifications for this repository, complete with quotations and
+  catalogue records, and then retracted them. Get the paper.
+- **The citation most likely to be attached to a claim it does not make** is the one
+  supporting a framing rather than a method. Cite the argument, objection included.
+  `principles.md` section 11.
+
+### Bookkeeping
+
 - Keep `docs/libraries.md` current. Every time a library works, fails, or is ruled out,
   write down which and why. That file is the point of not relearning this each term.
-- Every external thing gets a line in `docs/attributions.md` at the moment it is added,
-  not later.
+- Every external thing gets a line in `docs/attributions.md` at the moment it is added.
 - Credit reads "Made by Luke Bergmann with Claude" wherever a page carries a credit.
-  Copyright notices read "Copyright (c) 2026 Luke Bergmann, where applicable" and stay
-  that way — credit and copyright are not the same thing. See `docs/attributions.md`.
-- Record verified numbers in the widget's file in `docs/widgets/`, so a rebuild has
-  something to fail against. Reproducing a known case is necessary and never sufficient:
-  ask what bug would pass the test you just ran.
-- Measure rather than eyeball, for layout, for speed, and for what a control actually
-  demonstrates. Most of the real defects found so far were invisible until something was
-  measured, and one control turned out to teach the opposite of its design intent.
-- Documentation makes claims that go stale exactly like code. When a feature changes,
-  grep the docs for the numbers and the words "every", "always" and "all".
-- Prefer an exact answer to a simulated one wherever a closed form exists, and know the
-  floor of what a simulation can resolve. See `principles.md` section 7.
-- A citation is not checked until you have read the thing. An adversarial agent fabricated
-  a full set of verifications for this repository, complete with quotations and catalogue
-  records, and then retracted them. Get the paper.
-- What a widget is *for* goes in the reading flow, not behind an (i) and not in the footer.
-  Presentation mode hides (i) panels, so anything only in them is missing from every lecture.
-- A count is not a rate. Never shade a polygon by a count; use graduated symbols or divide
-  by something, and know that the denominator is itself a claim. See `visual-forms.md`.
-- Check the rendered output, not only the numbers behind it. Read attributes back off the
-  SVG and verify the picture makes the claim the model does.
-- After changing what is displayed, audit each control for whether it still controls
-  something, and grep the captions, footer and licence line for claims that went stale.
-- Replacing a block of CSS or code wholesale silently takes everything else in it. List what
-  was in the block before replacing it; a layout rewrite here deleted an entire stylesheet.
-- Duplicate rules are why a fix does not take. Two identical `.readout` declarations
-  survived two attempts at the same bug.
-- An author `display` rule beats the browser's `[hidden]`, and it has caught three widgets
-  here. `template/` now declares `[hidden] { display: none !important; }` once, globally.
-- A palette of more than about six categories has to be searched under simulated colour
-  blindness, weighted by how much ground each class covers, not chosen by eye. See
-  `visual-forms.md`.
-- Batching a redraw into an animation frame means something will read state one frame
-  behind. Keep a `flush()` for wherever a settled answer is read rather than drawn.
-- Data licences decide what a widget can be. DMTI cannot be redistributed; going to Metro
-  Vancouver's open land use produced a *better* widget, because its classes include the
-  one the lab's own argument needs. Check the licence before the design, not after.
+  Copyright notices read "Copyright (c) 2026 Luke Bergmann, where applicable" and stay that
+  way — credit and copyright are not the same thing. See `docs/attributions.md`.

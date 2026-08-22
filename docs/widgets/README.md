@@ -10,7 +10,12 @@ choice is gone and only the choice is left.
 | [Drawing the lines: MAUP in Vancouver](https://foldingspace.github.io/interactive/maup/) | [maup.md](maup.md) | Live |
 | [Least cost, whose cost?](https://foldingspace.github.io/interactive/least-cost/) | [least-cost.md](least-cost.md) | Live |
 
-Graphical decisions that recur across widgets are in `../visual-forms.md`, not here.
+Anything that would be true of the next widget too goes in the shared documents, not here:
+how to draw a quantity in `../visual-forms.md`, how a widget is put together in
+`../widget-pattern.md`, how it gets checked in `../review.md`, and what a widget must be in
+`../principles.md`. What stays here is the instance — this widget's numbers, this widget's
+choices, and why they went this way rather than another. A lesson written in both places
+goes stale in one of them.
 
 ## What every one of these has to contain
 

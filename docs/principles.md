@@ -201,12 +201,42 @@ p-value is about 0.042, so under those weights nothing can ever pass a corrected
 significance test, whatever the pattern. Instead of an empty map, the widget reports the
 smallest p-value reached and says a wider kernel gives finer ones.
 
+**A choice that changes nothing.** The least-cost widget carries a preset called "keep
+away from homes" that moves the route by 0.2 km, because the cheapest route was already
+avoiding houses. Whether a value you assert has any consequence is a fact about the ground,
+not about how strongly you hold it. A widget whose every control visibly works teaches that
+every value you hold has an effect, which is false and is the more comfortable of the two
+beliefs.
+
 The rule that falls out: **when a result is empty, undefined, or unmoved, say why on
 screen.** Not in the notes, not in the lecture — on screen, at the moment it happens. It
 costs a line and it converts the widget's worst moment into its best one.
 
 The related habit is to build the failing case into the presets deliberately, so it can be
 reached in one click and demonstrated on purpose rather than stumbled into.
+
+### Some limits are a reason to build something else
+
+Not every blind spot should be demonstrated. The least-cost widget was designed to route to
+Roberts Bank, and any route there reaches the causeway through Tsawwassen First Nation
+treaty land. A cost surface can only deal with that by giving it a number, and consent does
+not have a price; making it an impassable barrier is the same category error with the sign
+flipped. The two ways of handling it inside the widget were to draw the land and refuse to
+price it, or to price it and let students find the error themselves.
+
+The corridor was moved instead, and that was the right call. A widget has one screen and a
+few sentences. A subject that needs more than that is not made safe by being handled
+carefully in a corner of something about power lines, and a page that raises it and then
+moves on has used it. Move the example, and put in the widget's own file why it moved — so
+the next person does not rediscover the problem and solve it worse.
+
+Note what this does not license, and note what is still unresolved. Choosing a corridor
+that avoids land under separate Indigenous jurisdiction says nothing whatever about the land
+it does cross. At present that is written in the widget's own file and not on the page, so
+a reader of the page meets a silence. Whether a page that maps land and prices it should say
+something, and what, is in the open questions below — it is a decision about how the course
+speaks, not a technical one, and the failure mode described two paragraphs up applies to the
+easy answer.
 
 ## 7. Content and tools
 
@@ -332,6 +362,19 @@ Everything we ship is open, and everything borrowed is credited.
   legible at classroom distance. Basemap and data credits go in a persistent line or a
   clearly marked info control.
 - Every external thing gets an entry in `docs/attributions.md` when it is added.
+
+**Settle the licence before the subject, not after the build.** The least-cost widget was
+designed around a dataset it could never have shipped — DMTI, licensed to institutions, the
+basis of the whole lab it came from — and moving to Metro Vancouver's open land use changed
+the city, the corridor, the classes, and what the widget could argue. That was not damage
+control. The open data has an agricultural class where the licensed data has none, which is
+exactly the class the lab's own question needs and cannot express, so the constraint handed
+over the widget's best idea.
+
+Expect that to be usual rather than lucky. Openly licensed data is generally published by
+somebody with a public reason to maintain it, and the categories follow the reason. A
+licence check is not paperwork to do at the end; it is one of the first things that decides
+what the widget can be about.
 - Our own code is MIT and our own text and figures are CC BY 4.0, so anyone can pick a
   widget up and adapt it. Anything we add must be compatible with that.
 
@@ -370,6 +413,24 @@ teaching material is worse than no citation.
 
 This applies to every explanation, caption, and document in the repository, not only to
 things labelled as a bibliography.
+
+### The citation most likely to fail is the one attached to a framing
+
+Cite a paper for a method or a number and it either has it or it does not; the check is
+quick and it usually passes. Cite one for a *stance* — that a practice opens something up,
+that a technique is participatory, that a tool democratises anything — and you are almost
+always reaching for a review, and a review reports the argument rather than settling it.
+
+Four citations went out with the least-cost widget. The two attached to methods passed
+outright. Both of the two attached to framings came back needing the claim rewritten, and
+one of them was carrying the opposite of what its author had argued: Sieber's review treats
+"GIS broadens participation" as the field's contested question and gives serious space to
+the objection that such software lends the illusion of control while control stays where it
+was.
+
+The repair is not to soften the claim. It is to cite the argument rather than the side of it
+you like, objection included. That is more accurate, and it is better teaching — a student
+who is told a thing is contested and shown by whom has been given something to do.
 
 ### The claim drives the citation, never the reverse
 
@@ -442,6 +503,47 @@ say what the method cannot do. What does not generalise is any particular answer
 **A widget that is not on the front page does not exist.** `web/index.html` is the only
 route in for anyone who was not handed a URL, and it is part of shipping, not a follow-up.
 
+## 15. A widget built beside an assessment
+
+Two of these came out of a course lab, and both had to answer the same question before
+anything else: what stops this being the answer key? A public page that hands over a marked
+exercise is worse than no page, because it arrives looking like teaching.
+
+**The refusal has to be structural, not a warning label.** Anything that depends on a
+student choosing not to look has already failed. The MAUP widget refuses the crime category
+its lab asks students to model. The least-cost widget runs on a different city, a different
+destination and a different classification, so there is no configuration of it that
+reproduces the lab's surface.
+
+**And the refusal should be the lesson.** This is the part worth aiming for rather than
+settling for. The category the MAUP widget declines to model is declined for a reason it
+states on screen, and that reason is the substantive point about police data. The
+classification the least-cost widget uses has an agricultural class where the lab's has
+none — which is the finding the widget exists to make, arrived at by working the lab and
+noticing that the value its own question asks students to defend cannot be expressed in its
+own categories.
+
+The working order that produced both:
+
+Work the lab through in full first, computing every answer rather than reasoning about them.
+That is where the widget's subject comes from, and it is where the lab's own errors turn up:
+between them these two produced a friction table with no class for the thing it asks about,
+a topography claim that is false twice over, a distance comparison a quarter of which is a
+grid artefact, and two questions that are the same question and are never joined.
+
+Keep that worked version in the local folder, outside the public repository, and say in
+`CLAUDE.md` that it is to stay there.
+
+Then design so the widget cannot answer the questions, and check it by trying: take each
+question in turn and say what the widget would have to become for it to hand the answer
+over. If the answer is "nothing, a student would just have to read it carefully", start
+again.
+
+A last note on tone. Neither widget is coy about where it came from. Being unable to serve
+as an answer key is not the same as pretending to be unrelated, and a student who works out
+that the widget is about the same methods as their lab has understood something rather than
+cheated.
+
 ---
 
 ## Open questions
@@ -461,3 +563,12 @@ route in for anyone who was not handed a URL, and it is part of shipping, not a 
   autocorrelation widget shows that *where* the line falls changes the answer, but not what
   happens as it recedes. Letting a neighbourhood grow without limit, and watching the
   number as it does, is the experiment. Not yet run; see that widget's file.
+- **Whether a page that maps land should say whose land it is, and how.** Two of these draw
+  real places in British Columbia, price them, and cut them up. Neither says anything on
+  screen about territory, and the least-cost widget's corridor was chosen partly to avoid a
+  jurisdiction the method cannot represent, which makes the silence louder rather than
+  quieter. The obvious fix — a line of acknowledgement in the footer — is close to the
+  failure section 6 warns about, where a subject too big for one screen gets handled in a
+  corner and moved past. Doing nothing is also a position. This is Luke's call and it has
+  not been made; until it is, the reasoning stays in each widget's file where the next
+  person will find it.

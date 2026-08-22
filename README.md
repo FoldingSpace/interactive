@@ -36,9 +36,12 @@ install.
 
 ## How they are built
 
-Static HTML, CSS and JavaScript. Every widget so far is a single self-contained file with
-**no libraries, no build step, and no network calls after the page loads**. No server, no
-accounts. Every widget opens with defaults already set and something already drawn, works
+Static HTML, CSS and JavaScript, with **no libraries, no build step the browser can see,
+and no network calls after the page loads**. No server, no accounts. Two of the three are a
+single self-contained file; the third keeps its data in a sibling `data.js` in the same
+folder, which is the same thing as far as a reader or an `iframe` is concerned. Where data
+has to be prepared, that happens once on our machine — see `tools/` — and what ships is the
+result. Every widget opens with defaults already set and something already drawn, works
 on a phone and on a projector, can be embedded in an `iframe`, and can be linked by a
 plain URL that carries its configuration.
 

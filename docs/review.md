@@ -106,6 +106,14 @@ can disagree. Change two inputs, save after each, and confirm the two saved reco
 in the way the inputs did. This is where batched rendering shows up as a data bug rather
 than a visual one.
 
+**Verify what the page asserts against what the page ships.** The least-cost widget nearly
+said its line starts at a named company's substation. That came from the licensed dataset
+the widget had been designed around and does not use, and nothing it ships could have
+supported it. What the wording rests on instead is Metro Vancouver's own classification of
+that exact cell — a utility yard — which a reader can check from the same source the map
+comes from. The rule: if a claim on screen cannot be checked from the data in the page, it
+is either cited to something else or it goes.
+
 **Derive one case by hand.** Slow, and worth it once per statistic. It is the only check
 that tests your understanding rather than your code.
 
@@ -115,6 +123,26 @@ error a simulation carries. "Simulation is used because closed forms are hard" i
 some cases and assumed of many more; test it rather than inherit it. Where a simulation is
 genuinely needed, know the floor of what it can resolve, and never report a value below
 that floor as a finding.
+
+### Testing an interface is not the same as using one
+
+Three rounds of confusing results here came from the harness rather than the widget, and all
+three look like bugs until you check.
+
+**A synchronous read after triggering a change reads the previous state.** If renders are
+batched into an animation frame — and they should be, so a drag never waits on a solve — then
+asserting straight after a click tests the frame before it. Wait a frame, or call the
+widget's own flush. Two attempts at checking the cost bars here spun on a stale
+`aria-valuenow` and concluded, wrongly, that the control was broken.
+
+**Automated pointer drags are not strokes.** The browser tool's drag helper sends a press and
+a release with nothing in between, so a painting stroke that works perfectly by hand drew a
+single dot and looked like a dead feature. Build the pointer events yourself when you are
+testing interpolation, and keep the hand test for whether it feels right.
+
+**A console keeps its errors across reloads.** A fixed error goes on being reported until the
+tab is replaced, which is a fast way to spend twenty minutes re-fixing something. Read the
+console in a fresh tab before believing it.
 
 Record the resulting values in the widget's file in `docs/widgets/`, so a future rebuild
 has something to fail against.
