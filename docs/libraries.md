@@ -4,7 +4,7 @@ What we use, what worked, what did not, and what is worth trying. Update this ev
 a library earns or loses a place. Licences below are recorded from prior knowledge and
 must be checked against the project's own repository before anything ships publicly.
 
-Started 2026-08-19. One widget built so far, and it needed no library at all, so the
+Started 2026-08-19. Two widgets built so far and neither needed a library, so the
 "in use" table is still empty and everything below it remains a candidate.
 
 The empty table is a result about one kind of widget, not about the repository. A widget
@@ -150,6 +150,30 @@ rather than reimplementing it matters; see the correctness pass in `review.md`.
 route from the widget's own — matrix algebra against its loops. This is what has caught
 things, and it is worth the small cost of writing the check twice.
 
+## What the second widget taught
+
+**A data-backed widget still needed no library.** The MAUP widget ships 996 polygons,
+their contiguity, an ordinary least squares fit with exact p-values, and a permutation
+test, in plain JavaScript. What replaced a geometry library was a choice about the data
+format: quantising coordinates to a 2 m grid *before* encoding makes touching polygons
+share exact vertices, so contiguity is a hash of shared points rather than a topology
+computation, and simplification cannot open slivers between neighbours. Deciding how the
+data is written is often the cheaper half of deciding what code to run over it.
+
+**Exact p-values needed about sixty lines.** The regularised incomplete beta function by
+continued fraction gives coefficient p-values with no table and no library, and checks
+against three closed forms to ten decimal places. Anything that would have pulled in a
+statistics library was smaller than the import.
+
+**Two files, not one.** This is the first widget with a separate `data.js`, at 130 KB.
+The single-file rule was about having no external dependency, and a sibling file in the
+same folder does not break that. Inlining it would only have made the source unreadable.
+
+**Do not time code in a harness.** Slicing the widget's maths into a Node script to
+measure it reported 208 ms where the page takes 57 ms, and blamed the random number
+generator, which was not the problem. Top-level script code is not optimised the way code
+inside a function is. Verify *values* in a harness; measure *time* in the page.
+
 ## What each sort of widget is likely to need
 
 A rough map, to be corrected as widgets get built. The point is to know before starting
@@ -158,6 +182,7 @@ which of the project's habits are about to be tested.
 | Sort | Likely dependencies | What to watch |
 |---|---|---|
 | Computation on made-up data | none so far | Speed and exactness. Prefer a closed form; keep the main thread free. |
+| Vector polygons with attributes | none so far | Quantise coordinates before encoding, and adjacency comes free. Watch the file size and the licence. |
 | Maps and basemaps | MapLibre, PMTiles | Network calls after load, tile licensing, default styles that fail on a projector. |
 | Projections and geometry | proj4js, turf, d3-geo | Which definition of a projection is being used, and whether it matches what students are taught. |
 | Data-backed | possibly none; DuckDB-WASM only if genuinely large | File size over classroom wifi and phone data. Licence and provenance of the extract. |

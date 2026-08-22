@@ -18,6 +18,14 @@ install.
   uncorrected, so the cost of asking hundreds of questions at once is visible rather than
   asserted.
 
+- [**Drawing the lines: MAUP in Vancouver**](https://foldingspace.github.io/interactive/maup/)
+  — the same police-reported incidents, the same two predictors, and a control that changes
+  how the city is cut into areas. Census tracts and dissemination areas are the real units;
+  random areas grown to the same size hold the number of areas still and move only the
+  boundaries. A predictor can be significant across 996 areas and gone across 118 without a
+  single figure in the data changing. A spatial lag model is there to deal with the
+  clustered errors, and the widget is candid about what dealing with them does not fix.
+
 ## How they are built
 
 Static HTML, CSS and JavaScript. Every widget so far is a single self-contained file with

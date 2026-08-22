@@ -1,0 +1,1393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drawing the lines: MAUP in Vancouver</title>
+<style>
+:root {
+  --ui: 1;
+  --ink: #16181d;
+  --ink-soft: #545a63;
+  --page: #ffffff;
+  --panel: #f2f3f5;
+  --edge: #848b95;
+  --focus: #0b57d0;
+  --map-line: #9aa1ab;      /* the fine lines between dissemination areas */
+  --zone-line: #16181d;     /* the heavier lines around the areas being analysed */
+  --nodata: #d9dce0;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
+    --panel: #1e2128; --edge: #6e7682; --focus: #7cacff;
+    --map-line: #5d646e; --zone-line: #e9ecf1; --nodata: #3a3f47;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: calc(1rem * var(--ui));
+  line-height: 1.45;
+}
+body[data-present="1"] { --ui: 1.15; }
+
+.wrap {
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: calc(1rem * var(--ui)) calc(0.9rem * var(--ui)) calc(2rem * var(--ui));
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.9rem * var(--ui));
+}
+h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
+.intro { margin: 0; color: var(--ink-soft); max-width: 44em; }
+body[data-present="1"] .intro { display: none; }
+
+/* ---- layout ----
+   Narrow: the two maps sit side by side even on a phone. Stacked, they made the page
+   2255 px tall and put the controls three screens below the thing they control; the
+   whole point is comparing the two, and a small pair beats a tall single file. */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "mapa mapb" "readout readout" "controls controls";
+  gap: calc(0.9rem * var(--ui)) calc(0.5rem * var(--ui));
+}
+.mapa { grid-area: mapa; }
+.mapb { grid-area: mapb; }
+.readout { grid-area: readout; }
+.controls { grid-area: controls; }
+@media (min-width: 56rem) {
+  .main {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas: "mapa mapb readout"
+                         "mapa mapb controls";
+    align-content: start;
+    align-items: start;
+    gap: calc(1.1rem * var(--ui)) calc(1.5rem * var(--ui));
+  }
+  .mapa, .mapb { width: min(30vw, 46vh, 26rem); }
+  /* Lands the readout card's top edge on the maps' top edge, past the map captions. */
+  .readout .spacer { display: block; margin-bottom: calc(-0.45rem * var(--ui)); }
+
+  /* Presenting: the controls run as one wide row beneath everything. Five groups of
+     buttons stacked in a column overflowed a 900 px screen by 360 px; across the full
+     width they cost about one line. */
+  body[data-present="1"] .main {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas: "mapa mapb readout"
+                         "controls controls controls";
+  }
+  body[data-present="1"] .controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: calc(0.5rem * var(--ui));
+  }
+  body[data-present="1"] .controls > fieldset { flex: 1 1 auto; min-width: 0; }
+  body[data-present="1"] .controls > .row { flex: 0 0 auto; align-self: center; }
+
+  body[data-present="1"] .wrap {
+    /* A projector is wider than the reading measure this page is capped to. Leaving the
+       cap on squeezed the readout and the controls into unreadable slivers at 1920. */
+    max-width: none;
+    height: 100vh;
+    /* A projector is far taller than this content needs. Hugging the top left half the
+       screen empty; centring puts the maps at eye height. */
+    justify-content: center;
+    padding-top: calc(0.5rem * var(--ui));
+    padding-bottom: calc(0.5rem * var(--ui));
+    gap: calc(0.5rem * var(--ui));
+    overflow: hidden;
+  }
+  body[data-present="1"] .main { gap: calc(1.1rem * var(--ui)); min-height: 0; }
+  body[data-present="1"] .readout .spacer { margin-bottom: calc(-0.2rem * var(--ui)); }
+  body[data-present="1"] .readout,
+  body[data-present="1"] .controls {
+    gap: calc(0.5rem * var(--ui));
+    max-height: 100%;
+    overflow-y: auto;
+  }
+  body[data-present="1"] .stat { padding: calc(0.5rem * var(--ui)) calc(0.7rem * var(--ui)); }
+  body[data-present="1"] .big { font-size: calc(2.6rem * var(--ui)); }
+  /* Nobody reads an explanation from the back of a room, and the (i) buttons cost the
+     height that the controls need. They come back the moment presentation mode is off. */
+  body[data-present="1"] .info { display: none; }
+  body[data-present="1"] .help-panel { display: none; }
+  body[data-present="1"] fieldset {
+    padding: calc(0.25rem * var(--ui)) calc(0.55rem * var(--ui)) calc(0.5rem * var(--ui));
+  }
+  body[data-present="1"] .pick-line { min-height: calc(2.2em * var(--ui)); }
+  body[data-present="1"] .mapa,
+  body[data-present="1"] .mapb { width: min(30vw, 58vh); }
+}
+
+/* A 720p projector has no room for everything. The hover readout is the first thing to
+   go: nobody reads it from the back of a room, and it returns at normal size. */
+@media (min-width: 56rem) and (max-height: 820px) {
+  body[data-present="1"] .readout .stat:last-child { display: none; }
+  body[data-present="1"] .mapa,
+  body[data-present="1"] .mapb { width: min(28vw, 52vh); }
+}
+
+/* ---- maps ---- */
+.mapa, .mapb { display: flex; flex-direction: column; gap: calc(0.3rem * var(--ui)); }
+.caption {
+  font-size: calc(0.85rem * var(--ui));
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+svg.map {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--page);
+  touch-action: manipulation;
+}
+/* Dissemination areas are always drawn, always hairline: at 996 of them anything
+   heavier eats the map, and when the analysis uses coarser areas they are the faint
+   detail underneath rather than the subject. */
+svg.map path.area { stroke: var(--map-line); stroke-width: 0.45; vector-effect: non-scaling-stroke; }
+/* One path holding every line that separates one area of analysis from the next. */
+svg.map path.zones { fill: none; stroke: var(--zone-line); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+svg.map path.pick  { fill: none; stroke: var(--focus); stroke-width: 3.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.legend { display: flex; align-items: center; gap: calc(0.25rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
+.legend .sw { flex: 1 1 0; height: calc(0.75rem * var(--ui)); border: 1px solid var(--edge); }
+/* Compound, not descendant: this row IS a .legend. A descendant selector here
+   silently did nothing and the end labels bunched at the left. */
+.legend.ends { justify-content: space-between; }
+.legend.ends span { flex: 0 1 auto; }
+.legendwrap { display: flex; flex-direction: column; gap: calc(0.15rem * var(--ui)); }
+
+/* ---- readout ---- */
+.readout, .controls { display: flex; flex-direction: column; gap: calc(0.75rem * var(--ui)); }
+/* A two-column readout was tried for the narrow layout and dropped: the cards do not
+   pair up in source order, so making them pair needs CSS `order`, which pulls the tab
+   order away from the reading order for the sake of about 150 px. */
+@media (max-width: 55.99rem) {
+  .readout .spacer { display: none; }
+  .readout { gap: calc(0.6rem * var(--ui)); }
+}
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.6rem * var(--ui)) calc(0.8rem * var(--ui));
+}
+.label { color: var(--ink-soft); font-size: calc(0.88rem * var(--ui)); }
+.big { font-size: calc(2.2rem * var(--ui)); font-weight: 650; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.eq { font-size: calc(0.95rem * var(--ui)); margin-top: calc(0.35rem * var(--ui)); font-variant-numeric: tabular-nums; }
+.eq .term { white-space: nowrap; }
+.eq .dead { color: var(--ink-soft); text-decoration: line-through; }
+.sub { font-size: calc(0.85rem * var(--ui)); color: var(--ink-soft); margin-top: calc(0.2rem * var(--ui)); }
+.pick-line { font-size: calc(0.88rem * var(--ui)); min-height: calc(2.6em * var(--ui)); }
+.pick-line .none { color: var(--ink-soft); }
+
+/* ---- controls ---- */
+fieldset {
+  border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  margin: 0;
+  padding: calc(0.4rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.7rem * var(--ui));
+  min-width: 0;
+}
+legend { padding: 0 calc(0.3rem * var(--ui)); color: var(--ink-soft); font-size: calc(0.88rem * var(--ui)); }
+.row { display: flex; flex-wrap: wrap; gap: calc(0.35rem * var(--ui)); }
+.act, .opt {
+  font: inherit;
+  font-size: calc(0.92rem * var(--ui));
+  min-height: calc(2.6rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.6rem * var(--ui));
+  border: calc(2px * var(--ui)) solid var(--edge);
+  border-radius: calc(0.4rem * var(--ui));
+  background: var(--page);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.opt[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+/* Touch: the minimum target is 44px. This block must stay AFTER the sizes above — a
+   media query adds no specificity, so an identical rule later in the file would win. */
+@media (pointer: coarse) {
+  .act, .opt { min-height: 44px; }
+}
+.opt .n { color: var(--ink-soft); font-size: 0.85em; }
+.opt[aria-pressed="true"] .n { color: var(--page); opacity: 0.75; }
+.act:focus-visible, .opt:focus-visible, .info:focus-visible {
+  outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px;
+}
+svg.map path:focus-visible { outline: none; }
+.info {
+  font: inherit;
+  font-size: calc(0.78rem * var(--ui));
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  /* 24px is the smallest a target may be. The buttons are larger; these sit inline in
+     a legend, where a 44px circle would collide with the row beneath. */
+  width: calc(1.5rem * var(--ui)); height: calc(1.5rem * var(--ui));
+  min-width: 24px; min-height: 24px;
+  border: calc(2px * var(--ui)) solid var(--edge);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.info[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.help-panel {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.2rem * var(--ui)) calc(0.85rem * var(--ui)) calc(0.65rem * var(--ui));
+  font-size: calc(0.92rem * var(--ui));
+  margin-top: calc(0.45rem * var(--ui));
+}
+.help-panel p { margin: calc(0.55rem * var(--ui)) 0 0; }
+.refs b { color: var(--ink); font-weight: 600; }
+
+footer { color: var(--ink-soft); font-size: calc(0.82rem * var(--ui)); border-top: 1px solid var(--edge); padding-top: calc(0.55rem * var(--ui)); }
+footer a { color: inherit; }
+body[data-present="1"] footer { display: none; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Drawing the lines: the same city, different areas</h1>
+  <p class="intro">Incidents reported to Vancouver police, explained by how many households
+     an area holds and what they earn. Change how the city is cut up: the records stay the
+     same, the answer does not.</p>
+
+  <div class="main">
+
+    <div class="mapa">
+      <div class="caption" id="capa">Break-ins reported to police</div>
+      <svg class="map" id="mapa" viewBox="0 0 100 100" role="img" aria-labelledby="capa"></svg>
+      <div class="legendwrap">
+        <div class="legend" id="lega"></div>
+        <div class="legend ends"><span id="lega0"></span><span id="lega1"></span></div>
+      </div>
+    </div>
+
+    <div class="mapb">
+      <div class="caption" id="capb">What the model misses</div>
+      <svg class="map" id="mapb" viewBox="0 0 100 100" role="img" aria-labelledby="capb"></svg>
+      <div class="legendwrap">
+        <div class="legend" id="legb"></div>
+        <div class="legend ends"><span id="legb0"></span><span id="legb1"></span></div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <span class="spacer"></span>
+
+      <div class="stat">
+        <div class="label">How much of the pattern the model explains (R<sup>2</sup>)
+          <button class="info" data-info="info-r2" aria-expanded="false" aria-controls="info-r2"
+                  title="What is R squared?">i</button>
+        </div>
+        <div class="big" id="r2">—</div>
+        <div class="sub" id="nareas"></div>
+        <div class="help-panel" id="info-r2" hidden>
+          <p>R<sup>2</sup> runs from 0 to 1. It is the share of the variation between areas
+             that the two predictors account for. At 0 the model tells you nothing; at 1 it
+             would predict every area exactly.</p>
+          <p>A higher R<sup>2</sup> does not mean a better description of the world. Changing
+             the areas changes it, and there is no rule saying which way. Openshaw took 99
+             counties and grouped them into 6 regions in many different ways: depending only
+             on which counties were put together, the correlation could be made to come out
+             anywhere between &minus;0.99 and +0.99.</p>
+          <p class="refs"><b>For more, see:</b> Openshaw, S. (1984) <i>The Modifiable Areal
+             Unit Problem</i>. Concepts and Techniques in Modern Geography 38. Norwich: Geo
+             Books. &middot; Fotheringham, A. S. and Wong, D. W. S. (1991) The modifiable
+             areal unit problem in multivariate statistical analysis. <i>Environment and
+             Planning A</i> 23(7), 1025&ndash;1044.</p>
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="label">The model
+          <button class="info" data-info="info-eq" aria-expanded="false" aria-controls="info-eq"
+                  title="How do I read this equation?">i</button>
+        </div>
+        <div class="eq" id="eq"></div>
+        <div class="sub" id="eqnote"></div>
+        <div class="help-panel" id="info-eq" hidden>
+          <p>One equation for the whole city. It predicts the number of reported break-ins
+             in an area from two things: how many private households the area holds, and the
+             median household income there, in thousands of dollars.</p>
+          <p>Each number in front of a predictor says how much the prediction changes when
+             that predictor goes up by one, holding the other still. A term is crossed out
+             when it could easily have come out that size by chance (p is 0.05 or more), which
+             is the usual reason to leave it out of the equation you write down.</p>
+          <p><strong>The equation describes areas, not people.</strong> Nobody in this data is
+             a person. Reading a coefficient as a fact about residents is the ecological
+             fallacy, and it is one of the things this page is built to make visible.</p>
+          <p>The income term is where that goes wrong most easily. A negative coefficient does
+             not say that people with lower incomes damage or steal more. It says areas whose
+             <em>residents</em> report lower median incomes hold more <em>records</em> — and
+             those areas also differ in what the land is used for, how many people pass
+             through in a day, how much of the space is public, and how closely it is
+             policed. Most of these incidents happen in streets, shops and parking spaces,
+             not in the homes that the household figures count.</p>
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="label">Are the errors clustered in space? (Moran's I)
+          <button class="info" data-info="info-moran" aria-expanded="false" aria-controls="info-moran"
+                  title="Why test the errors?">i</button>
+        </div>
+        <div class="big" id="moran">—</div>
+        <div class="sub" id="moranp"></div>
+        <div class="help-panel" id="info-moran" hidden>
+          <p>The model's errors should be scattered. If areas where it guesses too low sit
+             next to other areas where it guesses too low, something with a geography to it
+             is missing from the model.</p>
+          <p>Moran's I measures that clustering: near 0 means scattered, positive means
+             neighbours resemble each other. Neighbours here are areas that touch, each
+             counted equally.</p>
+          <p>The usual reading of clustered errors is that a variable with a geography is
+             missing from the model. Recording and policing are two such variables: where
+             officers are sent, how readily an incident is reported, and how it is written up
+             all vary across a city. Part of what clusters here is the recording rather than
+             the thing recorded, and no amount of care with the statistics separates them.</p>
+          <p>The p-value comes from shuffling the errors between areas 999 times and asking
+             how often chance alone beats what we see. Treat it as a rough guide: the errors
+             are left over from a model already fitted to this data, so the shuffling is not
+             quite testing what it appears to.</p>
+          <p class="refs"><b>For more, see:</b> Cliff, A. D. and Ord, J. K. (1972) Testing
+             for spatial autocorrelation among regression residuals. <i>Geographical
+             Analysis</i> 4(3), 267&ndash;284. &middot; Cliff, A. D. and Ord, J. K. (1973)
+             <i>Spatial Autocorrelation</i>. London: Pion.</p>
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="label">The area under the pointer</div>
+        <div class="pick-line" id="pick"><span class="none">Point at the map, or tap an area.</span></div>
+      </div>
+    </div>
+
+    <div class="controls">
+
+      <fieldset>
+        <legend>Cut the city into
+          <button class="info" data-info="info-zones" aria-expanded="false" aria-controls="info-zones"
+                  title="Why does this change the answer?">i</button>
+        </legend>
+        <div class="row" id="zonebtns" role="group" aria-label="How the city is cut into areas"></div>
+        <div class="row" style="margin-top: calc(0.35rem * var(--ui))">
+          <button class="act" id="redraw">Draw new random areas</button>
+        </div>
+        <div class="help-panel" id="info-zones" hidden>
+          <p>Dissemination areas and census tracts are real units published by Statistics
+             Canada. A tract is built from whole dissemination areas, so the two are the same
+             city counted at two grains.</p>
+          <p>The random areas are grown from random starting points until each holds about
+             the same number of households, which is roughly how the real units are built.
+             They are drawn only to answer one question: if the number of areas stays the
+             same and only the boundaries move, does the answer move too?</p>
+          <p>It does. That is the modifiable areal unit problem, and it has two halves.
+             Going from 996 areas to 118 is the scale problem. Pressing redraw, with the
+             number of areas held still, is the aggregation problem, now more often called
+             the zoning effect.</p>
+          <p class="refs"><b>For more, see:</b> Openshaw, S. and Taylor, P. J. (1979) A
+             million or so correlation coefficients: three experiments on the modifiable
+             areal unit problem. In N. Wrigley (ed.) <i>Statistical Applications in the
+             Spatial Sciences</i>. London: Pion, 127&ndash;144.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Reports of
+          <button class="info" data-info="info-crime" aria-expanded="false"
+                  aria-controls="info-crime" title="Where do these numbers come from?">i</button>
+        </legend>
+        <div class="row" id="crimebtns" role="group" aria-label="Which reports are modelled"></div>
+        <div class="help-panel" id="info-crime" hidden>
+          <p>These are counts of incidents <em>reported to police and recorded</em> under
+             each heading, in 2015 and 2016. That is not the same as things that happened.
+             A record exists only if someone reported it, an officer wrote it down, and it
+             was filed under this heading, and none of those three steps happens at the same
+             rate everywhere in a city or for every kind of incident.</p>
+          <p>Compare the categories and you are partly comparing how willingly each is
+             reported. A stolen bicycle is often not reported at all; a break-in at a
+             business usually is, because a claim needs a file number. Any map of these
+             counts is a map of records.</p>
+          <p>The headings are legal and administrative categories, not descriptions of
+             behaviour. Mischief in Canadian law covers damage to property, graffiti
+             included; whether an act is written up under that heading depends on who
+             complains, whose property was involved, and how an officer files it.</p>
+          <p>A record also marks where police were. Officers are not spread evenly across a
+             city, and an incident becomes a record where there is someone to record it. So
+             these counts measure police activity as well as anything else.</p>
+          <p>Residential break and enter is deliberately missing. It is the category the
+             GEOG 370 lab asks you to model, and this page is meant to sharpen what you
+             make of your own results, not to hand them to you.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>The model
+          <button class="info" data-info="info-model" aria-expanded="false"
+                  aria-controls="info-model" title="What does using neighbours do?">i</button>
+        </legend>
+        <div class="row" id="modelbtns" role="group" aria-label="Which model is fitted"></div>
+        <div class="help-panel" id="info-model" hidden>
+          <p><strong>Each area on its own</strong> fits one equation from an area's own
+             households and income. Its errors are clustered in space, which says something
+             with a geography is missing.</p>
+          <p><strong>Areas plus their neighbours</strong> is the standard repair. It adds
+             the average count in the surrounding areas as a third predictor. Because that
+             predictor is tangled up with the thing being predicted, it cannot be fitted by
+             ordinary least squares; it is estimated in two stages, using the neighbours'
+             households and income, and their neighbours' in turn, to stand in for it.</p>
+          <p>It works, in the narrow sense. Watch Moran's I fall. But look at what the model
+             now says: an area's count is predicted by the counts around it. That is the
+             statistical form of the reasoning behind hot-spot and predictive policing, and
+             it is worth being uneasy about. Records are made where officers are; a model
+             that sends officers where records are will be right about the records.</p>
+          <p>Fixing the statistics does not change what the numbers are or what they are
+             used for. That the map can be improved is not the same as the map being made
+             answerable.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Left map shows
+          <button class="info" data-info="info-left" aria-expanded="false" aria-controls="info-left"
+                  title="What are these?">i</button>
+        </legend>
+        <div class="row" id="viewbtns" role="group" aria-label="What the left map shows"></div>
+        <div class="help-panel" id="info-left" hidden>
+          <p>Reports are counts of recorded incidents in the chosen category. Households is
+             the number of private households in the area. Income is the median household
+             income.</p>
+          <p>When areas are grouped, counts are added up and income is averaged across the
+             areas being grouped, weighted by how many households each holds. An average of
+             medians is not itself a median, so the income of a grouped area here is close
+             to, but not the same as, the figure the census publishes for it. For census
+             tracts the two agree closely, and the difference still moves R<sup>2</sup>
+             from 0.160 to 0.188.</p>
+          <p>Every set of areas here is built the same way, so that comparing them is a
+             comparison of boundaries and nothing else.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Right map shows
+          <button class="info" data-info="info-right" aria-expanded="false" aria-controls="info-right"
+                  title="What are these?">i</button>
+        </legend>
+        <div class="row" id="viewbbtns" role="group" aria-label="What the right map shows"></div>
+        <div class="help-panel" id="info-right" hidden>
+          <p><strong>What the model misses</strong> is the residual: reported break-ins minus
+             the number the equation predicts, divided by the spread of those differences.
+             Red is more break-ins reported than predicted, blue is fewer.</p>
+          <p>A red area can mean three different things and the map cannot tell them apart:
+             more incidents happening, more of them being reported, or more police attention
+             turning what happens into a record. This is a map of records, and none of the
+             three is a statement about the people who live there.</p>
+          <p>Maps of this kind are also not only descriptions. They are used to decide where
+             patrols go, and patrols produce records, so a crime map takes part in making the
+             pattern it appears to be reporting. Geographers who study policing treat that
+             loop as the main thing to notice about crime mapping, rather than as a flaw in
+             the data to be corrected.</p>
+          <p><strong>Share of reports</strong> is a location quotient: the area's share of the
+             city's reports divided by its share of the city's households. One means exactly
+             the share its households would suggest, two means twice that share.</p>
+          <p class="refs"><b>For more, see:</b> Jefferson, B. (2019) Crime mapping. In
+             <i>International Encyclopedia of Human Geography</i>, 2nd edition. Amsterdam:
+             Elsevier, 11&ndash;15.</p>
+        </div>
+      </fieldset>
+
+      <div class="row">
+        <button class="act" id="reset">Reset</button>
+        <button class="act" id="present" aria-pressed="false">Big screen</button>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Residential break and enter incidents reported to police, 2015&ndash;2016: City of
+       Vancouver, under the Open Government Licence &ndash; Vancouver. Boundaries,
+       households and income: adapted from Statistics Canada, 2016 Census boundary files
+       and census attribute data, 2016. This does not constitute an endorsement by
+       Statistics Canada of this product.</p>
+    <p>Crime reports are not crime occurrences, and the gap between them has a geography
+       of its own. Every number here is a record made by an institution, and the widget
+       models the records.</p>
+    <p>Made by Luke Bergmann with Claude.
+       <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
+  </footer>
+
+  <p class="visually-hidden" id="live" aria-live="polite"></p>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var D = LAB3;
+  var N = D.n;
+
+  // ------------------------------------------------------------------ geometry
+  // Zigzag varint deltas, base64. Quantised to a 2 m grid before encoding, so
+  // touching polygons share exact vertices and adjacency falls out of the geometry.
+  function decodeGeom() {
+    var bin = atob(D.geom), len = bin.length, bytes = new Uint8Array(len), i;
+    for (i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+    var p = 0;
+    function next() {
+      var shift = 0, result = 0, b;
+      do { b = bytes[p++]; result |= (b & 0x7F) << shift; shift += 7; } while (b & 0x80);
+      return (result >>> 1) ^ -(result & 1);
+    }
+    var x = 0, y = 0, feats = [], f, r, k, lens, rings, pts;
+    for (f = 0; f < N; f++) {
+      lens = D.rings[f]; rings = [];
+      for (r = 0; r < lens.length; r++) {
+        pts = new Int32Array(lens[r] * 2);
+        for (k = 0; k < lens[r]; k++) {
+          x += next(); y += next();
+          pts[k * 2] = x; pts[k * 2 + 1] = y;
+        }
+        rings.push(pts);
+      }
+      feats.push(rings);
+    }
+    return feats;
+  }
+  var GEOM = decodeGeom();
+  var W = D.size[0], H = D.size[1];
+
+  function pathOf(rings) {
+    var d = "", r, k, pts;
+    for (r = 0; r < rings.length; r++) {
+      pts = rings[r];
+      for (k = 0; k < pts.length; k += 2) {
+        d += (k ? "L" : "M") + pts[k] + " " + (H - pts[k + 1]);
+      }
+      d += "Z";
+    }
+    return d;
+  }
+
+  // Every edge, and which areas own it. An edge owned by two areas in different zones
+  // is a zone boundary; an edge owned by one area is the edge of the city.
+  var EDGES = (function () {
+    var map = new Map(), f, r, k, pts, a, b, key, cur;
+    for (f = 0; f < N; f++) {
+      for (r = 0; r < GEOM[f].length; r++) {
+        pts = GEOM[f][r];
+        for (k = 0; k < pts.length; k += 2) {
+          var k2 = (k + 2) % pts.length;
+          a = pts[k] * 100000 + pts[k + 1];
+          b = pts[k2] * 100000 + pts[k2 + 1];
+          key = a < b ? a + ":" + b : b + ":" + a;
+          cur = map.get(key);
+          if (cur) { if (cur.o2 < 0 && cur.o1 !== f) cur.o2 = f; }
+          else map.set(key, { x1: pts[k], y1: pts[k + 1], x2: pts[k2], y2: pts[k2 + 1], o1: f, o2: -1 });
+        }
+      }
+    }
+    return Array.from(map.values());
+  })();
+
+  // ---------------------------------------------------------------- attributes
+  var HH = D.hh, INC = D.inc, NBR = D.nbr, CT = D.ct;
+  // Which category of report is being modelled. Residential break and enter is not among
+  // them on purpose; see the note in the "Reports of" panel.
+  var BE = D.crime[D.types[0].key];
+  // One dissemination area has no published household or income figure: too few people
+  // living there for Statistics Canada to release it. It is left out of every model.
+  var OK = new Uint8Array(N);
+  for (var i0 = 0; i0 < N; i0++) OK[i0] = (HH[i0] !== null && INC[i0] !== null && HH[i0] > 0) ? 1 : 0;
+
+  // -------------------------------------------------------------------- zoning
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function zonesDA() { var z = new Int32Array(N), i; for (i = 0; i < N; i++) z[i] = i; return { zone: z, k: N }; }
+  function zonesCT() { return { zone: Int32Array.from(CT), k: D.ctuid.length }; }
+
+  // Grow k areas outward from k random starting points, always extending whichever
+  // area currently holds the fewest households. Real census units are built to hold
+  // similar populations, so matching that keeps the comparison about where the lines
+  // are rather than about how uneven the areas are.
+  function zonesRandom(k, seed) {
+    var rnd = mulberry32(seed), zone = new Int32Array(N), load = new Float64Array(k), i, j;
+    for (i = 0; i < N; i++) zone[i] = -1;
+    var order = [], used = {};
+    while (order.length < k) {
+      var s = (rnd() * N) | 0;
+      if (!used[s]) { used[s] = 1; order.push(s); }
+    }
+    // A binary heap keyed on the growing area's household count.
+    var heap = [];
+    function push(load, z, cell) {
+      heap.push([load, z, cell]);
+      var c = heap.length - 1;
+      while (c > 0) {
+        var p = (c - 1) >> 1;
+        if (heap[p][0] <= heap[c][0]) break;
+        var t = heap[p]; heap[p] = heap[c]; heap[c] = t; c = p;
+      }
+    }
+    function pop() {
+      var top = heap[0], last = heap.pop();
+      if (heap.length) {
+        heap[0] = last;
+        var c = 0;
+        for (;;) {
+          var l = c * 2 + 1, r = l + 1, m = c;
+          if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+          if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+          if (m === c) break;
+          var t = heap[m]; heap[m] = heap[c]; heap[c] = t; c = m;
+        }
+      }
+      return top;
+    }
+    for (i = 0; i < k; i++) {
+      zone[order[i]] = i;
+      load[i] = HH[order[i]] || 0;
+      for (j = 0; j < NBR[order[i]].length; j++)
+        if (zone[NBR[order[i]][j]] < 0) push(load[i], i, NBR[order[i]][j]);
+    }
+    while (heap.length) {
+      var e = pop(), z = e[1], cell = e[2];
+      if (zone[cell] >= 0) continue;
+      if (e[0] !== load[z]) { push(load[z], z, cell); continue; }   // stale, requeue
+      zone[cell] = z;
+      load[z] += HH[cell] || 0;
+      for (j = 0; j < NBR[cell].length; j++)
+        if (zone[NBR[cell][j]] < 0) push(load[z], z, NBR[cell][j]);
+    }
+    for (i = 0; i < N; i++) if (zone[i] < 0) zone[i] = 0;   // unreachable, if any
+    return { zone: zone, k: k };
+  }
+
+  // ---------------------------------------------------------------- aggregation
+  function aggregate(zone, k) {
+    var be = new Float64Array(k), hh = new Float64Array(k), wsum = new Float64Array(k),
+        winc = new Float64Array(k), cells = [], i, z;
+    for (i = 0; i < k; i++) cells.push([]);
+    for (i = 0; i < N; i++) {
+      z = zone[i];
+      cells[z].push(i);
+      if (!OK[i]) continue;
+      be[z] += BE[i]; hh[z] += HH[i];
+      wsum[z] += HH[i]; winc[z] += HH[i] * INC[i];
+    }
+    var inc = new Float64Array(k), use = new Uint8Array(k);
+    for (i = 0; i < k; i++) {
+      use[i] = (wsum[i] > 0) ? 1 : 0;
+      inc[i] = use[i] ? winc[i] / wsum[i] : NaN;
+    }
+    return { be: be, hh: hh, inc: inc, use: use, cells: cells, k: k };
+  }
+
+  // Neighbours between areas, lifted from the neighbours between dissemination areas.
+  function zoneNbr(zone, k) {
+    var sets = [], i, j;
+    for (i = 0; i < k; i++) sets.push(new Set());
+    for (i = 0; i < N; i++)
+      for (j = 0; j < NBR[i].length; j++)
+        if (zone[NBR[i][j]] !== zone[i]) sets[zone[i]].add(zone[NBR[i][j]]);
+    return sets.map(function (s) { return Array.from(s); });
+  }
+
+  // -------------------------------------------------------------------- the model
+  // Ordinary least squares from the normal equations, and a spatial lag model estimated
+  // by two-stage least squares. Both need a small dense solve — at most 7 by 7 — so a
+  // plain Gauss-Jordan with partial pivoting is exact and instant.
+  function solveN(A, b) {
+    var k = b.length, M = [], i, j, r, piv, f;
+    for (i = 0; i < k; i++) { M.push(A[i].slice()); M[i].push(b[i]); }
+    for (i = 0; i < k; i++) {
+      piv = i;
+      for (r = i + 1; r < k; r++) if (Math.abs(M[r][i]) > Math.abs(M[piv][i])) piv = r;
+      if (Math.abs(M[piv][i]) < 1e-12) return null;
+      if (piv !== i) { var t = M[i]; M[i] = M[piv]; M[piv] = t; }
+      for (r = 0; r < k; r++) {
+        if (r === i) continue;
+        f = M[r][i] / M[i][i];
+        for (j = i; j <= k; j++) M[r][j] -= f * M[i][j];
+      }
+    }
+    var out = [];
+    for (i = 0; i < k; i++) out.push(M[i][k] / M[i][i]);
+    return out;
+  }
+
+  function invN(A) {
+    var k = A.length, M = [], i, j, r, piv, f;
+    for (i = 0; i < k; i++) {
+      M.push(A[i].slice());
+      for (j = 0; j < k; j++) M[i].push(i === j ? 1 : 0);
+    }
+    for (i = 0; i < k; i++) {
+      piv = i;
+      for (r = i + 1; r < k; r++) if (Math.abs(M[r][i]) > Math.abs(M[piv][i])) piv = r;
+      if (Math.abs(M[piv][i]) < 1e-12) return null;
+      if (piv !== i) { var t = M[i]; M[i] = M[piv]; M[piv] = t; }
+      f = M[i][i];
+      for (j = 0; j < 2 * k; j++) M[i][j] /= f;
+      for (r = 0; r < k; r++) {
+        if (r === i) continue;
+        f = M[r][i];
+        if (!f) continue;
+        for (j = 0; j < 2 * k; j++) M[r][j] -= f * M[i][j];
+      }
+    }
+    var out = [];
+    for (i = 0; i < k; i++) out.push(M[i].slice(k));
+    return out;
+  }
+
+  // Least squares of y on the columns of X, returning coefficients, their standard
+  // errors, and (X'X) inverse for whoever needs it.
+  function lstsq(y, X) {
+    var k = X.length, n = y.length, A = [], v = [], a, b, i;
+    for (a = 0; a < k; a++) {
+      A.push(new Array(k).fill(0));
+      v.push(0);
+    }
+    for (a = 0; a < k; a++) {
+      for (b = a; b < k; b++) {
+        var sum = 0;
+        for (i = 0; i < n; i++) sum += X[a][i] * X[b][i];
+        A[a][b] = sum; A[b][a] = sum;
+      }
+      var sv = 0;
+      for (i = 0; i < n; i++) sv += X[a][i] * y[i];
+      v[a] = sv;
+    }
+    var coef = solveN(A, v);
+    return coef ? { b: coef, A: A } : null;
+  }
+
+  function lag(v, g) {
+    // Row-standardised spatial lag: the mean of each area's neighbours.
+    var out = new Float64Array(g.n), j, m, cnt;
+    for (j = 0; j < g.n; j++) {
+      cnt = g.off[j + 1] - g.off[j];
+      if (!cnt) { out[j] = v[j]; continue; }   // an island stands in for itself
+      var acc = 0;
+      for (m = g.off[j]; m < g.off[j + 1]; m++) acc += v[g.adj[m]];
+      out[j] = acc / cnt;
+    }
+    return out;
+  }
+
+  // Regularised incomplete beta, by the continued fraction in Numerical Recipes.
+  // This is what turns a t statistic into a p-value without a table.
+  function betacf(a, b, x) {
+    var FPMIN = 1e-300, qab = a + b, qap = a + 1, qam = a - 1;
+    var c = 1, d = 1 - qab * x / qap, m, m2, aa, del;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    d = 1 / d;
+    var h = d;
+    for (m = 1; m <= 200; m++) {
+      m2 = 2 * m;
+      aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d; del = d * c; h *= del;
+      if (Math.abs(del - 1) < 3e-16) break;
+    }
+    return h;
+  }
+  function gammaln(x) {
+    var cof = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+               -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    var y = x, tmp = x + 5.5, ser = 1.000000000190015, j;
+    tmp -= (x + 0.5) * Math.log(tmp);
+    for (j = 0; j < 6; j++) ser += cof[j] / ++y;
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  }
+  function betai(a, b, x) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    var bt = Math.exp(gammaln(a + b) - gammaln(a) - gammaln(b) +
+                      a * Math.log(x) + b * Math.log(1 - x));
+    return (x < (a + 1) / (a + b + 2)) ? bt * betacf(a, b, x) / a
+                                       : 1 - bt * betacf(b, a, 1 - x) / b;
+  }
+  function tTest(t, dof) {
+    if (!(dof > 0) || !isFinite(t)) return NaN;
+    return betai(dof / 2, 0.5, dof / (dof + t * t));
+  }
+
+  // `mode` is "ols" or "lag". The lag model adds the mean of an area's neighbours'
+  // counts as a predictor, estimated by two-stage least squares with the neighbours'
+  // and neighbours-of-neighbours' characteristics as instruments, because the lag is
+  // correlated with the error term and plain least squares would be biased.
+  function fit(ag, mode, g) {
+    var idx = [], i;
+    for (i = 0; i < ag.k; i++) if (ag.use[i]) idx.push(i);
+    var n = idx.length;
+    if (n < 8) return null;
+    var one = new Float64Array(n).fill(1), x1 = new Float64Array(n),
+        x2 = new Float64Array(n), y = new Float64Array(n), j;
+    for (j = 0; j < n; j++) {
+      x1[j] = ag.hh[idx[j]];
+      x2[j] = ag.inc[idx[j]] / 1000;
+      y[j] = ag.be[idx[j]];
+    }
+    var names = ["households", "income"], cols = [one, x1, x2], Xhat = null, wy = null;
+
+    if (mode === "lag" && g) {
+      wy = lag(y, g);
+      var wx1 = lag(x1, g), wx2 = lag(x2, g);
+      var Z = [one, x1, x2, wx1, wx2, lag(wx1, g), lag(wx2, g)];
+      var first = lstsq(wy, Z);
+      if (!first) return null;
+      var wyhat = new Float64Array(n);
+      for (j = 0; j < n; j++) {
+        var acc = 0;
+        for (i = 0; i < Z.length; i++) acc += first.b[i] * Z[i][j];
+        wyhat[j] = acc;
+      }
+      cols = [one, x1, x2, wyhat];
+      Xhat = cols;
+      names = ["households", "income", "neighbours"];
+    }
+
+    var f = lstsq(y, cols);
+    if (!f) return null;
+    var b = f.b, k = b.length;
+
+    // Residuals use the real neighbour values, not the fitted stand-in.
+    var resid = new Float64Array(ag.k), ssr = 0, sst = 0, ybar = 0, r;
+    for (j = 0; j < n; j++) ybar += y[j];
+    ybar /= n;
+    for (j = 0; j < n; j++) {
+      var pred = b[0] + b[1] * x1[j] + b[2] * x2[j];
+      if (mode === "lag") pred += b[3] * wy[j];
+      r = y[j] - pred;
+      resid[idx[j]] = r; ssr += r * r;
+      sst += (y[j] - ybar) * (y[j] - ybar);
+    }
+    var dof = n - k, s2 = ssr / dof, C = invN(f.A), se = [], p = [];
+    if (!C) return null;
+    for (i = 0; i < k; i++) {
+      se.push(Math.sqrt(Math.max(s2 * C[i][i], 0)));
+      p.push(tTest(b[i] / se[i], dof));
+    }
+    return { b: b, se: se, p: p, names: names, mode: mode,
+             r2: sst > 0 ? 1 - ssr / sst : NaN,
+             resid: resid, sd: Math.sqrt(ssr / n), n: n, idx: idx };
+  }
+
+  // Moran's I of the residuals. Neighbours are areas that touch, each counted equally,
+  // and each area's neighbours are averaged so that an area with many neighbours does
+  // not outweigh one with few.
+  //
+  // The graph is flattened into two typed arrays once per redraw, because the shuffling
+  // below walks it a thousand times and an array of arrays costs a property lookup per
+  // step. Measure any change to this in the page, not in a harness: the same code timed
+  // at top level in Node runs several times slower than it does inside the widget.
+  function buildGraph(idx, nbr, k) {
+    var at = new Int32Array(k), j, i, m, cnt = 0;
+    for (j = 0; j < k; j++) at[j] = -1;
+    for (j = 0; j < idx.length; j++) at[idx[j]] = j;
+    var n = idx.length, off = new Int32Array(n + 1);
+    for (j = 0; j < n; j++) {
+      i = idx[j];
+      for (m = 0; m < nbr[i].length; m++) if (at[nbr[i][m]] >= 0) cnt++;
+      off[j + 1] = cnt;
+    }
+    var adj = new Int32Array(cnt), w = 0;
+    for (j = 0; j < n; j++) {
+      i = idx[j];
+      for (m = 0; m < nbr[i].length; m++) if (at[nbr[i][m]] >= 0) adj[w++] = at[nbr[i][m]];
+    }
+    return { off: off, adj: adj, n: n };
+  }
+
+  function moranG(v, g) {
+    var n = g.n, off = g.off, adj = g.adj, j, m, mean = 0;
+    for (j = 0; j < n; j++) mean += v[j];
+    mean /= n;
+    var num = 0, den = 0, S0 = 0, z, lag, cnt;
+    for (j = 0; j < n; j++) {
+      z = v[j] - mean; den += z * z;
+      lag = 0; cnt = off[j + 1] - off[j];
+      for (m = off[j]; m < off[j + 1]; m++) lag += v[adj[m]] - mean;
+      if (cnt) { num += z * lag / cnt; S0 += 1; }
+    }
+    if (!S0 || !den) return NaN;
+    return (n / S0) * num / den;
+  }
+
+  // Shuffle the residuals between areas 999 times and see how often chance does as
+  // well. The seed is fixed, so the same picture always gives the same number.
+  //
+  // Shuffling moves values between areas, so the mean and the sum of squares never
+  // change; only the numerator does. Both are computed once, outside the loop.
+  function moranP(obs, v, g) {
+    if (!isFinite(obs)) return NaN;
+    var n = g.n, off = g.off, adj = g.adj, j, m, mean = 0;
+    for (j = 0; j < n; j++) mean += v[j];
+    mean /= n;
+    var z = new Float64Array(n), den = 0, S0 = 0, cnt = new Int32Array(n);
+    for (j = 0; j < n; j++) {
+      z[j] = v[j] - mean; den += z[j] * z[j];
+      cnt[j] = off[j + 1] - off[j];
+      if (cnt[j]) S0 += 1;
+    }
+    if (!S0 || !den) return NaN;
+    var scale = (n / S0) / den, rnd = mulberry32(424242), count = 0, t, i, s, num, lag;
+    for (s = 0; s < 999; s++) {
+      for (j = n - 1; j > 0; j--) {
+        i = (rnd() * (j + 1)) | 0;
+        t = z[j]; z[j] = z[i]; z[i] = t;
+      }
+      num = 0;
+      for (j = 0; j < n; j++) {
+        if (!cnt[j]) continue;
+        lag = 0;
+        for (m = off[j]; m < off[j + 1]; m++) lag += z[adj[m]];
+        num += z[j] * lag / cnt[j];
+      }
+      num *= scale;
+      if (obs >= 0 ? num >= obs : num <= obs) count++;
+    }
+    return (count + 1) / 1000;
+  }
+
+  // ------------------------------------------------------------------- colours
+  // ColorBrewer. Both schemes are among those the scheme's authors mark as safe for
+  // the commonest forms of colour blindness, and both survive a projector.
+  var SEQ = ["#ffffcc", "#d9f0a3", "#addd8e", "#78c679", "#41ab5d", "#238443", "#005a32"];
+  var DIV = ["#2166ac", "#67a9cf", "#d1e5f0", "#f7f7f7", "#fddbc7", "#ef8a62", "#b2182b"];
+
+  function quantileBreaks(vals) {
+    var s = vals.slice().sort(function (a, b) { return a - b; }), out = [], i;
+    for (i = 1; i < 7; i++) out.push(s[Math.floor(i * s.length / 7)]);
+    return out;
+  }
+  function classOf(v, breaks) {
+    var i;
+    for (i = 0; i < breaks.length; i++) if (v < breaks[i]) return i;
+    return breaks.length;
+  }
+
+  // ---------------------------------------------------------------- page state
+  var ZONINGS = [
+    { id: "da",   label: "Dissemination areas", n: "996" },
+    { id: "ct",   label: "Census tracts",       n: "118" },
+    { id: "r118", label: "Random areas",        n: "118" },
+    { id: "r40",  label: "Random areas",        n: "40" }
+  ];
+  var VIEWS = [
+    { id: "be",  label: "Reports",    cap: "" },   // filled in from the chosen category
+    { id: "hh",  label: "Households", cap: "Private households" },
+    { id: "inc", label: "Income",     cap: "Median household income" }
+  ];
+  var VIEWS_B = [
+    { id: "res", label: "What the model misses", cap: "What the model misses" },
+    { id: "lq",  label: "Share of reports",       cap: "Share of the city's reports" }
+  ];
+
+  var params = new URLSearchParams(location.search);
+  var zoning = "da", seed = 1, view = "be", viewB = "res", present = false;
+  var crime = D.types[0].key;
+  var modelMode = params.get("m") === "lag" ? "lag" : "ols";
+  if (params.get("c") && D.crime[params.get("c")]) crime = params.get("c");
+  BE = D.crime[crime];
+  if (params.get("z") && ZONINGS.some(function (z) { return z.id === params.get("z"); })) zoning = params.get("z");
+  if (params.get("v") && VIEWS.some(function (v) { return v.id === params.get("v"); })) view = params.get("v");
+  if (params.get("w") && VIEWS_B.some(function (v) { return v.id === params.get("w"); })) viewB = params.get("w");
+  var sp = parseInt(params.get("s"), 10); if (sp > 0 && sp < 1e6) seed = sp;
+  present = params.get("present") === "1";
+
+  var svgA = document.getElementById("mapa"), svgB = document.getElementById("mapb");
+  var liveEl = document.getElementById("live");
+  var pathsA = [], pathsB = [], zoneLineA, zoneLineB, pickA, pickB;
+  var picked = -1;
+  var state = null;
+
+  function buildMaps() {
+    var ns = "http://www.w3.org/2000/svg", f, p, q;
+    [svgA, svgB].forEach(function (svg) { svg.setAttribute("viewBox", "0 0 " + W + " " + H); });
+    for (f = 0; f < N; f++) {
+      var d = pathOf(GEOM[f]);
+      p = document.createElementNS(ns, "path"); p.setAttribute("d", d); p.setAttribute("class", "area");
+      q = document.createElementNS(ns, "path"); q.setAttribute("d", d); q.setAttribute("class", "area");
+      p.dataset.i = f; q.dataset.i = f;
+      svgA.appendChild(p); svgB.appendChild(q);
+      pathsA.push(p); pathsB.push(q);
+    }
+    zoneLineA = document.createElementNS(ns, "path"); zoneLineA.setAttribute("class", "zones");
+    zoneLineB = document.createElementNS(ns, "path"); zoneLineB.setAttribute("class", "zones");
+    pickA = document.createElementNS(ns, "path"); pickA.setAttribute("class", "pick");
+    pickB = document.createElementNS(ns, "path"); pickB.setAttribute("class", "pick");
+    svgA.appendChild(zoneLineA); svgB.appendChild(zoneLineB);
+    svgA.appendChild(pickA); svgB.appendChild(pickB);
+  }
+
+  function zoneOutline(zone, wantZone) {
+    var d = "", e, i;
+    for (i = 0; i < EDGES.length; i++) {
+      e = EDGES[i];
+      var inA = wantZone < 0 ? true : zone[e.o1] === wantZone;
+      var other = e.o2 < 0 ? -1 : zone[e.o2];
+      var boundary = (e.o2 < 0) || (zone[e.o1] !== other);
+      if (!boundary) continue;
+      if (wantZone >= 0 && !(zone[e.o1] === wantZone || other === wantZone)) continue;
+      if (wantZone < 0 && !inA) continue;
+      d += "M" + e.x1 + " " + (H - e.y1) + "L" + e.x2 + " " + (H - e.y2);
+    }
+    return d;
+  }
+
+  function compute() {
+    var zs;
+    if (zoning === "da") zs = zonesDA();
+    else if (zoning === "ct") zs = zonesCT();
+    else zs = zonesRandom(zoning === "r40" ? 40 : 118, seed);
+    var ag = aggregate(zs.zone, zs.k);
+    // The graph has to exist before the model does: the spatial model needs it, and the
+    // residual test needs the same one, so both are built from the same area list.
+    var idx0 = [], q;
+    for (q = 0; q < zs.k; q++) if (ag.use[q]) idx0.push(q);
+    var nbr = zoneNbr(zs.zone, zs.k);
+    var g = buildGraph(idx0, nbr, zs.k);
+    var model = fit(ag, modelMode, g);
+    var I = NaN, p = NaN;
+    if (model) {
+      var v = new Float64Array(g.n), j;
+      for (j = 0; j < g.n; j++) v[j] = model.resid[model.idx[j]];
+      I = moranG(v, g);
+      p = moranP(I, v, g);
+    }
+    // location quotient: share of break-ins over share of households
+    var totBE = 0, totHH = 0, i;
+    for (i = 0; i < zs.k; i++) if (ag.use[i]) { totBE += ag.be[i]; totHH += ag.hh[i]; }
+    var lq = new Float64Array(zs.k);
+    for (i = 0; i < zs.k; i++)
+      lq[i] = (ag.use[i] && ag.hh[i] > 0 && totBE > 0)
+        ? (ag.be[i] / totBE) / (ag.hh[i] / totHH) : NaN;
+    return { zone: zs.zone, k: zs.k, ag: ag, model: model, I: I, p: p, lq: lq, nbr: nbr };
+  }
+
+  function valuesFor(which, st) {
+    var k = st.k, out = new Float64Array(k), i;
+    for (i = 0; i < k; i++) {
+      if (!st.ag.use[i]) { out[i] = NaN; continue; }
+      out[i] = which === "be" ? st.ag.be[i]
+             : which === "hh" ? st.ag.hh[i]
+             : which === "inc" ? st.ag.inc[i]
+             : which === "lq" ? st.lq[i]
+             : (st.model ? st.model.resid[i] / (st.model.sd || 1) : NaN);
+    }
+    return out;
+  }
+
+  function paint(paths, which, st, legEl, end0, end1) {
+    var k = st.k, vals = valuesFor(which, st), i, finite = [], v;
+    for (i = 0; i < k; i++) if (isFinite(vals[i])) finite.push(vals[i]);
+    var diverging = (which === "res" || which === "lq");
+    var breaks, ramp = diverging ? DIV : SEQ, centre = which === "lq" ? 1 : 0;
+    if (diverging) {
+      if (which === "res") breaks = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5];
+      else breaks = [0.25, 0.5, 0.8, 1.25, 2, 4];
+    } else {
+      breaks = quantileBreaks(finite);
+    }
+    for (i = 0; i < N; i++) {
+      v = vals[st.zone[i]];
+      paths[i].setAttribute("fill", isFinite(v) ? ramp[classOf(v, breaks)] : "var(--nodata)");
+    }
+    // legend
+    legEl.textContent = "";
+    for (i = 0; i < ramp.length; i++) {
+      var s = document.createElement("span");
+      s.className = "sw"; s.style.background = ramp[i];
+      legEl.appendChild(s);
+    }
+    if (diverging) {
+      end0.textContent = which === "res" ? "fewer than predicted" : "under its share";
+      end1.textContent = which === "res" ? "more than predicted" : "over its share";
+    } else {
+      finite.sort(function (a, b) { return a - b; });
+      end0.textContent = fmtVal(which, finite[0]);
+      end1.textContent = fmtVal(which, finite[finite.length - 1]);
+    }
+  }
+
+  function fmtVal(which, v) {
+    if (!isFinite(v)) return "no data";
+    if (which === "inc") return "$" + Math.round(v / 1000) + "k";
+    if (which === "hh") return Math.round(v).toLocaleString();
+    return String(Math.round(v));
+  }
+
+  function sig(x, digits) {
+    if (!isFinite(x)) return "—";
+    return x.toFixed(digits);
+  }
+
+  function render() {
+    state = compute();
+    var st = state, m = st.model;
+
+    paint(pathsA, view, st, document.getElementById("lega"),
+          document.getElementById("lega0"), document.getElementById("lega1"));
+    paint(pathsB, viewB, st, document.getElementById("legb"),
+          document.getElementById("legb0"), document.getElementById("legb1"));
+
+    // Zone lines are only worth drawing when they are not simply every line on the map.
+    var outline = (zoning === "da") ? "" : zoneOutline(st.zone, -1);
+    zoneLineA.setAttribute("d", outline);
+    zoneLineB.setAttribute("d", outline);
+
+    var label = D.types.filter(function (t) { return t.key === crime; })[0].label;
+    document.getElementById("capa").textContent =
+      view === "be" ? label + ", reported" : VIEWS.filter(function (v) { return v.id === view; })[0].cap;
+    document.getElementById("capb").textContent =
+      VIEWS_B.filter(function (v) { return v.id === viewB; })[0].cap;
+
+    document.getElementById("r2").textContent = m ? sig(m.r2, 3) : "—";
+    document.getElementById("nareas").textContent =
+      st.k + " areas" + (zoning === "da" ? "" : ", built from 996 dissemination areas");
+
+    var eq = document.getElementById("eq");
+    if (m) {
+      var DIGITS = { households: 5, income: 3, neighbours: 3 };
+      var html = '<span class="term">reports = ' + sig(m.b[0], 2) + "</span> ", q;
+      for (q = 0; q < m.names.length; q++)
+        html += term(m.b[q + 1], m.p[q + 1], DIGITS[m.names[q]], m.names[q]) + " ";
+      eq.innerHTML = html;
+      var dead = [];
+      for (q = 0; q < m.names.length; q++) if (m.p[q + 1] >= 0.05) dead.push(m.names[q]);
+      document.getElementById("eqnote").innerHTML =
+        "income in thousands of dollars &middot; " +
+        (dead.length === 0 ? "every predictor holds up"
+         : dead.length === m.names.length ? "no predictor holds up"
+         : dead.join(" and ") + " could be chance");
+    } else {
+      eq.textContent = "—";
+      document.getElementById("eqnote").textContent = "";
+    }
+
+    document.getElementById("moran").textContent = sig(st.I, 3);
+    document.getElementById("moranp").textContent =
+      isFinite(st.p) ? (st.p <= 0.001 ? "p = 0.001 or less, the smallest 999 shuffles can show"
+                        : "p = " + st.p.toFixed(3)) : "";
+
+    ZONINGS.forEach(function (z) {
+      zbtn[z.id].setAttribute("aria-pressed", z.id === zoning ? "true" : "false");
+    });
+    D.types.forEach(function (t) {
+      cbtn[t.key].setAttribute("aria-pressed", t.key === crime ? "true" : "false");
+    });
+    Object.keys(mbtn).forEach(function (id) {
+      mbtn[id].setAttribute("aria-pressed", id === modelMode ? "true" : "false");
+    });
+    VIEWS.forEach(function (v) {
+      vbtn[v.id].setAttribute("aria-pressed", v.id === view ? "true" : "false");
+    });
+    VIEWS_B.forEach(function (v) {
+      wbtn[v.id].setAttribute("aria-pressed", v.id === viewB ? "true" : "false");
+    });
+
+    showPick();
+    writeURL();
+  }
+
+  function term(b, p, digits, name) {
+    var sign = b < 0 ? "&minus; " : "+ ";
+    var body = sign + Math.abs(b).toFixed(digits) + " &times; " + name;
+    return '<span class="term' + (p >= 0.05 ? " dead" : "") + '">' + body + "</span>";
+  }
+
+  function showPick() {
+    var el = document.getElementById("pick"), st = state;
+    if (picked < 0 || !st) {
+      el.innerHTML = '<span class="none">Point at the map, or tap an area.</span>';
+      pickA.setAttribute("d", ""); pickB.setAttribute("d", "");
+      return;
+    }
+    var z = st.zone[picked];
+    pickA.setAttribute("d", zoneOutline(st.zone, z));
+    pickB.setAttribute("d", pickA.getAttribute("d"));
+    var ag = st.ag, m = st.model;
+    if (!ag.use[z]) { el.textContent = "This area has no published figures."; return; }
+    var pred = m ? ag.be[z] - m.resid[z] : NaN;
+    el.innerHTML =
+      Math.round(ag.be[z]) + " reported, " +
+      (isFinite(pred) ? sig(pred, 1) + " predicted" : "") + ".<br>" +
+      Math.round(ag.hh[z]).toLocaleString() + " households, median income $" +
+      Math.round(ag.inc[z] / 1000) + "k.";
+  }
+
+  function writeURL() {
+    var p = new URLSearchParams();
+    if (zoning !== "da") p.set("z", zoning);
+    if (zoning === "r118" || zoning === "r40") { if (seed !== 1) p.set("s", String(seed)); }
+    if (crime !== D.types[0].key) p.set("c", crime);
+    if (modelMode !== "ols") p.set("m", modelMode);
+    if (view !== "be") p.set("v", view);
+    if (viewB !== "res") p.set("w", viewB);
+    if (present) p.set("present", "1");
+    var q = p.toString();
+    history.replaceState(null, "", location.pathname + (q ? "?" + q : ""));
+  }
+
+  // ------------------------------------------------------------------- controls
+  var zbtn = {}, vbtn = {}, wbtn = {}, cbtn = {}, mbtn = {};
+  (function buildControls() {
+    var host = document.getElementById("zonebtns");
+    ZONINGS.forEach(function (z) {
+      var b = document.createElement("button");
+      b.className = "opt"; b.type = "button";
+      b.innerHTML = z.label + ' <span class="n">' + z.n + "</span>";
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () {
+        zoning = z.id; picked = -1; render();
+        liveEl.textContent = z.label + ", " + z.n + " of them. R squared " +
+          (state.model ? state.model.r2.toFixed(3) : "not available") + ".";
+      });
+      zbtn[z.id] = b; host.appendChild(b);
+    });
+    var MODELS = [{ id: "ols", label: "Each area on its own" },
+                  { id: "lag", label: "Areas plus their neighbours" }];
+    var hm = document.getElementById("modelbtns");
+    MODELS.forEach(function (mo) {
+      var b = document.createElement("button");
+      b.className = "opt"; b.type = "button"; b.textContent = mo.label;
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () {
+        modelMode = mo.id; render();
+        liveEl.textContent = mo.label + ". Moran's I of the errors is now " +
+          (isFinite(state.I) ? state.I.toFixed(3) : "not available") + ".";
+      });
+      mbtn[mo.id] = b; hm.appendChild(b);
+    });
+    var hc = document.getElementById("crimebtns");
+    D.types.forEach(function (t) {
+      var b = document.createElement("button");
+      b.className = "opt"; b.type = "button"; b.textContent = t.label;
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () {
+        crime = t.key; BE = D.crime[crime]; picked = -1; render();
+        liveEl.textContent = t.label + ". R squared " +
+          (state.model ? state.model.r2.toFixed(3) : "not available") + ".";
+      });
+      cbtn[t.key] = b; hc.appendChild(b);
+    });
+    var h2 = document.getElementById("viewbtns");
+    VIEWS.forEach(function (v) {
+      var b = document.createElement("button");
+      b.className = "opt"; b.type = "button"; b.textContent = v.label;
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () { view = v.id; render(); });
+      vbtn[v.id] = b; h2.appendChild(b);
+    });
+    var h3 = document.getElementById("viewbbtns");
+    VIEWS_B.forEach(function (v) {
+      var b = document.createElement("button");
+      b.className = "opt"; b.type = "button"; b.textContent = v.label;
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () { viewB = v.id; render(); });
+      wbtn[v.id] = b; h3.appendChild(b);
+    });
+  })();
+
+  document.getElementById("redraw").addEventListener("click", function () {
+    if (zoning !== "r118" && zoning !== "r40") zoning = "r118";
+    seed = (seed % 99999) + 1;
+    picked = -1;
+    render();
+    liveEl.textContent = "New random areas. R squared " +
+      (state.model ? state.model.r2.toFixed(3) : "not available") + ".";
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    zoning = "da"; seed = 1; view = "be"; viewB = "res"; picked = -1;
+    crime = D.types[0].key; BE = D.crime[crime]; modelMode = "ols";
+    render();
+    liveEl.textContent = "Back to dissemination areas.";
+  });
+
+  function onPoint(e) {
+    var t = e.target;
+    if (!t || !t.dataset || t.dataset.i === undefined) return;
+    var i = Number(t.dataset.i);
+    if (i === picked) return;
+    picked = i;
+    showPick();
+  }
+  [svgA, svgB].forEach(function (svg) {
+    svg.addEventListener("pointermove", onPoint);
+    svg.addEventListener("pointerdown", onPoint);
+    svg.addEventListener("pointerleave", function (e) {
+      if (e.pointerType === "touch") return;   // a tap should leave the reading up
+      picked = -1; showPick();
+    });
+  });
+
+  var presentBtn = document.getElementById("present");
+  function setPresent(on) {
+    present = on;
+    document.body.dataset.present = on ? "1" : "0";
+    presentBtn.textContent = on ? "Normal size" : "Big screen";
+    presentBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    writeURL();
+  }
+  presentBtn.addEventListener("click", function () { setPresent(!present); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "p" && !e.metaKey && !e.ctrlKey && !e.altKey &&
+        document.activeElement.tagName !== "INPUT") setPresent(!present);
+  });
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-info]");
+    if (!b) return;
+    var panel = document.getElementById(b.dataset.info);
+    if (!panel) return;
+    var open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", open ? "false" : "true");
+    panel.hidden = open;
+  });
+
+  // ------------------------------------------------------------------------ go
+  buildMaps();
+  setPresent(present);
+  render();
+
+  window.MAUP_TEST = { compute: compute, state: function () { return state; },
+                       setZoning: function (z, s) { zoning = z; if (s) seed = s; render(); } };
+})();
+</script>
+</body>
+</html>

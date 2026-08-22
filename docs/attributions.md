@@ -26,7 +26,52 @@ here is necessarily copyrightable in the first place.
 
 ## Data
 
-_(none yet)_
+### 2016 Census dissemination area and census tract boundaries, Vancouver
+- Source: Statistics Canada, 2016 Census boundary files. Supplied inside the GEOG 370
+  Lab 3 geodatabase (`MAUP.gdb`), already clipped to the City of Vancouver.
+- Licence: Statistics Canada Open Licence,
+  <https://www.statcan.gc.ca/en/reference/licence>
+- Attribution required on screen: this is a value-added product, so the licence requires
+  the *adapted from* wording: "Adapted from Statistics Canada, 2016 Census boundary files
+  and census attribute data, 2016. This does not constitute an endorsement by Statistics
+  Canada of this product."
+- Used in: `web/maup`
+- Added: 2026-08-21
+- Notes: reprojected? No — kept in EPSG:3005, BC Albers, as supplied. Modified: geometry
+  quantised to a 2 m grid and delta-encoded; census tracts are not shipped and are drawn
+  by grouping dissemination areas.
+
+### 2016 Census attributes: population, private households, median household income
+- Source: Statistics Canada, 2016 Census attribute data, joined to the boundary files in
+  the Lab 3 geodatabase.
+- Licence: Statistics Canada Open Licence, as above.
+- Attribution required on screen: covered by the same *adapted from* sentence.
+- Used in: `web/maup`
+- Added: 2026-08-21
+- Notes: one dissemination area has both figures suppressed and is excluded from every
+  model. Income for any grouped area is recomputed as a household-weighted mean of the
+  dissemination areas' medians, which is not the published figure for a census tract.
+
+### Police-reported crime incidents, City of Vancouver, 2015–2016
+- Source: City of Vancouver Open Data Portal,
+  <https://opendata.vancouver.ca/>. Supplied inside the Lab 3 geodatabase.
+- Licence: Open Government Licence – Vancouver,
+  <https://opendata.vancouver.ca/pages/licence/>
+- Attribution required on screen: acknowledge the City of Vancouver as the source and
+  name the licence. The widget's footer does both.
+- Used in: `web/maup`
+- Added: 2026-08-21
+- Notes: four categories are counted per dissemination area — Theft of Bicycle (5,698),
+  Theft from Vehicle (23,357), Break and Enter Commercial (5,143) and Mischief (8,791).
+  The points themselves are not shipped. Incident locations were already generalised to the
+  hundred-block level at source. Residential break and enter is deliberately excluded: it is
+  the category the course lab asks students to model, and shipping it would publish the
+  answers.
+
+### Deliberately not used: City boundary (DMTI, 2006)
+The Lab 3 geodatabase also contains a `City` layer credited to DMTI Spatial. DMTI data is
+licensed to institutions, not openly, so it is not shipped and not drawn. The city's
+outline in the widget is the outer edge of the dissemination areas.
 
 ## Basemaps and tiles
 
