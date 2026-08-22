@@ -19,6 +19,7 @@
   --map-line: #8a919b;
   --zone-line: #16181d;     /* the heavier lines around the areas being analysed */
   --nodata: #d9dce0;
+  --land: #eceef1;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -26,6 +27,7 @@
     --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
     --panel: #1e2128; --edge: #6e7682; --focus: #7cacff;
     --map-line: #5d646e;   /* 3.03:1 against the dark page, same reasoning */
+    --land: #23262c;
     --zone-line: #e9ecf1; --nodata: #3a3f47;
   }
 }
@@ -91,8 +93,14 @@ body[data-present="1"] .intro { display: none; }
 
 .readout, .controls { display: flex; flex-direction: column; gap: calc(0.75rem * var(--ui)); }
 @media (min-width: 56rem) {
-  .readout { flex-direction: row; align-items: stretch; }
-  .readout > .stat { flex: 1 1 0; }
+  /* Grid rather than flex: the cards were stacking full width because a flex row inside a
+     flex column still lays its own children out along its own axis, and the earlier rule
+     never took. */
+  .readout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
   .controls { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
   .controls > fieldset { flex: 1 1 auto; min-width: 0; }
   .controls > .row { flex: 0 0 auto; align-self: center; }
@@ -123,13 +131,35 @@ body[data-present="1"] .intro { display: none; }
   }
 }
 
+/* ---- maps ----
+   The polygons are a base under the symbols now, not the data. Dissemination areas stay
+   drawn under every grouping, always hairline, so what an aggregation throws away is
+   never quite off the screen. */
+svg.map {
+  width: 100%; height: auto; display: block;
+  background: var(--page); touch-action: manipulation;
+}
+svg.map path.area {
+  fill: var(--land); stroke: var(--map-line); stroke-width: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+svg.map path.zones {
+  fill: none; stroke: var(--zone-line); stroke-width: 1.6;
+  vector-effect: non-scaling-stroke; stroke-linejoin: round;
+}
+svg.map path.pick {
+  fill: none; stroke: var(--focus); stroke-width: 3.5;
+  vector-effect: non-scaling-stroke; stroke-linejoin: round;
+}
+/* A little transparency so overlapping circles read as overlapping, and no outline, which
+   at these sizes would be most of the symbol. */
+svg.map g.syms circle { fill-opacity: 0.68; stroke: none; pointer-events: none; }
+
 /* ---- readout ---- */
-.readout, .controls { display: flex; flex-direction: column; gap: calc(0.75rem * var(--ui)); }
 /* A two-column readout was tried for the narrow layout and dropped: the cards do not
    pair up in source order, so making them pair needs CSS `order`, which pulls the tab
    order away from the reading order for the sake of about 150 px. */
 @media (max-width: 55.99rem) {
-  .readout .spacer { display: none; }
   .readout { gap: calc(0.6rem * var(--ui)); }
 }
 .stat {
@@ -161,6 +191,16 @@ body[data-present="1"] .intro { display: none; }
   background: var(--ink);
 }
 .stripline .dot.lo, .stripline .dot.hi { border-color: var(--ink); }
+.const-term { justify-content: flex-start; }
+.constbox {
+  aspect-ratio: 7497 / 6401;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--edge); border-radius: calc(0.3rem * var(--ui));
+  font-size: calc(1.1rem * var(--ui)); font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.symkey { display: flex; align-items: center; gap: calc(0.4rem * var(--ui)); font-size: calc(0.72rem * var(--ui)); color: var(--ink-soft); }
+.symkey svg { width: calc(5rem * var(--ui)); height: auto; flex: 0 0 auto; }
 .stripline .dot:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
 .stripends { display: flex; justify-content: space-between; font-size: calc(0.78rem * var(--ui)); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .stripnote { font-size: calc(0.8rem * var(--ui)); color: var(--ink-soft); margin-top: calc(0.15rem * var(--ui)); }
@@ -325,11 +365,10 @@ body[data-present="1"] footer { display: none; }
   <div class="main">
 
     <div class="eqrow" id="eqrow">
-      <div class="term" data-layer="const">
+      <div class="term const-term">
         <div class="tname">the constant</div>
-        <svg class="map" id="m-const" viewBox="0 0 100 100" role="img"
-             aria-label="The constant term, mapped"></svg>
-        <div class="tbeta" id="b-const">—</div>
+        <div class="constbox"><span id="constval">—</span></div>
+        <div class="tbeta"><span class="pm" id="constse"></span></div>
       </div>
       <div class="op">+</div>
       <div class="term" data-layer="hh">
@@ -364,15 +403,11 @@ body[data-present="1"] footer { display: none; }
         <div class="tname" id="capa">reported</div>
         <svg class="map" id="m-be" viewBox="0 0 100 100" role="img"
              aria-labelledby="capa"></svg>
-        <div class="legendwrap">
-          <div class="legend" id="lega"></div>
-          <div class="legend ends"><span id="lega0"></span><span id="lega1"></span></div>
-        </div>
+        <div class="symkey" id="symkey"></div>
       </div>
     </div>
 
     <div class="readout">
-      <span class="spacer"></span>
 
       <div class="stat">
         <div class="label">How much of the pattern the model explains
@@ -1280,6 +1315,8 @@ body[data-present="1"] footer { display: none; }
   var picked = -1;
   var state = null;
 
+  var SYMS = {};
+
   function buildMaps() {
     var ns = "http://www.w3.org/2000/svg";
     LAYERS.forEach(function (L) {
@@ -1294,9 +1331,11 @@ body[data-present="1"] footer { display: none; }
         svg.appendChild(p); list.push(p);
       }
       var zl = document.createElementNS(ns, "path"); zl.setAttribute("class", "zones");
+      var g = document.createElementNS(ns, "g"); g.setAttribute("class", "syms");
       var pk = document.createElementNS(ns, "path"); pk.setAttribute("class", "pick");
-      svg.appendChild(zl); svg.appendChild(pk);
-      MAPS[L.id] = svg; PATHS[L.id] = list; ZLINES[L.id] = zl; PICKS[L.id] = pk;
+      svg.appendChild(zl); svg.appendChild(g); svg.appendChild(pk);
+      MAPS[L.id] = svg; PATHS[L.id] = list; ZLINES[L.id] = zl;
+      SYMS[L.id] = g; PICKS[L.id] = pk;
       svg.addEventListener("pointermove", onPoint);
       svg.addEventListener("pointerdown", onPoint);
       svg.addEventListener("pointerleave", function (e) {
@@ -1368,14 +1407,14 @@ body[data-present="1"] footer { display: none; }
     return runs;
   }
 
-  // Every layer is a term of the fitted equation, divided through by area so the maps are
-  // comparable and so a count is never shaded dark for covering more ground. They add up.
+  // Every layer is a term of the fitted equation, in counts. Counts are drawn as circles
+  // sized by value, not as shaded areas: shading a polygon by a count makes a big area
+  // look busy for being big. The terms add up.
   //   plain:  constant + households + income + residual = reported
   //   error:  constant + households + income + spatial error + residual = reported
-  // In the error model what was one error term splits in two: the part that runs together
-  // across neighbouring areas, and what is left once it is taken out.
+  // The constant is the same number in every area, so it appears as a number rather than
+  // as a map of one repeated value.
   var LAYERS = [
-    { id: "const", name: "the constant" },
     { id: "hh",    name: "households" },
     { id: "inc",   name: "income" },
     { id: "sperr", name: "spatial error" },
@@ -1384,39 +1423,57 @@ body[data-present="1"] footer { display: none; }
   ];
 
   function valuesFor(which, st) {
-    var k = st.k, out = new Float64Array(k), i, a, m = st.model;
+    var k = st.k, out = new Float64Array(k), i, m = st.model;
     for (i = 0; i < k; i++) {
       if (!st.ag.use[i] || !m) { out[i] = NaN; continue; }
-      a = st.ag.area[i];
-      if (!(a > 0)) { out[i] = NaN; continue; }
-      out[i] = which === "be"    ? st.ag.be[i] / a
-             : which === "hh"    ? m.b[1] * st.ag.hh[i] / a
-             : which === "inc"   ? m.b[2] * (st.ag.inc[i] / 1000) / a
-             : which === "const" ? m.b[0] / a
-             : which === "sperr" ? (m.raw[i] - m.resid[i]) / a
-             : m.resid[i] / a;
+      out[i] = which === "be"    ? st.ag.be[i]
+             : which === "hh"    ? m.b[1] * st.ag.hh[i]
+             : which === "inc"   ? m.b[2] * (st.ag.inc[i] / 1000)
+             : which === "const" ? m.b[0]
+             : which === "sperr" ? (m.raw[i] - m.resid[i])
+             : m.resid[i];
     }
     return out;
   }
 
-  // One scale for all five, symmetric about zero, so the addition can be checked by eye.
-  function sharedBreaks(st) {
-    var pool = [], i, j, v;
-    for (j = 0; j < LAYERS.length; j++) {
-      v = valuesFor(LAYERS[j].id, st);
-      for (i = 0; i < st.k; i++) if (isFinite(v[i])) pool.push(Math.abs(v[i]));
+  // One size scale across every map in the row, so the circles can be compared and the
+  // addition still reads. Area is proportional to the value, which means the radius goes
+  // as its square root.
+  function sharedScale(st) {
+    var pool = [], i, j, v, ids = ["hh", "inc", "sperr", "res", "be"];
+    for (j = 0; j < ids.length; j++) {
+      v = valuesFor(ids[j], st);
+      for (i = 0; i < st.k; i++) if (isFinite(v[i]) && v[i]) pool.push(Math.abs(v[i]));
     }
-    if (!pool.length) return [0, 0, 0, 0, 0, 0];
+    if (!pool.length) return { max: 1, r: 1 };
     pool.sort(function (a, b) { return a - b; });
-    var m = pool[Math.floor(pool.length * 0.98)] || pool[pool.length - 1] || 1;
-    return [-0.75 * m, -0.45 * m, -0.15 * m, 0.15 * m, 0.45 * m, 0.75 * m];
+    var m = pool[Math.floor(pool.length * 0.98)] || pool[pool.length - 1];
+    // Size the biggest circle against the spacing between areas rather than against the
+    // map, or 996 of them merge into one shape. Half the mean spacing leaves the largest
+    // touching its neighbours and everything smaller clear of them.
+    var spacing = Math.sqrt(W * H / Math.max(st.k, 1));
+    return { max: m, r: spacing * 0.5 };
   }
 
-  function paint(layer, st, breaks) {
-    var vals = valuesFor(layer, st), paths = PATHS[layer], i, v;
-    for (i = 0; i < N; i++) {
-      v = vals[st.zone[i]];
-      paths[i].setAttribute("fill", isFinite(v) ? DIV[classOf(v, breaks)] : "var(--nodata)");
+  var POS = "#b2182b", NEG = "#2166ac";
+
+  function paint(layer, st, sc) {
+    var vals = valuesFor(layer, st), g = SYMS[layer], ns = "http://www.w3.org/2000/svg";
+    g.textContent = "";
+    var order = [], i;
+    for (i = 0; i < st.k; i++) if (st.ag.use[i] && isFinite(vals[i]) && vals[i]) order.push(i);
+    // Big circles first, so the small ones are not buried under them.
+    order.sort(function (a, b) { return Math.abs(vals[b]) - Math.abs(vals[a]); });
+    for (i = 0; i < order.length; i++) {
+      var z = order[i], v = vals[z];
+      var r = sc.r * Math.sqrt(Math.min(Math.abs(v) / sc.max, 1.6));
+      if (r < 1) continue;
+      var c = document.createElementNS(ns, "circle");
+      c.setAttribute("cx", st.ag.pos[z * 2]);
+      c.setAttribute("cy", H - st.ag.pos[z * 2 + 1]);
+      c.setAttribute("r", r);
+      c.setAttribute("fill", v < 0 ? NEG : POS);
+      g.appendChild(c);
     }
   }
 
@@ -1491,32 +1548,23 @@ body[data-present="1"] footer { display: none; }
     document.getElementById("r2").textContent =
       (m && isFinite(m.r2)) ? Math.round(m.r2 * 100) + "%" : "—";
 
-    var breaks = sharedBreaks(st);
-    LAYERS.forEach(function (L) { paint(L.id, st, breaks); });
-
-    // one key, under the result, since every map shares the scale
-    var leg = document.getElementById("lega");
-    leg.textContent = "";
-    DIV.forEach(function (c) {
-      var sw = document.createElement("span");
-      sw.className = "sw"; sw.style.background = c; leg.appendChild(sw);
-    });
-    document.getElementById("lega0").textContent = "fewer per km\u00b2";
-    document.getElementById("lega1").textContent = "more per km\u00b2";
+    var sc = sharedScale(st);
+    LAYERS.forEach(function (L) { paint(L.id, st, sc); });
 
     var outline = (zoning === "da") ? "" : zoneOutline(st.zone, -1);
     LAYERS.forEach(function (L) { ZLINES[L.id].setAttribute("d", outline); });
 
     var label = D.types.filter(function (t) { return t.key === crime; })[0].label;
     document.getElementById("capa").textContent = label + ", reported";
-    // Under the aspatial model this term is exactly zero everywhere, so its map comes out
-    // blank. That is the point: the model assigns nothing to spatial structure, and you
-    // can see it assign nothing.
-    var spatialOn = (modelMode === "err");
-    document.getElementById("b-sperr").textContent =
-      spatialOn ? "what runs together" : "nothing: this model has none";
-    document.getElementById("b-res").textContent =
-      spatialOn ? "what is left once that is out" : "what is left over";
+
+    // A key of two nested circles: the biggest and a quarter of it.
+    var key = document.getElementById("symkey");
+    key.innerHTML = '<svg viewBox="0 0 120 44" aria-hidden="true">' +
+      '<circle cx="26" cy="26" r="16" fill="' + POS + '" fill-opacity="0.72"/>' +
+      '<circle cx="60" cy="34" r="8" fill="' + POS + '" fill-opacity="0.72"/>' +
+      '<circle cx="80" cy="38" r="4" fill="' + NEG + '" fill-opacity="0.72"/></svg>' +
+      '<span>' + Math.round(sc.max) + " &middot; " + Math.round(sc.max / 4) +
+      " &middot; red more, blue less</span>";
 
     // Each term carries its coefficient and the uncertainty on it. A beta printed alone
     // reads as a fact; printed with its standard error it reads as an estimate.
@@ -1527,11 +1575,16 @@ body[data-present="1"] footer { display: none; }
         v.toFixed(digits) + '</span> <span class="pm">&plusmn; ' + se.toFixed(digits) + "</span>";
     }
     if (m) {
-      document.getElementById("b-const").innerHTML =
-        m.b[0].toFixed(1) + ' <span class="pm">&plusmn; ' + m.se[0].toFixed(1) + "</span>";
+      document.getElementById("constval").textContent = m.b[0].toFixed(1);
+      document.getElementById("constse").innerHTML = "&plusmn; " + m.se[0].toFixed(1);
       beta("b-hh", m.b[1], m.se[1], m.p[1], 5);
       beta("b-inc", m.b[2], m.se[2], m.p[2], 3);
     }
+    var spatialOn = (modelMode === "err");
+    document.getElementById("b-sperr").textContent =
+      spatialOn ? "what runs together" : "nothing: this model has none";
+    document.getElementById("b-res").textContent =
+      spatialOn ? "what is left once that is out" : "what is left over";
 
     document.getElementById("moran").textContent = sig(st.I, 3);
     // Only the unsurprising result is worth a word here. Everything else is in the panel.

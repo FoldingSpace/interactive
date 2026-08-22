@@ -389,38 +389,35 @@ ramps colourblind-safe. Live region announces every change.
 modes, light and dark. Every control exercised in sequence on a phone with every resulting
 fit finite. Not yet checked on the lecture machine or in a compressed recording.
 
-## Next, and specified
+## The equation row
 
-Four changes agreed and not yet built. They belong together, because the first three all
-follow from the same cartographic point.
+Counts are drawn as graduated symbols, not as shaded areas, and are not normalised by area.
+A count is not a rate, so shading a polygon by one is wrong however it is scaled; circles
+sized by value are the standard answer. It also simplifies the row, because everything stays
+in plain counts and nothing has to be divided through by area.
 
-**Counts get graduated symbols, not choropleths, and no area normalisation.** A count is
-not a rate, so shading a polygon by it is wrong however it is scaled. Proportional circles
-at the area centres are the standard answer, and they simplify the equation row: everything
-stays in plain counts, so nothing is divided through by area and the intercept stops being
-a strange quantity per square kilometre. Zone centres are already computed (`ag.pos`), so
-this is a rendering change rather than a data one.
+Circle area is proportional to the value and the radius to its square root, with one scale
+shared across every map in the row so the addition still reads. The largest circle is half
+the mean spacing between area centres, which keeps 996 of them from merging into one shape.
+Colour carries the sign: red above, blue below. Symbols are 68 per cent opaque with no
+outline, so overlaps read as overlaps and a small circle is not mostly its own border.
 
-Circle area proportional to the absolute value, radius as the square root, one scale factor
-shared across every map in the row so the addition stays checkable by eye. Colour carries
-the sign for the terms that can go negative.
+The constant has no map. In counts it is the same number everywhere, so a map of it would
+be one value repeated. It keeps its place in the row as a number with its standard error.
 
-**Symbols get a little transparency and no outer stroke.** Overlapping circles have to
-read as overlapping.
+The polygons are now a base under the symbols, still with the dissemination-area hairlines
+under every grouping.
 
-**The constant loses its map and keeps its place.** In count units it is the same number
-everywhere, so a map of it says nothing. It stays in the row as a number, in position, so
-the equation still reads left to right.
+**The row's claim is checked, not assumed.** The terms sum to the observed counts within
+2.8e-14 at census tracts and 7.1e-15 across 995 dissemination areas, in both models, tested
+through `MAUP_TEST.valuesFor`. Under aspatial OLS the spatial error term has exactly zero
+circles — not small ones, none — because that model assigns nothing to spatial structure.
 
-**The polygons stay underneath** as a plain base with the hairlines, which also answers a
-standing gap: at the moment a reader gets shapes with no sense of Vancouver under them.
+Two bugs found while building this, both from earlier edits rather than this one: the layout
+rewrite had deleted the entire maps stylesheet, so the polygons were rendering as black
+silhouettes with no strokes; and a duplicated `.readout` rule later in the file was beating
+the grid that was supposed to lay the cards out in a row.
 
-What is already true and worth not breaking: the row closes arithmetically to 4.5e-13
-across 995 areas in both models and three zonings, checked through `MAUP_TEST.valuesFor`;
-the spatial error term is exactly zero under aspatial OLS so its symbols should vanish
-entirely rather than shrink to dots; and the shared scale is what makes the row legible as
-an equation rather than five unrelated pictures.
-
-Layout still needs a pass after that. The readout cards stack full width at desktop sizes
-where they were meant to sit in a row, the legend end labels want more room, and the
-vertical space under the map row is unused.
+Still to do: the vertical space under the map row is unused, and on a phone the six maps
+stack to about 2,900 px, which is a long scroll for a page whose point is the comparison
+across them.
