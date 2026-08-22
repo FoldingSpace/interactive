@@ -163,6 +163,26 @@ the cases a student will actually compare, and pin everything that is not the le
 This usually means generating examples under a constraint rather than taking whatever a
 sampling procedure hands you.
 
+**A category name is a claim too, and the category defined by absence is where it does
+damage.** Most classifications have one class that is defined by what its members are not.
+Metro Vancouver's is "Undeveloped and Unclassified": land outside the Agricultural Land
+Reserve with no visible development, vacant urban land, and vegetated ground not identified
+as park or as farm. The least-cost widget grouped it as "Open land" and gave it the cheapest
+number on the chart, so a category defined by absence was drawn and priced as though it were
+a landscape — and 87 hectares of an Indian reserve sat inside it. Naming and pricing compound
+each other: rename absence as a landscape and it stops looking like absence, and then it gets
+priced like the landscape.
+
+**Read the publisher's own long definition of every code before writing a label.** Not the
+one-line `Description` field — the paragraph in the service metadata, which is where this
+one was, unread, the whole time. Two errors here came from skipping it: the class was
+mislabelled, and then the correction invented an example ("gravel workings") that belongs to
+a different code the same widget files under Industry.
+
+Neither error was found by re-reading the claim. The first was found by a reader looking at
+the map and not believing the class name; the second by an adversarial checker sent to refute
+the first correction. Send the checker after your fixes as well as after your citations.
+
 Two habits follow:
 
 **Fixed seeds, always.** Anything random uses a seed written into the code, never
@@ -245,6 +265,21 @@ a reader of the page meets a silence. Whether a page that maps land and prices i
 something, and what, is in the open questions below — it is a decision about how the course
 speaks, not a technical one, and the failure mode described two paragraphs up applies to the
 easy answer.
+
+**Moving the example is a decision about the window, not only about the destination.** The
+same widget kept a claim, in its own file and with the word "checked" in it, that its window
+was clear of every reserve. It was not: 37 rows of the grid held part of Semiahmoo Indian
+Reserve, and 1621 of those cells sat in the residual class the page priced at the base cost.
+Nothing was ever routed through them, which was luck. The window was trimmed to 818 rows so
+that the extent matched the position already taken, and it cost no route figure and one band
+figure — the removed strip was 56% sea and had never been on an optimal path.
+
+Two things to carry forward. An extent is a claim about what is inside it and deserves the
+same treatment as a citation: query the attribute, print the distinct values, and assert the
+extent in the test suite, because it lives as one number in several files and a rebuild is
+where it comes back. And a decision like this one is not finished when the destination
+moves — every later change to resolution, window or classification is a chance to walk back
+into it without noticing.
 
 ## 7. Content and tools
 

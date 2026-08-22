@@ -9,7 +9,7 @@ var L = require("./load.js");
 var dom = require("./dom.js");
 
 var FILE = path.join(__dirname, "..", "..", "web", "least-cost", "index.html");
-var W = 990, H = 855, CELL = 200 / 9, SUB = "109,231", DST = "675,810";
+var W = 990, H = 818, CELL = 200 / 9, SUB = "109,231", DST = "675,810";
 var SCALE = 1;   // pixels per cell for the pretend canvas, so pointer maths is exact
 
 function open(search) {
@@ -68,6 +68,7 @@ function readDrawing(w) {
     }
     return {
       cost: total, km: metres / 1000, cells: P.length, illegal: illegal,
+      ids: P.map(function (q) { return q.r * W + q.c; }),
       from: P[0].r + "," + P[0].c, to: P[P.length - 1].r + "," + P[P.length - 1].c,
       whollyInBand: P.every(function (q) { return inBand[q.r * W + q.c] === 1; })
     };
@@ -78,6 +79,7 @@ function readDrawing(w) {
     cells: heavy.length ? pts(heavy[0]).map(function (q) { return q.r * W + q.c; }) : [],
     best: heavy.length ? evaluate(pts(heavy[0])) : null,
     alts: thin.map(function (p) { return evaluate(pts(p)); }),
+    inBand: inBand,
     bandCells: Array.prototype.reduce.call(inBand, function (a, v) { return a + v; }, 0)
   };
 }
@@ -129,21 +131,21 @@ module.exports = function (t) {
     var w = open();
     a.equal(w.doc.getElementById("len").textContent, "20.9", "opening length");
     a.equal(w.doc.getElementById("mix").textContent,
-      "Crosses 62% farmland, 21% industry, 5% open land.", "opening composition");
+      "Crosses 62% farmland, 26% industry, 4% road and rail.", "opening composition");
     var d = readDrawing(w);
     a.equal(d.best.from, SUB, "route starts at the substation");
     a.equal(d.best.to, DST, "route ends at the plant");
     a.equal(d.best.illegal, 0, "every step is an eight-neighbour move");
-    a.close(d.best.km, 20.85, 0.02, "drawn length matches the model");
-    a.close(d.best.cost, 340922.79, 0.5, "drawn route re-costs to the recorded optimum");
+    a.close(d.best.km, 20.88, 0.02, "drawn length matches the model");
+    a.close(d.best.cost, 361735.37, 0.5, "drawn route re-costs to the recorded optimum");
   });
 
   t("the three presets give the recorded routes", function (a) {
     var w = open();
     var want = [
-      ["Protect farmland", "23.5", "Crosses 40% road and rail, 32% open land, 27% industry."],
-      ["Follow what is built", "23.1", "Crosses 84% road and rail, 15% open land, 1% industry."],
-      ["Keep away from homes", "23.2", "Crosses 32% farmland, 30% industry, 27% open land."]
+      ["Protect farmland", "22.1", "Crosses 64% road and rail, 33% industry, 2% shops and offices."],
+      ["Follow what is built", "23.2", "Crosses 99% road and rail, 1% industry, 0% other."],
+      ["Keep away from homes", "20.5", "Crosses 57% farmland, 27% industry, 13% road and rail."]
     ];
     var buttons = w.doc.querySelectorAll("#presets .act");
     a.equal(buttons.length, 3, "three presets, and none of them a cost claim");
@@ -235,16 +237,80 @@ module.exports = function (t) {
     a.ok(pct > 5, "and more than 5%, so farmland is still using corridors where they help");
   });
 
+  t("the two lengths the presets panel quotes are the two lengths the widget produces",
+    function (a) {
+      // The (i) for "keep away from homes" says it hardly changes the answer and prints both
+      // lengths. It said something else until 2026-08-22 — that two thirds of the route ran
+      // over the same ground — and that figure was wrong twice over: it compared the widget
+      // against a different implementation, and cell overlap between tied routes is the one
+      // quantity this widget's own file says is a property of the queue, not of the land.
+      // Length and cost are what both implementations agree on, so length is what the page
+      // quotes and what this asserts.
+      var w = open();
+      var opening = w.doc.getElementById("len").textContent;
+      w.doc.querySelectorAll("#presets .act")[2].click(); w.settle();
+      var keepAway = w.doc.getElementById("len").textContent;
+      var fs = require("fs");
+      var panel = fs.readFileSync(FILE, "utf8");
+      panel = panel.slice(panel.indexOf('id="info-preset"'));
+      panel = panel.slice(0, panel.indexOf("</div>"));
+      a.ok(panel.indexOf(keepAway + " km") > 0,
+        'the panel quotes the preset\'s own length, ' + keepAway);
+      a.ok(panel.indexOf(opening + " km") > 0,
+        "and the opening length beside it, " + opening);
+      a.ok(Math.abs(+keepAway - +opening) < 1,
+        "and they really are close: " + keepAway + " against " + opening);
+    });
+
+  t("the tie the page claims at the tightest setting is really there", function (a) {
+    // The alternatives (i) says a thin route at 0.1% "shares under half its length with the
+    // heavy one and costs the same". That sentence is a measurement, so it is asserted here
+    // rather than trusted: it was already wrong once, left behind by a change to the table.
+    var w = open();
+    bandOn(w, "0.001");
+    var d = readDrawing(w);
+    var best = {}; d.best.ids.forEach(function (u) { best[u] = 1; });
+    var least = 101;
+    d.alts.forEach(function (p) {
+      var shared = 0, seen = {};
+      p.ids.forEach(function (u) { if (!seen[u]) { seen[u] = 1; if (best[u]) shared++; } });
+      least = Math.min(least, Math.round(100 * shared / Object.keys(seen).length));
+    });
+    a.ok(least < 50, "the least overlapping alternative shares " + least + "%, under half");
+    a.ok(d.alts.every(function (p) { return p.cost <= d.best.cost * 1.001 + 1e-6; }),
+      "and every one of them costs within a thousandth of the best");
+  });
+
+  t("the window still stops north of the reserve", function (a) {
+    // The grid used to be 855 rows and reached 5428500 N, which put 2260 cells of Semiahmoo
+    // Indian Reserve inside it — 1621 of them in the class the page prices most cheaply.
+    // A cost surface cannot give land under a separate jurisdiction a friction number
+    // without making the category error this corridor was already moved once to avoid, so
+    // the window stops at 818 rows. The reserve's northernmost point is 5429314 N; row 817's
+    // centre is 5429333 N. This asserts the trim on the shipped file, because the whole of
+    // it is one number in three places and a rebuild is where it would come back.
+    var fs = require("fs");
+    var html = fs.readFileSync(FILE, "utf8");
+    var grid = /var GRID = "([0-9]+)";/.exec(html);
+    a.ok(!!grid, "the grid is inlined");
+    a.equal(grid[1].length, 990 * 818, "the grid is 818 rows deep, not 855");
+    a.ok(html.indexOf('height="818"') > 0, "the canvas is 818 cells tall");
+    a.ok(html.indexOf('viewBox="0 0 990 818"') > 0, "and so is the overlay");
+    var south = 5447500 - 818 * (200 / 9);
+    a.ok(south > 5429314, "the southern edge, " + Math.round(south)
+      + " N, is north of the reserve at 5429314 N");
+  });
+
   t("a kept proposal records the route that matches the numbers beside it", function (a) {
     var w = open();
     w.doc.querySelectorAll("#presets .act")[0].click(); w.settle();
     w.doc.getElementById("pin").click(); w.settle();
     var first = w.doc.querySelector(".pin .stats").textContent;
-    a.ok(/^23\.5 km/.test(first), "the kept card carries the route it was kept from: " + first);
+    a.ok(/^22\.1 km/.test(first), "the kept card carries the route it was kept from: " + first);
     w.doc.querySelectorAll("#presets .act")[1].click(); w.settle();
     w.doc.getElementById("pin").click(); w.settle();
     var cards = w.doc.querySelectorAll(".pin .stats").map(function (e) { return e.textContent; });
-    a.ok(/^23\.5 km/.test(cards[0]) && /^23\.1 km/.test(cards[1]),
+    a.ok(/^22\.1 km/.test(cards[0]) && /^23\.2 km/.test(cards[1]),
       "two kept proposals stay distinct: " + cards.join(" | "));
     var names = w.doc.querySelectorAll(".pin input").map(function (e) { return e.getAttribute("value") || e.value; });
     a.equal(names[0], "Protect farmland", "a preset supplies the name it was loaded under");
@@ -256,12 +322,12 @@ module.exports = function (t) {
     w.doc.getElementById("pin").click(); w.settle();
     w.settle();
     var url = w.location.search;
-    a.ok(url.indexOf("c=120.60.20.10.40.125.200.1.20") > 0, "the numbers are in the link");
+    a.ok(url.indexOf("c=120.60.20.10.40.125.200.100.20") > 0, "the numbers are in the link");
     a.ok(url.indexOf("k=") > 0, "the kept proposal is in the link");
     var back = open(url);
-    a.equal(back.doc.getElementById("len").textContent, "23.5", "reopening restores the route");
+    a.equal(back.doc.getElementById("len").textContent, "22.1", "reopening restores the route");
     a.equal(back.doc.querySelectorAll(".pin").length, 1, "reopening restores the kept proposal");
-    a.equal(back.doc.querySelector(".pin .stats").textContent.slice(0, 7), "23.5 km",
+    a.equal(back.doc.querySelector(".pin .stats").textContent.slice(0, 7), "22.1 km",
       "the restored proposal carries its route");
   });
 
@@ -284,12 +350,17 @@ module.exports = function (t) {
     var fs = require("fs");
     var html = fs.readFileSync(FILE, "utf8");
     var body = html.slice(html.indexOf("<body>"));
-    ["Cheapest to build", "near tie", "Near ties", "Nobody measured"].forEach(function (bad) {
+    ["Cheapest to build", "near tie", "Near ties", "Nobody measured",
+     "Open land", "open land"].forEach(function (bad) {
       a.equal(body.indexOf(bad), -1, 'the page no longer says "' + bad + '"');
     });
     a.ok(body.indexOf("Values are complex and vary by perspective") > 0,
       "the page says the values are contested rather than absent");
     a.ok(body.indexOf("nobody looked up any land prices") > 0,
       "the costs panel still says plainly what these numbers are not");
+    a.ok(body.indexOf("no visible development") > 0,
+      "the residual class is described from the source's own definition");
+    a.ok(body.indexOf("gravel") === -1,
+      "and not with an example that belongs to a different code (gravel pits are M300)");
   });
 };

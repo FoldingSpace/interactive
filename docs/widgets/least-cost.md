@@ -40,13 +40,52 @@ Government Licence. Already in NAD83 / UTM zone 10N, so nothing is reprojected.
 DMTI CanMap Route Logistics, which the lab uses, is licensed data and cannot go on a public
 site. That constraint turned out to improve the widget rather than limit it.
 
-**Window:** 504000–526000 E, 5428500–5447500 N. 990 × 855 cells of 22²⁄₉ m, that size chosen so 990 cells is exactly the 22 km width. Entirely inside
-Metro Vancouver, so there are no holes, and clear of every reserve and treaty boundary in
-the region's own `Jurisdiction` field — checked, not assumed. An earlier plan ran to Roberts
-Bank; the causeway's shore end sits inside Tsawwassen First Nation lands, and a cost surface
-that assigns treaty land a friction number is making a category error. The corridor was
-moved rather than the question fudged. This does not make the land it does cross
-uncontested.
+**Window:** 504000–526000 E, 5429322–5447500 N. 990 × 818 cells of 22²⁄₉ m, that size chosen so 990 cells is exactly the 22 km width. Entirely inside
+Metro Vancouver, so there are no holes. An earlier plan ran to Roberts Bank; the causeway's
+shore end sits inside Tsawwassen First Nation lands, and a cost surface that assigns treaty
+land a friction number is making a category error. The corridor was moved rather than the
+question fudged. This does not make the land it does cross uncontested.
+
+**It was 855 rows deep until 2026-08-22, and this file used to claim it was "clear of every
+reserve and treaty boundary in the region's own `Jurisdiction` field — checked, not
+assumed". That claim was false**, and it carried the word "checked" while being wrong, which
+is the worst way to be wrong. Querying the field says so in one line: the old window held 21
+features whose `Jurisdiction` is `Indian Reserve - SEMIAHMOO`. The northern part of
+Semiahmoo Indian Reserve sat in the bottom 37 rows — 2260 cells, 112 ha, rows 818–854 and
+columns 511–618, the rest of the reserve running south past the window edge.
+
+It was not found by re-reading the claim. It was found because a reader looked at the map
+and did not believe the class name, which is the check that actually works.
+
+No route and no alternative had ever run there. Measured over all four tables, at both the
+old and the new price for class 8, at all three tolerances — 24 combinations — the number of
+band cells falling on the reserve was **zero**, and so was the number of route cells; the
+corridor turns east well north of it. That was luck, not design. What was not luck: 1621 of
+those 2260 cells were class 8, which the widget called **"Open land" and priced at 1**, the
+cheapest thing on the map, so the page was inviting a reader to route through it and would
+have obliged.
+
+**The window now stops at 818 rows**, with its southern edge at 5429322 N. The reserve's
+northernmost point is 5429314 N and row 817's centre is 5429333 N, so no cell of it is left.
+Renaming and repricing class 8 stops the page treating that land as free; moving the edge is
+the part that matches the position this widget already took when it moved off Roberts Bank,
+because the objection was never that the number was too low. It was that there should be no
+number.
+
+What the trim cost, measured before it was made and confirmed after:
+
+- **No route figure moved at all.** All four preset costs, cell counts and lengths are
+  bit-identical before and after, because the removed rows were never on any optimal path.
+  361735.3709 over 790 cells is the same number in both grids.
+- **One recorded figure moved**: the opening 5% band, 66.0 km² to **65.3 km²**. The 0.1% and
+  1% bands are unchanged at 8.7 and 34.7 km².
+- **4.3% of the map**, 36,630 cells, and the strip was 56% sea. Rows 800–819 are already
+  half water, so the Boundary Bay shoreline that orients a reader is well inside the grid
+  that remains.
+- Class shares shifted with the sea removed: water 14.1% → 12.3%, houses 28.9% → 30.0%.
+
+The trim is asserted in the suite, on the shipped file, because it lives as one number in
+three places and a rebuild is exactly where it would come back.
 
 **Endpoints.** The start is a real utility site at 124 St and 86 Ave in Surrey, cell
 (row 109, col 231). Metro Vancouver's own data classifies that exact cell **T400, "Utility,
@@ -62,15 +101,57 @@ is ours and the widget says so. Shares of the window:
 
 | Class | Codes | Share |
 |---|---|---|
-| Houses | S100, S110, S120, S130, S131, S135, S410, S230, S235 | 28.9% |
-| Farmland | A500 | 22.2% |
-| Water | R200 | 14.1% |
-| Parks and protected | R100, W400 | 13.1% |
-| Road and rail | S500, T100, T200, T300 | 11.4% |
-| Industry | S300, M300, S600, T400 | 3.8% |
-| Open land | U100 | 3.3% |
-| Shops and offices | S200, S202, S204 | 1.9% |
-| Schools and civic | S400, S420, S450, S460 | 1.2% |
+| Houses | S100, S110, S120, S130, S131, S135, S410, S230, S235 | 30.0% |
+| Farmland | A500 | 22.3% |
+| Parks and protected | R100, W400 | 13.2% |
+| Water | R200 | 12.3% |
+| Road and rail | S500, T100, T200, T300 | 11.8% |
+| Industry | S300, M300, S600, T400 | 4.0% |
+| Other | U100 | 3.2% |
+| Shops and offices | S200, S202, S204 | 2.0% |
+| Schools and civic | S400, S420, S450, S460 | 1.3% |
+
+**"Other" was called "Open land" and that was a mistake in the grouping.** U100's own
+description in the source is **"Undeveloped and Unclassified"**, and the service's layer
+metadata carries a longer definition that the first version of this file never read:
+
+> includes lands outside the provincial Agricultural Land Reserve with no visible
+> development, vacant urban land, and forested or vegetated areas not identified as
+> recreation, open space and protected natural areas or agriculture.
+
+So it is not, as this file first said, the bin for ground the survey could not identify. It
+is a positive finding — no visible development — plus everything vegetated that did not
+qualify as park or as farm. The class is defined by what the land is **not**, which is why
+no attribute splits it: `Description` is one-to-one with `LU_Code`, and the only other
+fields are administrative geography.
+
+Calling it "Open land" made a class defined by absence sound like a landscape, and the
+opening table then priced that landscape at 1.
+
+**Read the publisher's own long definitions before writing a class label.** Getting this
+wrong produced a second error downstream: the first correction described "Other" as holding
+"a gravel working". Gravel pits are **M300, "Industrial – Extractive"** — peat extraction,
+gravel pits, landfill, quarries — which this very file groups under *Industry*. The example
+was invented, and it contradicted our own grouping four lines further up.
+
+It now reads **Other** and starts at **100** in the opening state and in all three presets.
+A low number was the page asserting that land nobody has built on, and nobody has given a
+name to, is land nobody minds losing. A high one is the opposite assertion. Both are
+positions; neither is neutral, and the (i) panel says so.
+
+Repricing it improved three things that had nothing to do with the reason for doing it.
+"Protect farmland" now crosses **0.2% farmland** instead of detouring through unclassified
+land, so the preset finally does what it is named for. "Follow what is built" reaches 98.5%
+road and rail. And "keep away from homes" went back to being the widget's best teaching
+case: it runs **20.5 km against the opening 20.9**, where at Other = 1 it had drifted to
+23.2 km, quietly falsifying the sentence in its own (i) panel. The detours were all through
+the class the page was giving away.
+
+The colour is unchanged: `--c8` is a near-white, which is the right convention for
+unclassified ground and was already searched against the rest of the palette. It does read as
+cheap, which the number now contradicts. The chart doubles as the legend, so the number is
+never far from the colour, but this is the one place in the palette where hue and value
+disagree on purpose.
 
 **Cells went 100 → 50 → 33⅓ → 22²⁄₉, every time for the same reason.** Blocks of housing
 and farmland rasterise fine at any of these; everything linear does not. Road allowances,
@@ -79,7 +160,7 @@ and a route could not follow one — which mattered, because "follow what is bui
 the three positions the widget offers. 50 m joined up the main grid, 33⅓ m most of the rural
 lanes, and 22²⁄₉ m the rest.
 
-846,450 cells, twenty times the first attempt. The answer was never a coarser map; it was a
+809,820 cells, nineteen times the first attempt. The answer was never a coarser map; it was a
 faster queue, then a worker, then sending the worker changes instead of the map.
 
 **One cell needed filling.** At this size a cell centre can land in a sliver where two
@@ -157,18 +238,27 @@ it. They agree to the displayed precision in every case.
 
 | Numbers | Length | Route composition |
 |---|---|---|
-| The opening state | 20.9 km | 62% farmland, 21% industry, 5% open land |
-| Protect farmland | 23.5 km | 40% road and rail, 32% open land, 27% industry |
-| Follow what is built | 23.1 km | 84% road and rail, 15% open land, 1% industry |
-| Keep away from homes | 23.2 km | 32% farmland, 30% industry, 27% open land |
+| The opening state | 20.9 km | 62% farmland, 26% industry, 4% road and rail |
+| Protect farmland | 22.1 km | 64% road and rail, 33% industry, 2% shops and offices |
+| Follow what is built | 23.2 km | 99% road and rail, 1% industry, 0% other |
+| Keep away from homes | 20.5 km | 57% farmland, 27% industry, 13% road and rail |
 
-Tables, in the order farmland, houses, shops, industry, civic, parks, water, open, roads:
+Tables, in the order farmland, houses, shops, industry, civic, parks, water, other, roads:
 
 ```
-The opening state      1  150  50  10  70  125  200  1  130
-Protect farmland     120   60  20  10  40  125  200  1   20
-Follow what is built  40  150  50  10  70  125  200  1    2
-Keep away from homes  10  200  60   5  80  100  150  1   60
+The opening state      1  150  50  10  70  125  200  100  130
+Protect farmland     120   60  20  10  40  125  200  100   20
+Follow what is built  40  150  50  10  70  125  200  100    2
+Keep away from homes  10  200  60   5  80  100  150  100   60
+```
+
+Full compositions, since the widget only prints the top three:
+
+```
+The opening state      farmland 61.5  industry 25.6  road+rail  3.9  shops 3.0  houses 2.4  parks 2.2  other 0.8  civic 0.6
+Protect farmland       road+rail 64.0  industry 32.7  shops 2.4  other 0.5  farmland 0.2  water 0.1
+Follow what is built   road+rail 98.5  industry  0.8  other 0.4  farmland 0.2
+Keep away from homes   farmland 57.3  industry 27.3  road+rail 13.3  shops 1.6  other 0.4
 ```
 
 **"Protect farmland" prices road and rail at 20, not 130, and that was a correction.** A
@@ -176,43 +266,60 @@ group trying to keep fields whole has no reason to avoid ground that is already 
 and every reason to prefer it, so pricing corridors high was incoherent as a position. The
 number is a balance rather than a preference: pushing it lower stops the route being about
 farmland at all and turns it into "follow what is built". Measured overlap between the two
-routes as that number falls — 130: 2%, 60: 3%, 40: 31%, 20: **34%**, 10: 76%, 5: 92%. At 5
-they were the same proposal twice. There is a test guarding the gap.
+routes as that number falls — 130: 1%, 60: 4%, 40: 6%, 20: **12%**, 10: 60%, 5: 79%. The
+collapse is sudden and it sits between 20 and 10. There is a test guarding the gap.
+
+(Those overlaps were re-measured after "Other" was repriced; at Other = 1 the same sweep ran
+2%, 3%, 31%, 34%, 76%, 92%. The shape is the same and the cliff is in the same place.)
 
 The opening state used to be a fourth preset called "Cheapest to build" and is not one any
 more. Nothing here is a construction cost and no land prices were looked up, so a button
 offering the cheapest build claimed something the widget cannot support. "Numbers back to the
 start" restores those numbers without naming them as a position anybody holds.
 
-**Accumulated cost at the plant, opening state: 340922.7927**, over a 786-cell route
-measuring 20.850 km. That figure is the anchor and a rebuild should reproduce it first. A
+**Accumulated cost at the plant, opening state: 361735.3709**, over a 790-cell route
+measuring 20.884 km. That figure is the anchor and a rebuild should reproduce it first. A
 Python implementation sharing no code with the widget agrees on all three to every printed
-digit.
+digit, and re-costing the widget's *drawn* polyline in Python gives 361735.3709 as well.
 
-It does **not** agree on the composition — it reports 59% farmland, 21% industry, 7% open
-land where the widget reports 62/21/5. Same cost, same length, same number of cells,
-different cells. That is the tie result again, now systematic: Python uses a heap and the
-widget uses buckets, and where routes tie the queue decides. Read cost and length as claims
-about the world, and the compositions as a regression test on this implementation.
+**The two agree on every number and disagree about 45% of the ground.** Python uses a binary
+heap, the widget uses Dial's buckets. Same cost to four decimals, same 790 cells, same
+20.884 km — and only 434 of those 790 cells are the same cells. They even report the same
+composition, 62% farmland, 26% industry, 4% road and rail, which is the sharpest form this
+result has taken yet: two routes over different ground, scoring identically and *summarising*
+identically. Read cost, length and composition as claims about the world here, and the choice
+of cells as a property of the queue.
 
 **Similar proposals**, opening state. The band areas:
 
 ```
-within 0.1% of the optimum     9.6 km²    4 routes drawn, longest 21.2 km   (+2%)
-within 1%                     35.3 km²    6 routes drawn, longest 24.2 km   (+16%)
-within 5%                     70.3 km²    6 routes drawn, longest 32.0 km   (+53%)
+within 0.1% of the optimum     8.7 km²    3 routes drawn, longest 21.2 km   (+2%)
+within 1%                     34.7 km²    6 routes drawn, longest 24.5 km   (+17%)
+within 5%                     65.3 km²    6 routes drawn, longest 32.2 km   (+54%)
 ```
 
 The "+" figures are how much further the longest alternative runs **on the ground** for that
-much more cost. At 5% a reader can see a route 73% longer that the numbers score within a
+much more cost. At 5% a reader can see a route 54% longer that the numbers score within a
 twentieth of the answer.
 
+**How little the tightest setting has to overlap.** Of the three alternatives at 0.1%, the
+least overlapping shares **46%** of its cells with the heavy line; at 1% it is 27% and at 5%
+26%. The page used to say "barely a third" of a length at 0.1%, which was true of an earlier
+table and is not true of this one. It now says "under half", and there is a test asserting
+that, because a sentence which is a measurement should fail when the measurement changes
+rather than sit there being wrong.
+
 **Swapping the queue moved half the route at identical cost, and that is the widget's own
-thesis arriving uninvited.** Heap and buckets both give accumulated cost 342042.506987 at
-the plant — a difference of exactly zero — and both give a 386-cell route. The two routes
-share 189 of those 386 cells. **49%.** An implementation detail with nothing geographic in
-it decides half of where the line goes, because the two are tied. This is on the page now,
-in the similar-proposals panel.
+thesis arriving uninvited.** Heap and buckets both give accumulated cost 361735.3709 at the
+plant — a difference of exactly zero — and both give a 790-cell route of 20.884 km. The two
+routes share 434 of those 790 cells. **55%.** An implementation detail with nothing
+geographic in it decides 45% of where the line goes, because the two are tied. This is on
+the page now, in the similar-proposals panel.
+
+(Measured again on the current grid and the current table. The figure in this file used to
+be 49% of a 386-cell route at cost 342042.506987, which was measured on a coarser grid two
+resolutions ago and had been carried forward as though it were current. The effect is
+unchanged; the numbers were not.)
 
 It also means the composition figures in this file are the most fragile thing in it, and
 deliberately so: the test suite asserts them exactly, so anything that moves the line has to
@@ -222,9 +329,9 @@ come and re-record them.
 rendered SVG; the land classes were read back off the painted canvas by matching pixels to
 the palette and to the palette faded by 0.62; the nine values were read off the controls'
 `aria-valuenow`. Every route was then re-costed from those three. At all three tolerances:
-every step is an eight-neighbour move, every route runs cell (24,51) to cell (150,180), every
-route lies wholly inside the shaded band, and every route is inside the selected tolerance.
-Costs over the minimum:
+every step is an eight-neighbour move, every route runs cell (109,231) to cell (675,810),
+every route lies wholly inside the shaded band, and every route is inside the selected
+tolerance.
 
 The suite asserts this at all three tolerances, on the unedited map and again after four
 brush strokes and five changed values. The check is in `tools/test/least-cost.test.js`; it
@@ -236,9 +343,11 @@ worst case, for a route running at 22.5° to the grid, is **8.239%**. This corri
 close to 45°, where the error is smallest — which is itself the point, since the error is a
 property of the direction, not of the landscape.
 
-**Timing**, measured in the page, not in a harness. During a brush stroke over 846,450
-cells: median frame 16.7 ms, 99th percentile 19.7, **zero frames over 25 ms in 96**. A flat
-60 frames a second for the whole stroke. Turning the similar proposals on takes 224 ms,
+**Timing**, measured in the page, not in a harness. During a brush stroke over 809,820
+cells: median frame 16.7 ms, 99th percentile 20.4, longest 21.6, **zero frames over 25 ms in
+120**. A flat 60 frames a second for the whole stroke. (Re-measured after the trim; at
+846,450 cells it was median 16.7, 99th 19.7, zero over 25 in 96.) Turning the similar
+proposals on, with nothing cached, takes about 230 ms,
 which is off the main thread but long enough that the readout says "Working out the
 others…" rather than sitting silent.
 
@@ -257,7 +366,7 @@ thread would hide it. Before the worker, at this resolution, 12 frames in 83 ran
 and a stroke averaged 52 fps. After it, none do.
 
 **And then sending the worker changes rather than the map.** A brush stroke alters a few
-hundred cells; copying all 846,450 into every message was the last thing on the main thread
+hundred cells; copying all 809,820 into every message was the last thing on the main thread
 big enough to cost a frame, and it cost four in 91. The widget keeps a list of changed cells
 and sends that instead, falling back to the whole map when the list gets long or the map is
 reset. Zero slow frames after.
@@ -289,18 +398,34 @@ full contrast whatever the hue is doing and the colour is left to carry identity
 every route, because road allowances form a connected cheap network and real transmission
 lines do follow them. Cheap by default, the opening state would teach "follow the roads"
 before it taught anything about farmland against houses, and the other seven rows would look
-inert. High by default, lowering it is a discovery: the route snaps onto Surrey's section-line
-grid and runs 28.1 km in right angles.
+inert. High by default, lowering it is a discovery: at 130 the route puts 3.9% of itself on
+road and rail, and at 1 it puts **57.6%**, running 19.7 km instead of 20.9.
+
+This paragraph used to say the route "snaps onto Surrey's section-line grid and runs 28.1 km
+in right angles". Re-measured on the current grid, both halves are wrong and the second is
+backwards: the length is 19.7 km, and lowering the number makes the route *less* orthogonal,
+not more — 53.9% of its steps are orthogonal at 130 and 32.2% at 1. It follows the corridors,
+and this corridor's corridors run diagonally. Another measurement carried forward from a
+coarser grid without being taken again.
 
 **Farmland starts at 1.** This is the position the lab's own classification takes, and it is
-what makes the opening route run 56% through the Serpentine and Nicomekl farmland. Defaults
+what makes the opening route run 61.5% through the Serpentine and Nicomekl farmland. Defaults
 are claims (principles §5), and this one is a claim the widget wants a student to argue with.
 The (i) panel says where the numbers came from.
 
-**"Keep away from homes" barely moves the line.** 20.1 km against 20.0. That is not a broken
-preset, it is the best thing in the set: the cheapest route was already avoiding houses, so
-a value stated loudly changes nothing. Whether an assertion has consequences depends on the
-land, not on how strongly it is held. The preset (i) says so.
+**"Keep away from homes" hardly changes the answer.** 20.5 km against 20.9. That is not a
+broken preset, it is the best thing in the set:
+the cheapest route was already avoiding houses, so a value stated loudly changes almost
+nothing. Whether an assertion has consequences depends on the land, not on how strongly it
+is held. The preset (i) says so.
+
+This is also the claim that went stale without anyone noticing. It was recorded as "20.1 km
+against 20.0" from a coarser grid; by the time the grid reached 22²⁄₉ m the preset was
+running 23.2 km against 20.9, so the sentence in the (i) panel was simply false, and had
+been through two resolutions. Pricing "Other" properly is what
+brought it back, because the detour it had been taking ran through unclassified land the page
+was giving away at 1. Text that states a measurement needs a test, or it needs re-reading
+every time the measurement moves; this one now has a test.
 
 **Endpoints are fixed.** The disagreement this widget is about is over values, not over where
 the line runs from. Holding everything else constant is principles §5.
@@ -374,6 +499,14 @@ silence about territory louder rather than quieter. Adding a line to the footer 
 obvious move and is close to the failure `principles.md` section 6 describes. Open question
 there; not this file's to settle.
 
+**The page still does not name what is in the "Other" class.** It says the class is the bin
+for ground the survey could not name and gives examples; it does not say that until this
+week the bin included part of a reserve. That is deliberate. Naming a First Nation on a page
+that prices land is the question section 6 leaves open, and it should not get answered by
+accident inside a class label. The window no longer contains the reserve, so the page is not
+being silent about something it is currently doing — but it is silent about territory in
+general, which is the open question one paragraph up.
+
 **Whether the framing lands.** The pin cards and the naming prompt are the whole argument
 that a route is a proposal. Untested with students.
 
@@ -391,7 +524,7 @@ To rebuild the grid: `python3 tools/lab4-extract.py > /tmp/grid.js`, then replac
 `/tmp/mv-landuse-window.geojson`; pass `--refetch` to go back to the service.
 
 **Check these first after any change.** The opening length and the three preset lengths —
-19.9, 26.3, 28.1, 20.1 km — and their compositions. Then the similar-proposal band areas and
+20.9, 22.1, 23.2, 20.5 km — and their compositions. Then the similar-proposal band areas and
 route lengths at the three tolerances, re-costed off the drawing rather than off the model.
 Then that keeping a proposal records the route matching the table beside it, which is the bug
 that was hardest to see: `render()` batches into an animation frame, so `solved` can be one
@@ -412,13 +545,51 @@ corridor moved rather than the question being fudged. The framing was going to b
 proposals the spine of the widget rather than a convenience, and made the naming prompt
 part of the argument instead of a label.
 
-Four presets were added so that the failing case is one click away rather than something a
+Three presets were added so that the failing case is one click away rather than something a
 student has to stumble into. "Keep away from homes" is the failing case: it moves the line
 by 0.2 km, because the cheapest route was already avoiding houses.
 
 **Correctness — pass.** Every figure in "Verified numbers" was produced twice, once by the
 widget in the browser and once by a Python implementation sharing no code with it, and they
 agree to the displayed precision.
+
+**Classification — fail, then fixed, 2026-08-22.** Class 8 was labelled "Open land" and
+priced at 1. The source calls it "Undeveloped and Unclassified" and it is a residual bin, so
+the label described a landscape where the data recorded a gap, and the price then made that
+gap the cheapest ground on the map. 1621 of the class's cells were on Semiahmoo Indian
+Reserve. Three things changed: the class is "Other" at 100 in every table; the window was
+trimmed from 855 rows to 818 so it holds no reserve cell at all; and this file's claim that
+the window was clear of every reserve — which carried the word "checked" — has been
+corrected. No route or alternative had ever crossed those cells, at any tolerance under any
+preset, which is luck rather than design. The trim moved no route figure and one band figure.
+
+**Text — two claims corrected by the adversarial check, 2026-08-22.** The check refuted the
+framing of the "Other" class (see the classes section: the source defines U100 positively,
+and the "gravel working" example belongs to a code we file under Industry), and refuted the
+figure in the "keep away from homes" panel — see below. It also caught the page saying a tie
+cost "a thousandth of one per cent" more when the measured excess is 0.0967%, a hundredfold
+overstatement that had been on the page since the panel was written.
+
+**A measurement compared across two implementations, 2026-08-22 — the worst thing found in
+this pass, and it was mine.** The "keep away from homes" panel was given the sentence "about
+two thirds of the route runs over the same ground as the numbers you started with". The
+figure, 63.3%, was measured Python-route against Python-route. On the widget the same overlap
+is **31.7%** — because the widget's *opening* route shares only 54.9% of its cells with
+Python's. So the number described a pair of routes no student ever sees.
+
+Two rules were broken at once, both written down in this very file. Cell overlap between tied
+routes is the quantity recorded three sections up as a property of the queue rather than of
+the land, and it was then asserted to students as a fact about land. And a figure produced by
+the reference implementation was printed as a figure about the widget. The panel now quotes
+length, which both implementations agree on to the metre, and a test asserts that the two
+lengths in the panel are the two lengths the widget produces.
+
+**Stale text — three found, 2026-08-22.** The 0.1% tie was described as "barely a third" of a
+length when the measurement had moved to 46%; the "keep away from homes" (i) said the preset
+barely moved the line when it was running 2.3 km longer over different ground; the
+alternatives (i) promised "six more routes" where the tightest setting draws three. All three
+were measurements written as prose and left behind by later changes to the grid and the
+table. Each is now either a test or a hedge that stays true.
 
 *The bug that would have passed the obvious test*: a heap that trusts the key it popped
 rather than the current best distance. It gives correct answers on most inputs and silently

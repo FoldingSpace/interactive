@@ -134,6 +134,28 @@ where anyone reads past the fifth. Grouped now. Every one was paid for.
   what the page visibly does.
 - **Assert that the things you build are not empty.** A titled card with a collapsed body sat
   live for months. One assertion catches that class of bug on the day it happens.
+- **A class name is a claim, and the class defined by absence is where it goes wrong.**
+  `least-cost` called U100 "Open land" and priced it at 1, the cheapest thing on its map;
+  the class is "Undeveloped and Unclassified", it is defined by what the land is not, and it
+  included part of an Indian reserve. Read the publisher's **long** definition — the
+  paragraph in the service metadata, not the one-line description field — before writing any
+  label. Skipping it caused the mislabel and then caused the correction to invent an example
+  belonging to a different code.
+- **Never quote a figure measured with the reference implementation as a figure about the
+  widget.** They agree on cost, length and composition and disagree about which cells,
+  because the routes tie. A "two thirds of the route is unchanged" claim went on the
+  least-cost page at 63%; on the widget it is 32%, and the file three sections away already
+  said that this exact quantity is a property of the queue. Quote what both agree on.
+- **A window is a claim about what is inside it, and it needs the same check as a citation.**
+  The least-cost file said its window was clear of every reserve, with the word "checked" in
+  the sentence, and one query of the `Jurisdiction` field refuted it. Query the field, print
+  the distinct values, and put the extent in a test — it lives as one number in three files
+  and a rebuild is where it comes back.
+- **A sentence that states a measurement needs a test, or it goes stale silently.** Three
+  claims on the least-cost page and in its file were measured on grids two resolutions old
+  and had been carried forward as current — one of them in an (i) panel telling students
+  something the widget no longer did. Grep the prose for numbers whenever the model moves,
+  and put the load-bearing ones in the suite.
 - **Measure rather than eyeball** — layout, speed, and what a control actually demonstrates.
   Most real defects here were invisible until something was measured, and one control turned
   out to teach the opposite of its design intent.

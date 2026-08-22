@@ -62,7 +62,7 @@ settle.
 ### When the work stops fitting in a frame
 
 Four things in the order they are worth doing, learned taking one widget from 41,800 cells
-to 846,450 without losing sixty frames a second.
+to 809,820 without losing sixty frames a second.
 
 **Change the algorithm before anything else.** A binary heap became Dial's buckets and a
 solve more than halved, in about thirty lines and with the answers bit-identical. Measure the
@@ -88,7 +88,7 @@ previous one. And the first frame now paints before any result exists, so whatev
 result has to tolerate its absence; showing the map with the number blank beats showing
 nothing.
 
-**Then stop sending it the whole world.** Copying an 846,450-cell array into every message
+**Then stop sending it the whole world.** Copying an 809,820-cell array into every message
 was the last thing on the main thread big enough to cost a frame, and it cost four in
 ninety-one. Send the cells that changed, and fall back to the whole array when the list grows
 long or the data is reset.

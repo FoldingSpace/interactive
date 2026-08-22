@@ -13,17 +13,25 @@ goes into web/least-cost/index.html.
 
 Why these choices, since none of them are forced:
 
-  Window   504000-526000 E, 5428500-5447500 N. Holds the Surrey substation at 124 St
+  Window   504000-526000 E, 5429322-5447500 N. Holds the Surrey substation at 124 St
            and 86 Ave, the Campbell Heights industrial district, and enough room either
            side for a route to wander. Entirely inside Metro Vancouver, so there are no
-           holes, and clear of every reserve and treaty boundary in the region's
-           Jurisdiction field.
+           holes.
+           It was 855 rows deep, reaching 5428500 N, and that put the northern part of
+           Semiahmoo Indian Reserve inside it: 2260 cells, of which 1621 were U100, the
+           class this file used to call "Open land" and the widget used to price at the
+           base cost. A cost surface cannot give land under a separate jurisdiction a
+           friction number without making a category error, which is the reason this
+           corridor was moved off Roberts Bank in the first place, so the window now stops
+           at 818 rows, just north of the reserve. The 37 rows removed are 56% sea.
+           Verify with the Jurisdiction field rather than by reading this paragraph:
+           query it and print the distinct values before claiming the window is clear.
   Cells    22 2/9 m, chosen so that 990 cells is exactly the 22 km width. It began at
            100 m, which was fine for blocks of housing and farmland and wrong for
            everything linear: road allowances, rail and watercourses are narrower than
            that, so they rasterised into dotted lines and a route could not follow one.
            50 m joined up the main grid, 33 1/3 m most of the rural lanes, and 22 2/9 m
-           the rest. 846450 cells, and the solver runs in a worker to keep up.
+           the rest. 809820 cells, and the solver runs in a worker to keep up.
   Classes  Metro Vancouver's 29 codes grouped into 8. The grouping is a claim and is
            printed in the widget.
 """
@@ -36,7 +44,7 @@ gdal.UseExceptions(); ogr.UseExceptions()
 SERVICE = ("https://services6.arcgis.com/56eqCzQ5SZhBaDST/arcgis/rest/services/"
            "Landuse_2016___Code_Description_No_Outlines/FeatureServer/1/query")
 
-X0, Y1, W, H = 504000, 5447500, 990, 855
+X0, Y1, W, H = 504000, 5447500, 990, 818
 CELL = 200.0 / 9          # 22 2/9 m: 990 cells is exactly the 22 km window
 
 # Class 0 is unused: it means "no land use polygon here", and the window has none.
@@ -49,7 +57,14 @@ CLASSES = [
     (5, "Schools and civic",   ["S400", "S420", "S450", "S460"]),
     (6, "Parks and protected", ["R100", "W400"]),
     (7, "Water",               ["R200"]),
-    (8, "Open land",           ["U100"]),
+    # U100 is "Undeveloped and Unclassified". The service's layer metadata defines it as
+    # land outside the Agricultural Land Reserve with no visible development, vacant urban
+    # land, and vegetated areas not identified as recreation, open space or agriculture --
+    # a class named for what the land is NOT. Description is one-to-one with LU_Code and
+    # every other field is administrative geography, so nothing splits it. Read that long
+    # definition before naming a class: calling this one "Open land" made a category
+    # defined by absence sound like a landscape, and the widget then priced it at 1.
+    (8, "Other",               ["U100"]),
     (9, "Road and rail",       ["S500", "T100", "T200", "T300"]),
 ]
 
