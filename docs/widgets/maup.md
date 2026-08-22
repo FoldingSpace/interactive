@@ -426,7 +426,9 @@ identical, the grid columns are blind to which term sits in them, and there are 
 where the row wraps two terms to a line, the pairing changes from [constant, households] to
 [households, income].
 
-**The key names its own sizes.** Two circles with their values beside them, and the value
+**The key names its own sizes.** Two circles on one midline with their values beside them,
+rather than sitting on a shared base, so the pair reads as two sizes of one thing rather
+than as something standing on the ground. The value
 is rounded to a multiple of four so the smaller reads as exactly a quarter of the larger:
 256 and 64, not 257 and 64. The circle is then drawn at the size that rounded value really
 has on the maps — area goes with value, so radius goes with its square root — rather than at
@@ -472,6 +474,15 @@ All six maps are the same size, including the result, so no term looks more impo
 another and the circle areas can be compared straight across. Titles and labels are held to
 two lines each, which makes every term the same height and lets the plus and equals signs
 simply centre on the row.
+
+**The titles carry the operators too.** The plus and equals signs between the panels are
+vertically centred on the row, which is right for the maps and means the title line above
+them read as a list of five nouns rather than as a sum. Each title now ends in its own plus,
+and the result's begins with the equals, so reading straight across the top gives
+"household size contribution + income contribution + the model's constant term + spatial
+error we account for + residual error = Theft of Bicycle, reported". They are
+`aria-hidden`: each map already has its own label, and an operator read out mid-name is
+noise. Checked that adding them wraps nothing — all six titles are still two lines.
 
 **And they are level, which they were not.** The result's title is a size larger than the
 other five — deliberately, it is the answer — and the title box was `min-height: 1.2em * 2`,

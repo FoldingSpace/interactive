@@ -18,9 +18,13 @@ function parseHTML(html, doc) {
   while ((m = re.exec(body)) !== null) {
     var text = body.slice(i, m.index);
     i = re.lastIndex;
-    if (text.trim() && stack.length) {
-      var t = doc.createTextNode(dom.decode(text.replace(/\s+/g, " ")));
-      stack[stack.length - 1].appendChild(t);
+    if (text && stack.length) {
+      // Whitespace between two inline elements is a real space in a browser, so dropping it
+      // made "= Theft of Bicycle" come out as "=Theft of Bicycle" here and nowhere else.
+      var collapsed = text.replace(/\s+/g, " ");
+      if (collapsed.trim() || collapsed === " ") {
+        stack[stack.length - 1].appendChild(doc.createTextNode(dom.decode(collapsed)));
+      }
     }
     if (m[0].indexOf("<!--") === 0) continue;
     var closing = m[1], tag = m[2].toLowerCase(), attrs = m[3] || "", selfClose = m[4];

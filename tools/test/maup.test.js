@@ -94,15 +94,22 @@ module.exports = function (t) {
 
   t("the row reads the five terms in order, constant third", function (a) {
     var w = open();
-    var names = w.doc.getElementById("eqrow").querySelectorAll(".tname").map(function (e) {
-      return e.textContent.trim();
+    // The titles carry the operators too, so the top of the row reads as the equation.
+    var titles = w.doc.getElementById("eqrow").querySelectorAll(".tname").map(function (e) {
+      return e.textContent.replace(/\s+/g, " ").trim();
     });
-    a.equal(names[0], "household size contribution", "first term");
-    a.equal(names[1], "income contribution", "second term");
-    a.equal(names[2], "the model\u2019s constant term",
+    a.equal(titles[0], "household size contribution +", "first term, and a plus after it");
+    a.equal(titles[1], "income contribution +", "second term");
+    a.equal(titles[2], "the model\u2019s constant term +",
       "the constant sits third, left of the spatial error");
-    a.equal(names[3], "spatial error we account for", "fourth term");
-    a.equal(names[4], "residual error", "fifth term");
+    a.equal(titles[3], "spatial error we account for +", "fourth term");
+    a.equal(titles[4], "residual error", "fifth term, and no plus: an equals comes next");
+    a.ok(/^=\s/.test(titles[5]), "and the result is introduced by the equals: " + titles[5]);
+    // Read straight across, the titles are the equation.
+    a.equal(titles.join(" "),
+      "household size contribution + income contribution + the model\u2019s constant term + "
+      + "spatial error we account for + residual error = " + titles[5].replace(/^=\s*/, ""),
+      "the title line scans left to right as the equation");
     a.equal(w.win.MAUP_TEST.layers.map(function (l) { return l.id; }).join(","),
       "hh,inc,const,sperr,res,be", "and the layer list says the same");
   });
@@ -160,6 +167,10 @@ module.exports = function (t) {
         z + ": and the second pair starts after the first number, not on top of it");
       // area goes with the value, so the radius goes with its square root: half for a quarter
       a.ok(Math.abs(r1 * 2 - r0) < 0.02, z + ": a quarter of the value is half the radius (" + r0 + ", " + r1 + ")");
+      a.equal(circles[0].getAttribute("cy"), circles[1].getAttribute("cy"),
+        z + ": both circles sit on one midline");
+      a.equal(texts[0].getAttribute("y"), texts[1].getAttribute("y"),
+        z + ": and both numbers with them");
     });
   });
 

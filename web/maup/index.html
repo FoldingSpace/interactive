@@ -74,6 +74,10 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
   min-height: calc(2.16rem * var(--ui));
 }
 .big-term .tname { font-size: calc(0.9rem * var(--ui)); color: var(--ink); }
+/* The same operators as the row's, in the title line, so the top of the row reads as the
+   equation it is. Hidden from screen readers: the map's own label already names the term,
+   and an operator read out mid-name is noise. */
+.tname .top { font-weight: 700; color: var(--ink); }
 .tbeta {
   font-size: calc(0.75rem * var(--ui)); color: var(--ink); line-height: 1.25;
   font-variant-numeric: tabular-nums; min-height: calc(1.25em * 2);
@@ -368,28 +372,28 @@ body[data-present="1"] footer { display: none; }
 
     <div class="eqrow" id="eqrow">
       <div class="term" data-layer="hh">
-        <div class="tname">household size contribution</div>
+        <div class="tname">household size contribution <span class="top" aria-hidden="true">+</span></div>
         <svg class="map" id="m-hh" viewBox="0 0 100 100" role="img"
              aria-label="The household size contribution, mapped"></svg>
         <div class="tbeta" id="b-hh">—</div>
       </div>
       <div class="op">+</div>
       <div class="term" data-layer="inc">
-        <div class="tname">income contribution</div>
+        <div class="tname">income contribution <span class="top" aria-hidden="true">+</span></div>
         <svg class="map" id="m-inc" viewBox="0 0 100 100" role="img"
              aria-label="The income contribution, mapped"></svg>
         <div class="tbeta" id="b-inc">—</div>
       </div>
       <div class="op">+</div>
       <div class="term" data-layer="const">
-        <div class="tname">the model&rsquo;s constant term</div>
+        <div class="tname">the model&rsquo;s constant term <span class="top" aria-hidden="true">+</span></div>
         <svg class="map" id="m-const" viewBox="0 0 100 100" role="img"
              aria-label="The model&rsquo;s constant term, the same in every area"></svg>
         <div class="tbeta" id="constval">—</div>
       </div>
       <div class="op">+</div>
       <div class="term" data-layer="sperr">
-        <div class="tname">spatial error we account for</div>
+        <div class="tname">spatial error we account for <span class="top" aria-hidden="true">+</span></div>
         <svg class="map" id="m-sperr" viewBox="0 0 100 100" role="img"
              aria-label="The spatial error the model accounts for, mapped"></svg>
         <div class="tbeta" id="b-sperr">—</div>
@@ -403,7 +407,7 @@ body[data-present="1"] footer { display: none; }
       </div>
       <div class="op eq">=</div>
       <div class="term big-term" data-layer="be">
-        <div class="tname" id="capa">reported</div>
+        <div class="tname"><span class="top" aria-hidden="true">=</span> <span id="capa">reported</span></div>
         <svg class="map" id="m-be" viewBox="0 0 100 100" role="img"
              aria-labelledby="capa"></svg>
         <div class="symkey" id="symkey"></div>
@@ -1552,11 +1556,14 @@ body[data-present="1"] footer { display: none; }
     var keyBig = Math.max(4, 4 * Math.round(sc.max / 4));
     var rBig = 16 * Math.sqrt(keyBig / sc.max), rSml = rBig / 2;
     var cxBig = 2 + rBig, cxSml = cxBig + rBig + 34 + rSml;
+    // Both circles on one midline rather than sitting on a shared base, so the pair reads
+    // as two sizes of the same thing rather than as something standing on the ground.
+    var midY = 20, textY = 24.6;
     key.innerHTML = '<svg viewBox="0 0 108 40" aria-hidden="true">' +
-      '<circle cx="' + cxBig.toFixed(2) + '" cy="' + (38 - rBig).toFixed(2) + '" r="' + rBig.toFixed(2) + '" fill="' + POS + '" fill-opacity="0.72"/>' +
-      '<text x="' + (cxBig + rBig + 3).toFixed(2) + '" y="' + (40 - rBig).toFixed(2) + '" font-size="13" fill="currentColor">' + keyBig + '</text>' +
-      '<circle cx="' + cxSml.toFixed(2) + '" cy="' + (38 - rSml).toFixed(2) + '" r="' + rSml.toFixed(2) + '" fill="' + POS + '" fill-opacity="0.72"/>' +
-      '<text x="' + (cxSml + rSml + 3).toFixed(2) + '" y="' + (40 - rSml).toFixed(2) + '" font-size="13" fill="currentColor">' + (keyBig / 4) + '</text>' +
+      '<circle cx="' + cxBig.toFixed(2) + '" cy="' + midY + '" r="' + rBig.toFixed(2) + '" fill="' + POS + '" fill-opacity="0.72"/>' +
+      '<text x="' + (cxBig + rBig + 3).toFixed(2) + '" y="' + textY + '" font-size="13" fill="currentColor">' + keyBig + '</text>' +
+      '<circle cx="' + cxSml.toFixed(2) + '" cy="' + midY + '" r="' + rSml.toFixed(2) + '" fill="' + POS + '" fill-opacity="0.72"/>' +
+      '<text x="' + (cxSml + rSml + 3).toFixed(2) + '" y="' + textY + '" font-size="13" fill="currentColor">' + (keyBig / 4) + '</text>' +
       '</svg>';
 
     // Each term carries its coefficient and the uncertainty on it. A beta printed alone
