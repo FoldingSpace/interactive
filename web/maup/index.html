@@ -132,12 +132,41 @@ body[data-present="1"] .intro { display: none; }
   body[data-present="1"] .mapb { width: min(30vw, 58vh); }
 }
 
-/* A 720p projector has no room for everything. The hover readout is the first thing to
-   go: nobody reads it from the back of a room, and it returns at normal size. */
+/* A projector has no room for everything, and less of it the shorter the screen. Things
+   go in order of how little a lecturer drives them: the left map's own view, then the
+   hover readout, then the choice of category, which is normally set in the URL on the
+   slide. All of them come back at normal size. */
+@media (min-width: 56rem) {
+  body[data-present="1"] #fs-left { display: none; }
+}
 @media (min-width: 56rem) and (max-height: 820px) {
   body[data-present="1"] .readout .stat:last-child { display: none; }
+  body[data-present="1"] #fs-crime { display: none; }
   body[data-present="1"] .mapa,
-  body[data-present="1"] .mapb { width: min(28vw, 52vh); }
+  body[data-present="1"] .mapb { width: min(22vw, 34vh); }
+  /* Tighter buttons so three groups fit one row rather than three. */
+  body[data-present="1"] .opt,
+  body[data-present="1"] .act {
+    font-size: calc(0.8rem * var(--ui));
+    min-height: calc(2rem * var(--ui));
+    padding: calc(0.2rem * var(--ui)) calc(0.45rem * var(--ui));
+  }
+  body[data-present="1"] legend { font-size: calc(0.8rem * var(--ui)); }
+  /* The readout, not the maps, sets the height of the top row. Pairing the two headline
+     numbers halves it and gives the controls the room they need. CSS order moves the
+     equation below them, which shifts the tab order away from the reading order — a fair
+     trade on a projector, where nobody is tabbing, and it does not apply at normal size. */
+  body[data-present="1"] .readout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: calc(0.5rem * var(--ui));
+    align-content: start;
+  }
+  body[data-present="1"] .readout .spacer { display: none; }
+  body[data-present="1"] .readout .stat:nth-child(2) { order: 1; }
+  body[data-present="1"] .readout .stat:nth-child(4) { order: 2; }
+  body[data-present="1"] .readout .stat:nth-child(3) { order: 3; grid-column: 1 / -1; }
+  body[data-present="1"] .big { font-size: calc(2.2rem * var(--ui)); }
 }
 
 /* ---- maps ---- */
@@ -185,6 +214,35 @@ svg.map path.pick  { fill: none; stroke: var(--focus); stroke-width: 3.5; vector
   padding: calc(0.6rem * var(--ui)) calc(0.8rem * var(--ui));
 }
 .label { color: var(--ink-soft); font-size: calc(0.88rem * var(--ui)); }
+/* The range strip. Every dot is a way of drawing the same number of areas; the filled one
+   is the way you are looking at. Dots are buttons, so they are reachable by keyboard. */
+.strip { margin: calc(0.4rem * var(--ui)) 0 calc(0.1rem * var(--ui)); }
+.stripline {
+  position: relative; height: calc(1.1rem * var(--ui));
+  border-bottom: calc(2px * var(--ui)) solid var(--edge);
+}
+.stripline .dot {
+  position: absolute; bottom: calc(-0.35rem * var(--ui));
+  width: calc(0.7rem * var(--ui)); height: calc(0.7rem * var(--ui));
+  min-width: 12px; min-height: 12px;
+  transform: translateX(-50%);
+  padding: 0; border-radius: 50%; cursor: pointer;
+  background: var(--page); border: calc(2px * var(--ui)) solid var(--ink-soft);
+}
+.stripline .dot.here { background: var(--ink); border-color: var(--ink); }
+.stripline .mark {
+  position: absolute; top: 0; bottom: calc(-0.1rem * var(--ui));
+  width: calc(3px * var(--ui)); transform: translateX(-50%);
+  background: var(--ink);
+}
+.stripline .dot.lo, .stripline .dot.hi { border-color: var(--ink); }
+.stripline .dot:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
+.stripends { display: flex; justify-content: space-between; font-size: calc(0.78rem * var(--ui)); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.stripnote { font-size: calc(0.8rem * var(--ui)); color: var(--ink-soft); margin-top: calc(0.15rem * var(--ui)); }
+/* Touch: the dots are small by design, so give them a bigger reach than they look. */
+@media (pointer: coarse) {
+  .stripline .dot { min-width: 18px; min-height: 18px; }
+}
 .big { font-size: calc(2.2rem * var(--ui)); font-weight: 650; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .eq { font-size: calc(0.95rem * var(--ui)); margin-top: calc(0.35rem * var(--ui)); font-variant-numeric: tabular-nums; }
 .eq .term { white-space: nowrap; }
@@ -255,6 +313,10 @@ svg.map path:focus-visible { outline: none; }
 .help-panel p { margin: calc(0.55rem * var(--ui)) 0 0; }
 .refs b { color: var(--ink); font-weight: 600; }
 
+.selfnote {
+  margin: 0; color: var(--ink-soft); font-size: calc(0.85rem * var(--ui)); max-width: 46em;
+}
+body[data-present="1"] .selfnote { display: none; }
 footer { color: var(--ink-soft); font-size: calc(0.82rem * var(--ui)); border-top: 1px solid var(--edge); padding-top: calc(0.55rem * var(--ui)); }
 footer a { color: inherit; }
 body[data-present="1"] footer { display: none; }
@@ -269,14 +331,13 @@ body[data-present="1"] footer { display: none; }
 <div class="wrap">
 
   <h1>Drawing the lines: the same city, different areas</h1>
-  <p class="intro">Incidents reported to Vancouver police, explained by how many households
-     an area holds and what they earn. Change how the city is cut up: the records stay the
-     same, the answer does not.</p>
+  <p class="intro">Does who lives in an area predict where incidents get reported to police?
+     Change how the city is cut into areas and see whether your answer survives it.</p>
 
   <div class="main">
 
     <div class="mapa">
-      <div class="caption" id="capa">Break-ins reported to police</div>
+      <div class="caption" id="capa">Reported incidents</div>
       <svg class="map" id="mapa" viewBox="0 0 100 100" role="img" aria-labelledby="capa"></svg>
       <div class="legendwrap">
         <div class="legend" id="lega"></div>
@@ -302,16 +363,26 @@ body[data-present="1"] footer { display: none; }
                   title="What is R squared?">i</button>
         </div>
         <div class="big" id="r2">—</div>
+        <div class="strip" id="strip" hidden>
+          <div class="stripline" id="stripline"></div>
+          <div class="stripends"><span id="strip0"></span><span id="strip1"></span></div>
+          <div class="stripnote" id="stripnote"></div>
+        </div>
         <div class="sub" id="nareas"></div>
         <div class="help-panel" id="info-r2" hidden>
           <p>R<sup>2</sup> runs from 0 to 1. It is the share of the variation between areas
              that the two predictors account for. At 0 the model tells you nothing; at 1 it
              would predict every area exactly.</p>
-          <p>A higher R<sup>2</sup> does not mean a better description of the world. Changing
-             the areas changes it, and there is no rule saying which way. Openshaw took 99
-             counties and grouped them into 6 regions in many different ways: depending only
-             on which counties were put together, the correlation could be made to come out
-             anywhere between &minus;0.99 and +0.99.</p>
+          <p>A higher R<sup>2</sup> does not mean a better description of the world. Grouping
+             areas together usually raises it. Fotheringham and Wong grouped 871 Buffalo
+             block groups into fewer and fewer zones: fit averaged about 0.4 at 800 zones
+             and about 0.85 at 100. Their conclusion was that you can reach any level of
+             accuracy you like by aggregating enough.</p>
+          <p>Where the lines go matters as much as how many there are. Openshaw took the 99
+             counties of Iowa and searched for the 6-region grouping that would give him the
+             answer he wanted. He could drive the correlation anywhere from &minus;0.99 to
+             +0.99. He called it applied gerrymandering. Even without searching, ordinary
+             six-region groupings of the same data ranged from 0.26 to 0.86.</p>
           <p class="refs"><b>For more, see:</b> Openshaw, S. (1984) <i>The Modifiable Areal
              Unit Problem</i>. Concepts and Techniques in Modern Geography 38. Norwich: Geo
              Books. &middot; Fotheringham, A. S. and Wong, D. W. S. (1991) The modifiable
@@ -328,9 +399,9 @@ body[data-present="1"] footer { display: none; }
         <div class="eq" id="eq"></div>
         <div class="sub" id="eqnote"></div>
         <div class="help-panel" id="info-eq" hidden>
-          <p>One equation for the whole city. It predicts the number of reported break-ins
-             in an area from two things: how many private households the area holds, and the
-             median household income there, in thousands of dollars.</p>
+          <p>One equation for the whole city. It predicts how many incidents of the chosen
+             kind were reported in an area, from two things: how many private households the
+             area holds, and the median household income there, in thousands of dollars.</p>
           <p>Each number in front of a predictor says how much the prediction changes when
              that predictor goes up by one, holding the other still. A term is crossed out
              when it could easily have come out that size by chance (p is 0.05 or more), which
@@ -338,13 +409,19 @@ body[data-present="1"] footer { display: none; }
           <p><strong>The equation describes areas, not people.</strong> Nobody in this data is
              a person. Reading a coefficient as a fact about residents is the ecological
              fallacy, and it is one of the things this page is built to make visible.</p>
-          <p>The income term is where that goes wrong most easily. A negative coefficient does
-             not say that people with lower incomes damage or steal more. It says areas whose
-             <em>residents</em> report lower median incomes hold more <em>records</em> — and
-             those areas also differ in what the land is used for, how many people pass
+          <p>The income term is where that goes wrong most easily. A negative coefficient
+             does not say that people with lower incomes steal or damage more. It says areas
+             whose <em>residents</em> report lower median incomes hold more <em>records</em>.
+             Those areas also differ in what the land is used for, how many people pass
              through in a day, how much of the space is public, and how closely it is
-             policed. Most of these incidents happen in streets, shops and parking spaces,
-             not in the homes that the household figures count.</p>
+             policed.</p>
+          <p>The count is of who lives here. Most of these incidents happen where people are,
+             not where they sleep. Work on Vancouver found that using the population actually
+             present rather than the resident population changed which places looked like hot
+             spots, and for several kinds of incident they nearly disappeared.</p>
+          <p class="refs"><b>For more, see:</b> Andresen, M. A. and Brantingham, P. J. (2007)
+             <i>Hot Spots of Crime in Vancouver and their Relationship with Population
+             Characteristics</i>. Ottawa: Department of Justice Canada.</p>
         </div>
       </div>
 
@@ -405,8 +482,8 @@ body[data-present="1"] footer { display: none; }
              same and only the boundaries move, does the answer move too?</p>
           <p>It does. That is the modifiable areal unit problem, and it has two halves.
              Going from 996 areas to 118 is the scale problem. Pressing redraw, with the
-             number of areas held still, is the aggregation problem, now more often called
-             the zoning effect.</p>
+             number of areas held still, is what they called the aggregation problem, now
+             often called the zoning effect.</p>
           <p class="refs"><b>For more, see:</b> Openshaw, S. and Taylor, P. J. (1979) A
              million or so correlation coefficients: three experiments on the modifiable
              areal unit problem. In N. Wrigley (ed.) <i>Statistical Applications in the
@@ -414,62 +491,69 @@ body[data-present="1"] footer { display: none; }
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset id="fs-crime">
         <legend>Reports of
           <button class="info" data-info="info-crime" aria-expanded="false"
                   aria-controls="info-crime" title="Where do these numbers come from?">i</button>
         </legend>
         <div class="row" id="crimebtns" role="group" aria-label="Which reports are modelled"></div>
         <div class="help-panel" id="info-crime" hidden>
-          <p>These are counts of incidents <em>reported to police and recorded</em> under
-             each heading, in 2015 and 2016. That is not the same as things that happened.
-             A record exists only if someone reported it, an officer wrote it down, and it
-             was filed under this heading, and none of those three steps happens at the same
-             rate everywhere in a city or for every kind of incident.</p>
-          <p>Compare the categories and you are partly comparing how willingly each is
-             reported. A stolen bicycle is often not reported at all; a break-in at a
-             business usually is, because a claim needs a file number. Any map of these
-             counts is a map of records.</p>
-          <p>The headings are legal and administrative categories, not descriptions of
-             behaviour. Mischief in Canadian law covers damage to property, graffiti
-             included; whether an act is written up under that heading depends on who
-             complains, whose property was involved, and how an officer files it.</p>
-          <p>A record also marks where police were. Officers are not spread evenly across a
-             city, and an incident becomes a record where there is someone to record it. So
-             these counts measure police activity as well as anything else.</p>
-          <p>Residential break and enter is deliberately missing. It is the category the
-             GEOG 370 lab asks you to model, and this page is meant to sharpen what you
-             make of your own results, not to hand them to you.</p>
+          <p>These count incidents reported to police and recorded under each heading in
+             2015 and 2016. A record exists only if someone reported it, an officer wrote it
+             down, and it was filed under this heading. None of those three happens at the
+             same rate everywhere, or for every kind of incident.</p>
+          <p>The headings themselves were written by an institution for its own purposes.
+             Change one and the city changes shape. Some of what moves is how each kind of
+             incident comes to be written down at all: a stolen bicycle often goes
+             unreported, a break-in at a business is reported because a claim needs a file
+             number. Read the difference between the categories as evidence about the
+             recording as much as about the city.</p>
+          <p>Mischief in Canadian law covers damage to property, graffiti included. Whether
+             an act is written up under that heading depends on who complains, whose
+             property was involved, and how an officer files it.</p>
+          <p>Residential break and enter is missing on purpose. It is the category the
+             GEOG 370 lab asks you to model, and this page is meant to sharpen what you make
+             of your own results rather than hand them to you.</p>
+          <p class="refs"><b>For more, see:</b> Lally, N. (2022) Mapping police power and the
+             limits of reform. <i>Geoforum</i> 136, 122&ndash;131. &middot; Jefferson, B. J.
+             (2017) Digitize and punish: computerized crime mapping and racialized carceral
+             power in Chicago. <i>Environment and Planning D</i> 35(5), 775&ndash;796.</p>
         </div>
       </fieldset>
 
       <fieldset>
         <legend>The model
           <button class="info" data-info="info-model" aria-expanded="false"
-                  aria-controls="info-model" title="What does using neighbours do?">i</button>
+                  aria-controls="info-model" title="What does the second one do?">i</button>
         </legend>
         <div class="row" id="modelbtns" role="group" aria-label="Which model is fitted"></div>
+        <div class="sub" id="lamnote"></div>
         <div class="help-panel" id="info-model" hidden>
           <p><strong>Each area on its own</strong> fits one equation from an area's own
-             households and income. Its errors are clustered in space, which says something
-             with a geography is missing.</p>
-          <p><strong>Areas plus their neighbours</strong> is the standard repair. It adds
-             the average count in the surrounding areas as a third predictor. Because that
-             predictor is tangled up with the thing being predicted, it cannot be fitted by
-             ordinary least squares; it is estimated in two stages, using the neighbours'
-             households and income, and their neighbours' in turn, to stand in for it.</p>
-          <p>It works, in the narrow sense. Watch Moran's I fall. But look at what the model
-             now says: an area's count is predicted by the counts around it. That is the
-             statistical form of the reasoning behind hot-spot and predictive policing, and
-             it is worth being uneasy about. Records are made where officers are; a model
-             that sends officers where records are will be right about the records.</p>
-          <p>Fixing the statistics does not change what the numbers are or what they are
-             used for. That the map can be improved is not the same as the map being made
-             answerable.</p>
+             households and income. Its errors cluster in space, which says something with
+             a geography is missing from it.</p>
+          <p><strong>What is left out has a shape</strong> takes that seriously. It assumes
+             the missing things are themselves smooth over space, estimates how smooth, and
+             refits the equation with that structure taken out. The number it estimates,
+             lambda, is roughly how much of what we failed to measure runs together across
+             the city.</p>
+          <p>Clustered errors admit a second story: that incidents in one area raise
+             incidents in the next. That model exists, and it is not offered here, because
+             its coefficients cannot be read as ordinary effects and a page that printed
+             them beside these would be teaching something false. Choosing between the two
+             stories is a claim about how the world works, and the data cannot make it
+             for you.</p>
+          <p>Watch the coefficients move. If income shifts a lot, the equation could not tell
+             income apart from the other things that are smooth over the same parts of the
+             city. Where the shops are. Where the trains stop. Who is about in the daytime.
+             Where officers go.</p>
+          <p>Sometimes it overshoots. Across 996 areas the repair can push the clustering
+             past zero and out the other side, which is a different problem, not a solved
+             one.</p>
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset id="fs-left">
         <legend>Left map shows
           <button class="info" data-info="info-left" aria-expanded="false" aria-controls="info-left"
                   title="What are these?">i</button>
@@ -491,30 +575,31 @@ body[data-present="1"] footer { display: none; }
       </fieldset>
 
       <fieldset>
-        <legend>Right map shows
-          <button class="info" data-info="info-right" aria-expanded="false" aria-controls="info-right"
-                  title="What are these?">i</button>
+        <legend>Neighbours are
+          <button class="info" data-info="info-near" aria-expanded="false"
+                  aria-controls="info-near" title="Who counts as a neighbour?">i</button>
         </legend>
-        <div class="row" id="viewbbtns" role="group" aria-label="What the right map shows"></div>
-        <div class="help-panel" id="info-right" hidden>
-          <p><strong>What the model misses</strong> is the residual: reported break-ins minus
-             the number the equation predicts, divided by the spread of those differences.
-             Red is more break-ins reported than predicted, blue is fewer.</p>
-          <p>A red area can mean three different things and the map cannot tell them apart:
-             more incidents happening, more of them being reported, or more police attention
-             turning what happens into a record. This is a map of records, and none of the
-             three is a statement about the people who live there.</p>
-          <p>Maps of this kind are also not only descriptions. They are used to decide where
-             patrols go, and patrols produce records, so a crime map takes part in making the
-             pattern it appears to be reporting. Geographers who study policing treat that
-             loop as the main thing to notice about crime mapping, rather than as a flaw in
-             the data to be corrected.</p>
-          <p><strong>Share of reports</strong> is a location quotient: the area's share of the
-             city's reports divided by its share of the city's households. One means exactly
-             the share its households would suggest, two means twice that share.</p>
-          <p class="refs"><b>For more, see:</b> Jefferson, B. (2019) Crime mapping. In
-             <i>International Encyclopedia of Human Geography</i>, 2nd edition. Amsterdam:
-             Elsevier, 11&ndash;15.</p>
+        <div class="row" id="viewbbtns" role="group" aria-label="What counts as a neighbour"></div>
+        <div class="sub" id="degnote"></div>
+        <div class="help-panel" id="info-near" hidden>
+          <p>Moran's I asks whether neighbouring areas resemble each other, so it cannot be
+             worked out until you say what a neighbour is. Nothing in the data answers that.</p>
+          <p><strong>Touching</strong> counts areas that share a boundary or a corner.
+             <strong>Touching, and theirs</strong> adds the neighbours of those neighbours.
+             <strong>All, by 1/distance</strong> counts every area in the city, weighted by
+             how far away it is, which is closer to what Tobler actually said: near things
+             are more related, not that far things are unrelated.</p>
+          <p>Watch the number fall as the circle widens. Most of that is arithmetic rather
+             than Vancouver: adding distant pairs that have nothing to do with each other
+             dilutes whatever the near pairs were showing.</p>
+          <p>Notice what does not follow. Across 996 areas the number drops from 0.165 to
+             0.012, and the test still says it is nowhere near what chance would give. A
+             small figure and a large one can be equally hard to explain away, because with
+             a thousand areas even a faint pattern is easy to detect. So widening cannot be
+             used to make the problem go away, and a value near zero is not permission to
+             stop worrying.</p>
+          <p>There is no correct answer here, and that is the point. The number you report
+             is a claim about what counts as near, and you should be able to defend it.</p>
         </div>
       </fieldset>
 
@@ -525,6 +610,11 @@ body[data-present="1"] footer { display: none; }
     </div>
 
   </div>
+
+  <p class="selfnote">This page does what it is describing. It turns a city into boxes with
+     numbers in them, and everything it cannot count is missing from it too. The 996 smallest
+     areas stay drawn under every grouping, so what the grouping throws away is never quite
+     off the screen.</p>
 
   <footer>
     <p>Residential break and enter incidents reported to police, 2015&ndash;2016: City of
@@ -618,10 +708,35 @@ body[data-present="1"] footer { display: none; }
   // Which category of report is being modelled. Residential break and enter is not among
   // them on purpose; see the note in the "Reports of" panel.
   var BE = D.crime[D.types[0].key];
+
   // One dissemination area has no published household or income figure: too few people
   // living there for Statistics Canada to release it. It is left out of every model.
   var OK = new Uint8Array(N);
   for (var i0 = 0; i0 < N; i0++) OK[i0] = (HH[i0] !== null && INC[i0] !== null && HH[i0] > 0) ? 1 : 0;
+
+  // Centre of each dissemination area, for the distance-based neighbours. Taken from the
+  // largest ring by the usual polygon centroid formula. No extra data needed: this comes
+  // out of the geometry the page has already decoded.
+  var CENT = (function () {
+    var c = new Float64Array(N * 2), f, r, k, pts, area, cx, cy, x1, y1, x2, y2, cr, best;
+    for (f = 0; f < N; f++) {
+      best = null;
+      for (r = 0; r < GEOM[f].length; r++) {
+        pts = GEOM[f][r]; area = 0; cx = 0; cy = 0;
+        for (k = 0; k < pts.length; k += 2) {
+          x1 = pts[k]; y1 = pts[k + 1];
+          x2 = pts[(k + 2) % pts.length]; y2 = pts[(k + 3) % pts.length];
+          cr = x1 * y2 - x2 * y1;
+          area += cr; cx += (x1 + x2) * cr; cy += (y1 + y2) * cr;
+        }
+        area *= 0.5;
+        if (area !== 0 && (!best || Math.abs(area) > best[2]))
+          best = [cx / (6 * area), cy / (6 * area), Math.abs(area)];
+      }
+      if (best) { c[f * 2] = best[0]; c[f * 2 + 1] = best[1]; }
+    }
+    return c;
+  })();
 
   // -------------------------------------------------------------------- zoning
   function mulberry32(a) {
@@ -636,10 +751,10 @@ body[data-present="1"] footer { display: none; }
   function zonesDA() { var z = new Int32Array(N), i; for (i = 0; i < N; i++) z[i] = i; return { zone: z, k: N }; }
   function zonesCT() { return { zone: Int32Array.from(CT), k: D.ctuid.length }; }
 
-  // Grow k areas outward from k random starting points, always extending whichever
-  // area currently holds the fewest households. Real census units are built to hold
-  // similar populations, so matching that keeps the comparison about where the lines
-  // are rather than about how uneven the areas are.
+  // Grow k areas outward from k random starting points, always extending whichever area
+  // currently holds the fewest households. Real census units are built to hold similar
+  // populations, so matching that keeps the comparison about where the lines are rather
+  // than about how uneven the areas are.
   function zonesRandom(k, seed) {
     var rnd = mulberry32(seed), zone = new Int32Array(N), load = new Float64Array(k), i, j;
     for (i = 0; i < N; i++) zone[i] = -1;
@@ -648,7 +763,6 @@ body[data-present="1"] footer { display: none; }
       var s = (rnd() * N) | 0;
       if (!used[s]) { used[s] = 1; order.push(s); }
     }
-    // A binary heap keyed on the growing area's household count.
     var heap = [];
     function push(load, z, cell) {
       heap.push([load, z, cell]);
@@ -689,31 +803,36 @@ body[data-present="1"] footer { display: none; }
       for (j = 0; j < NBR[cell].length; j++)
         if (zone[NBR[cell][j]] < 0) push(load[z], z, NBR[cell][j]);
     }
-    for (i = 0; i < N; i++) if (zone[i] < 0) zone[i] = 0;   // unreachable, if any
+    for (i = 0; i < N; i++) if (zone[i] < 0) zone[i] = 0;
     return { zone: zone, k: k };
   }
 
   // ---------------------------------------------------------------- aggregation
   function aggregate(zone, k) {
     var be = new Float64Array(k), hh = new Float64Array(k), wsum = new Float64Array(k),
-        winc = new Float64Array(k), cells = [], i, z;
+        winc = new Float64Array(k), cx = new Float64Array(k), cy = new Float64Array(k),
+        cnt = new Float64Array(k), cells = [], i, z;
     for (i = 0; i < k; i++) cells.push([]);
     for (i = 0; i < N; i++) {
       z = zone[i];
       cells[z].push(i);
+      cx[z] += CENT[i * 2]; cy[z] += CENT[i * 2 + 1]; cnt[z] += 1;
       if (!OK[i]) continue;
       be[z] += BE[i]; hh[z] += HH[i];
       wsum[z] += HH[i]; winc[z] += HH[i] * INC[i];
     }
-    var inc = new Float64Array(k), use = new Uint8Array(k);
+    var inc = new Float64Array(k), use = new Uint8Array(k), pos = new Float64Array(k * 2);
+    var idx = [];
     for (i = 0; i < k; i++) {
       use[i] = (wsum[i] > 0) ? 1 : 0;
       inc[i] = use[i] ? winc[i] / wsum[i] : NaN;
+      pos[i * 2] = cnt[i] ? cx[i] / cnt[i] : 0;
+      pos[i * 2 + 1] = cnt[i] ? cy[i] / cnt[i] : 0;
+      if (use[i]) idx.push(i);
     }
-    return { be: be, hh: hh, inc: inc, use: use, cells: cells, k: k };
+    return { be: be, hh: hh, inc: inc, use: use, cells: cells, k: k, pos: pos, idx: idx };
   }
 
-  // Neighbours between areas, lifted from the neighbours between dissemination areas.
   function zoneNbr(zone, k) {
     var sets = [], i, j;
     for (i = 0; i < k; i++) sets.push(new Set());
@@ -723,10 +842,143 @@ body[data-present="1"] footer { display: none; }
     return sets.map(function (s) { return Array.from(s); });
   }
 
-  // -------------------------------------------------------------------- the model
-  // Ordinary least squares from the normal equations, and a spatial lag model estimated
-  // by two-stage least squares. Both need a small dense solve — at most 7 by 7 — so a
-  // plain Gauss-Jordan with partial pivoting is exact and instant.
+  // ------------------------------------------------------- what counts as near
+  // Three answers, and the number depends on which you pick. Each W is row standardised,
+  // so every area's neighbours are averaged and an area with many does not outweigh one
+  // with few. The two contiguity forms are stored as lists; 1/d touches every pair, so it
+  // is left implicit and its weights are recomputed when needed rather than stored.
+  var WKINDS = [
+    { id: "touch",  label: "Touching" },
+    { id: "touch2", label: "Touching, and theirs" },
+    { id: "invd",   label: "All, by 1/distance" }
+  ];
+
+  function listW(lists) {
+    var n = lists.length, off = new Int32Array(n + 1), j, m, total = 0;
+    for (j = 0; j < n; j++) { total += lists[j].length; off[j + 1] = total; }
+    var adj = new Int32Array(total), w = new Float64Array(total), p = 0;
+    for (j = 0; j < n; j++)
+      for (m = 0; m < lists[j].length; m++) { adj[p] = lists[j][m]; w[p] = 1 / lists[j].length; p++; }
+    return { n: n, off: off, adj: adj, w: w, dense: false, deg: lists.map(function (l) { return l.length; }) };
+  }
+
+  function makeW(kind, ag, nbr) {
+    var idx = ag.idx, n = idx.length, at = new Int32Array(ag.k), j, i, m;
+    for (j = 0; j < ag.k; j++) at[j] = -1;
+    for (j = 0; j < n; j++) at[idx[j]] = j;
+
+    if (kind === "invd") {
+      var px = new Float64Array(n), py = new Float64Array(n);
+      for (j = 0; j < n; j++) { px[j] = ag.pos[idx[j] * 2]; py[j] = ag.pos[idx[j] * 2 + 1]; }
+      var rs = new Float64Array(n), dx, dy, d;
+      for (j = 0; j < n; j++) {
+        var acc = 0;
+        for (m = 0; m < n; m++) {
+          if (m === j) continue;
+          dx = px[j] - px[m]; dy = py[j] - py[m];
+          d = Math.sqrt(dx * dx + dy * dy);
+          if (d > 0) acc += 1 / d;
+        }
+        rs[j] = acc || 1;
+      }
+      return { n: n, dense: true, px: px, py: py, rs: rs };
+    }
+
+    var lists = [], set, q;
+    for (j = 0; j < n; j++) {
+      i = idx[j]; set = [];
+      for (m = 0; m < nbr[i].length; m++) if (at[nbr[i][m]] >= 0) set.push(at[nbr[i][m]]);
+      lists.push(set);
+    }
+    if (kind === "touch2") {
+      var wider = [];
+      for (j = 0; j < n; j++) {
+        var seen = new Set(lists[j]);
+        for (m = 0; m < lists[j].length; m++)
+          for (q = 0; q < lists[lists[j][m]].length; q++) seen.add(lists[lists[j][m]][q]);
+        seen.delete(j);
+        wider.push(Array.from(seen));
+      }
+      lists = wider;
+    }
+    // An area with no neighbours keeps an empty row: it drops out of the numerator and
+    // out of S0, rather than being made its own neighbour.
+    return listW(lists);
+  }
+
+  // W times a vector.
+  function wmul(W, v) {
+    var out = new Float64Array(W.n), j, m, acc, dx, dy, d;
+    if (W.dense) {
+      for (j = 0; j < W.n; j++) {
+        acc = 0;
+        for (m = 0; m < W.n; m++) {
+          if (m === j) continue;
+          dx = W.px[j] - W.px[m]; dy = W.py[j] - W.py[m];
+          d = Math.sqrt(dx * dx + dy * dy);
+          if (d > 0) acc += v[m] / d;
+        }
+        out[j] = acc / W.rs[j];
+      }
+      return out;
+    }
+    for (j = 0; j < W.n; j++) {
+      acc = 0;
+      for (m = W.off[j]; m < W.off[j + 1]; m++) acc += W.w[m] * v[W.adj[m]];
+      out[j] = acc;
+    }
+    return out;
+  }
+
+  // The sums Moran's I needs for its variance, plus the trace the error model needs.
+  // S1 is a sum over unordered pairs, so each pair is visited once. For 1/distance the
+  // raw weight is symmetric and only the row totals differ, which means w(i,j) + w(j,i)
+  // is 1/d times (1/rs_i + 1/rs_j) and nothing has to be stored.
+  function wsums(W) {
+    if (W._sums) return W._sums;              // two passes over a million pairs is enough
+    var n = W.n, S0 = 0, S1 = 0, S2 = 0, tr = 0, col = new Float64Array(n),
+        j, m, wij, wji, dx, dy, d, id, both;
+    if (W.dense) {
+      for (j = 0; j < n; j++) {
+        for (m = 0; m < n; m++) {
+          if (m === j) continue;
+          dx = W.px[j] - W.px[m]; dy = W.py[j] - W.py[m];
+          d = Math.sqrt(dx * dx + dy * dy);
+          if (!(d > 0)) continue;
+          id = 1 / d;
+          wij = id / W.rs[j];
+          S0 += wij; col[m] += wij; tr += wij * wij;
+          if (m > j) { both = id * (1 / W.rs[j] + 1 / W.rs[m]); S1 += both * both; }
+        }
+      }
+      for (j = 0; j < n; j++) S2 += (1 + col[j]) * (1 + col[j]);
+      W._sums = { S0: S0, S1: S1, S2: S2, tr: tr };
+      return W._sums;
+    }
+    var map = [], rowsum = new Float64Array(n);
+    for (j = 0; j < n; j++) map.push(new Map());
+    for (j = 0; j < n; j++)
+      for (m = W.off[j]; m < W.off[j + 1]; m++) {
+        map[j].set(W.adj[m], W.w[m]);
+        S0 += W.w[m]; rowsum[j] += W.w[m]; col[W.adj[m]] += W.w[m]; tr += W.w[m] * W.w[m];
+      }
+    var seen = new Set();
+    for (j = 0; j < n; j++)
+      map[j].forEach(function (v, key) {
+        var lo = j < key ? j : key, hi = j < key ? key : j, id2 = lo * n + hi;
+        if (seen.has(id2)) return;
+        seen.add(id2);
+        wij = map[lo].get(hi) || 0;
+        wji = map[hi].get(lo) || 0;
+        S1 += (wij + wji) * (wij + wji);
+      });
+    for (j = 0; j < n; j++) S2 += (rowsum[j] + col[j]) * (rowsum[j] + col[j]);
+    W._sums = { S0: S0, S1: S1, S2: S2, tr: tr };
+    return W._sums;
+  }
+
+  // ---------------------------------------------------------------- the models
+  // Small dense solves, at most 3 by 3 here, by Gauss-Jordan with partial pivoting.
   function solveN(A, b) {
     var k = b.length, M = [], i, j, r, piv, f;
     for (i = 0; i < k; i++) { M.push(A[i].slice()); M[i].push(b[i]); }
@@ -745,7 +997,6 @@ body[data-present="1"] footer { display: none; }
     for (i = 0; i < k; i++) out.push(M[i][k] / M[i][i]);
     return out;
   }
-
   function invN(A) {
     var k = A.length, M = [], i, j, r, piv, f;
     for (i = 0; i < k; i++) {
@@ -771,43 +1022,24 @@ body[data-present="1"] footer { display: none; }
     return out;
   }
 
-  // Least squares of y on the columns of X, returning coefficients, their standard
-  // errors, and (X'X) inverse for whoever needs it.
-  function lstsq(y, X) {
-    var k = X.length, n = y.length, A = [], v = [], a, b, i;
-    for (a = 0; a < k; a++) {
-      A.push(new Array(k).fill(0));
-      v.push(0);
-    }
+  function normalEq(y, X) {
+    var k = X.length, n = y.length, A = [], v = [], a, b, i, sum;
+    for (a = 0; a < k; a++) { A.push(new Array(k).fill(0)); v.push(0); }
     for (a = 0; a < k; a++) {
       for (b = a; b < k; b++) {
-        var sum = 0;
+        sum = 0;
         for (i = 0; i < n; i++) sum += X[a][i] * X[b][i];
         A[a][b] = sum; A[b][a] = sum;
       }
-      var sv = 0;
-      for (i = 0; i < n; i++) sv += X[a][i] * y[i];
-      v[a] = sv;
+      sum = 0;
+      for (i = 0; i < n; i++) sum += X[a][i] * y[i];
+      v[a] = sum;
     }
-    var coef = solveN(A, v);
-    return coef ? { b: coef, A: A } : null;
+    return { A: A, v: v };
   }
 
-  function lag(v, g) {
-    // Row-standardised spatial lag: the mean of each area's neighbours.
-    var out = new Float64Array(g.n), j, m, cnt;
-    for (j = 0; j < g.n; j++) {
-      cnt = g.off[j + 1] - g.off[j];
-      if (!cnt) { out[j] = v[j]; continue; }   // an island stands in for itself
-      var acc = 0;
-      for (m = g.off[j]; m < g.off[j + 1]; m++) acc += v[g.adj[m]];
-      out[j] = acc / cnt;
-    }
-    return out;
-  }
-
-  // Regularised incomplete beta, by the continued fraction in Numerical Recipes.
-  // This is what turns a t statistic into a p-value without a table.
+  // Regularised incomplete beta, by the continued fraction in Numerical Recipes. This is
+  // what turns a t statistic into a p-value with no table and no library.
   function betacf(a, b, x) {
     var FPMIN = 1e-300, qab = a + b, qap = a + 1, qam = a - 1;
     var c = 1, d = 1 - qab * x / qap, m, m2, aa, del;
@@ -848,143 +1080,124 @@ body[data-present="1"] footer { display: none; }
     if (!(dof > 0) || !isFinite(t)) return NaN;
     return betai(dof / 2, 0.5, dof / (dof + t * t));
   }
+  // Two-sided normal tail, from the usual rational approximation to erfc.
+  function normalP(z) {
+    var x = Math.abs(z) / Math.SQRT2, t = 1 / (1 + x / 2);
+    var r = t * Math.exp(-x * x - 1.26551223 + t * (1.00002368 + t * (0.37409196 +
+      t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 +
+      t * (1.48851587 + t * (-0.82215223 + t * 0.17087277)))))))));
+    return r;
+  }
 
-  // `mode` is "ols" or "lag". The lag model adds the mean of an area's neighbours'
-  // counts as a predictor, estimated by two-stage least squares with the neighbours'
-  // and neighbours-of-neighbours' characteristics as instruments, because the lag is
-  // correlated with the error term and plain least squares would be biased.
-  function fit(ag, mode, g) {
-    var idx = [], i;
-    for (i = 0; i < ag.k; i++) if (ag.use[i]) idx.push(i);
-    var n = idx.length;
+  // `mode` is "ols" or "err". The error model says the things left out of the equation
+  // are themselves smooth over space. Lambda is found by the Kelejian and Prucha moment
+  // conditions, which need no determinant and so run in a browser, and the equation is
+  // then refitted on data with the estimated spatial structure taken out. Coefficients
+  // keep their ordinary meaning, which is why this model and not the other one.
+  function fit(ag, mode, W) {
+    var idx = ag.idx, n = idx.length, j;
     if (n < 8) return null;
     var one = new Float64Array(n).fill(1), x1 = new Float64Array(n),
-        x2 = new Float64Array(n), y = new Float64Array(n), j;
+        x2 = new Float64Array(n), y = new Float64Array(n);
     for (j = 0; j < n; j++) {
       x1[j] = ag.hh[idx[j]];
       x2[j] = ag.inc[idx[j]] / 1000;
       y[j] = ag.be[idx[j]];
     }
-    var names = ["households", "income"], cols = [one, x1, x2], Xhat = null, wy = null;
+    var cols = [one, x1, x2], ne = normalEq(y, cols), b = solveN(ne.A, ne.v);
+    if (!b) return null;
+    var lambda = NaN, u = new Float64Array(n);
+    for (j = 0; j < n; j++) u[j] = y[j] - (b[0] + b[1] * x1[j] + b[2] * x2[j]);
 
-    if (mode === "lag" && g) {
-      wy = lag(y, g);
-      var wx1 = lag(x1, g), wx2 = lag(x2, g);
-      var Z = [one, x1, x2, wx1, wx2, lag(wx1, g), lag(wx2, g)];
-      var first = lstsq(wy, Z);
-      if (!first) return null;
-      var wyhat = new Float64Array(n);
-      for (j = 0; j < n; j++) {
-        var acc = 0;
-        for (i = 0; i < Z.length; i++) acc += first.b[i] * Z[i][j];
-        wyhat[j] = acc;
+    if (mode === "err" && W) {
+      lambda = gmLambda(u, W);
+      if (isFinite(lambda)) {
+        var wy = wmul(W, y), w1 = wmul(W, one), wx1 = wmul(W, x1), wx2 = wmul(W, x2);
+        var ys = new Float64Array(n), c0 = new Float64Array(n),
+            c1 = new Float64Array(n), c2 = new Float64Array(n);
+        for (j = 0; j < n; j++) {
+          ys[j] = y[j] - lambda * wy[j];
+          c0[j] = one[j] - lambda * w1[j];
+          c1[j] = x1[j] - lambda * wx1[j];
+          c2[j] = x2[j] - lambda * wx2[j];
+        }
+        cols = [c0, c1, c2];
+        ne = normalEq(ys, cols);
+        var b2 = solveN(ne.A, ne.v);
+        if (b2) { b = b2; y = ys; }
       }
-      cols = [one, x1, x2, wyhat];
-      Xhat = cols;
-      names = ["households", "income", "neighbours"];
     }
 
-    var f = lstsq(y, cols);
-    if (!f) return null;
-    var b = f.b, k = b.length;
-
-    // Residuals use the real neighbour values, not the fitted stand-in.
     var resid = new Float64Array(ag.k), ssr = 0, sst = 0, ybar = 0, r;
     for (j = 0; j < n; j++) ybar += y[j];
     ybar /= n;
     for (j = 0; j < n; j++) {
-      var pred = b[0] + b[1] * x1[j] + b[2] * x2[j];
-      if (mode === "lag") pred += b[3] * wy[j];
-      r = y[j] - pred;
+      r = y[j] - (b[0] * cols[0][j] + b[1] * cols[1][j] + b[2] * cols[2][j]);
       resid[idx[j]] = r; ssr += r * r;
       sst += (y[j] - ybar) * (y[j] - ybar);
     }
-    var dof = n - k, s2 = ssr / dof, C = invN(f.A), se = [], p = [];
+    var dof = n - 3, s2 = ssr / dof, C = invN(ne.A), se = [], p = [], i;
     if (!C) return null;
-    for (i = 0; i < k; i++) {
+    for (i = 0; i < 3; i++) {
       se.push(Math.sqrt(Math.max(s2 * C[i][i], 0)));
       p.push(tTest(b[i] / se[i], dof));
     }
-    return { b: b, se: se, p: p, names: names, mode: mode,
+    return { b: b, se: se, p: p, mode: mode, lambda: lambda,
              r2: sst > 0 ? 1 - ssr / sst : NaN,
              resid: resid, sd: Math.sqrt(ssr / n), n: n, idx: idx };
   }
 
-  // Moran's I of the residuals. Neighbours are areas that touch, each counted equally,
-  // and each area's neighbours are averaged so that an area with many neighbours does
-  // not outweigh one with few.
-  //
-  // The graph is flattened into two typed arrays once per redraw, because the shuffling
-  // below walks it a thousand times and an array of arrays costs a property lookup per
-  // step. Measure any change to this in the page, not in a harness: the same code timed
-  // at top level in Node runs several times slower than it does inside the widget.
-  function buildGraph(idx, nbr, k) {
-    var at = new Int32Array(k), j, i, m, cnt = 0;
-    for (j = 0; j < k; j++) at[j] = -1;
-    for (j = 0; j < idx.length; j++) at[idx[j]] = j;
-    var n = idx.length, off = new Int32Array(n + 1);
-    for (j = 0; j < n; j++) {
-      i = idx[j];
-      for (m = 0; m < nbr[i].length; m++) if (at[nbr[i][m]] >= 0) cnt++;
-      off[j + 1] = cnt;
+  // Kelejian and Prucha's generalised moments estimator for lambda. Three moment
+  // conditions in lambda, lambda squared and the error variance; sigma comes out by least
+  // squares once lambda is fixed, so a sweep over lambda is enough and no matrix
+  // determinant is ever needed.
+  function gmLambda(u, W) {
+    var n = W.n, ub = wmul(W, u), ubb = wmul(W, ub), s = wsums(W), j;
+    function dot(a, b) { var t = 0, q; for (q = 0; q < n; q++) t += a[q] * b[q]; return t; }
+    var G = [[2 * dot(u, ub) / n, -dot(ub, ub) / n, 1],
+             [2 * dot(ubb, ub) / n, -dot(ubb, ubb) / n, s.tr / n],
+             [(dot(u, ubb) + dot(ub, ub)) / n, -dot(ub, ubb) / n, 0]];
+    var g = [dot(u, u) / n, dot(ub, ub) / n, dot(u, ub) / n];
+    var best = Infinity, bestLam = 0, lam, a0, a1, a2, num, den, sig, e0, e1, e2, sse;
+    for (lam = -0.95; lam <= 0.951; lam += 0.001) {
+      a0 = g[0] - G[0][0] * lam - G[0][1] * lam * lam;
+      a1 = g[1] - G[1][0] * lam - G[1][1] * lam * lam;
+      a2 = g[2] - G[2][0] * lam - G[2][1] * lam * lam;
+      num = a0 * G[0][2] + a1 * G[1][2] + a2 * G[2][2];
+      den = G[0][2] * G[0][2] + G[1][2] * G[1][2] + G[2][2] * G[2][2];
+      if (!den) continue;
+      sig = num / den;
+      e0 = a0 - G[0][2] * sig; e1 = a1 - G[1][2] * sig; e2 = a2 - G[2][2] * sig;
+      sse = e0 * e0 + e1 * e1 + e2 * e2;
+      if (sse < best) { best = sse; bestLam = lam; }
     }
-    var adj = new Int32Array(cnt), w = 0;
-    for (j = 0; j < n; j++) {
-      i = idx[j];
-      for (m = 0; m < nbr[i].length; m++) if (at[nbr[i][m]] >= 0) adj[w++] = at[nbr[i][m]];
-    }
-    return { off: off, adj: adj, n: n };
+    return bestLam;
   }
 
-  function moranG(v, g) {
-    var n = g.n, off = g.off, adj = g.adj, j, m, mean = 0;
+  // Moran's I of the residuals, and how surprising it would be if the values had been
+  // dealt out at random among the areas. The moments are exact under that assumption
+  // (Cliff and Ord), so nothing is simulated and nothing depends on a seed.
+  function moranI(v, W) {
+    var n = W.n, mean = 0, j;
     for (j = 0; j < n; j++) mean += v[j];
     mean /= n;
-    var num = 0, den = 0, S0 = 0, z, lag, cnt;
-    for (j = 0; j < n; j++) {
-      z = v[j] - mean; den += z * z;
-      lag = 0; cnt = off[j + 1] - off[j];
-      for (m = off[j]; m < off[j + 1]; m++) lag += v[adj[m]] - mean;
-      if (cnt) { num += z * lag / cnt; S0 += 1; }
-    }
-    if (!S0 || !den) return NaN;
-    return (n / S0) * num / den;
-  }
-
-  // Shuffle the residuals between areas 999 times and see how often chance does as
-  // well. The seed is fixed, so the same picture always gives the same number.
-  //
-  // Shuffling moves values between areas, so the mean and the sum of squares never
-  // change; only the numerator does. Both are computed once, outside the loop.
-  function moranP(obs, v, g) {
-    if (!isFinite(obs)) return NaN;
-    var n = g.n, off = g.off, adj = g.adj, j, m, mean = 0;
-    for (j = 0; j < n; j++) mean += v[j];
-    mean /= n;
-    var z = new Float64Array(n), den = 0, S0 = 0, cnt = new Int32Array(n);
-    for (j = 0; j < n; j++) {
-      z[j] = v[j] - mean; den += z[j] * z[j];
-      cnt[j] = off[j + 1] - off[j];
-      if (cnt[j]) S0 += 1;
-    }
-    if (!S0 || !den) return NaN;
-    var scale = (n / S0) / den, rnd = mulberry32(424242), count = 0, t, i, s, num, lag;
-    for (s = 0; s < 999; s++) {
-      for (j = n - 1; j > 0; j--) {
-        i = (rnd() * (j + 1)) | 0;
-        t = z[j]; z[j] = z[i]; z[i] = t;
-      }
-      num = 0;
-      for (j = 0; j < n; j++) {
-        if (!cnt[j]) continue;
-        lag = 0;
-        for (m = off[j]; m < off[j + 1]; m++) lag += z[adj[m]];
-        num += z[j] * lag / cnt[j];
-      }
-      num *= scale;
-      if (obs >= 0 ? num >= obs : num <= obs) count++;
-    }
-    return (count + 1) / 1000;
+    var z = new Float64Array(n), den = 0;
+    for (j = 0; j < n; j++) { z[j] = v[j] - mean; den += z[j] * z[j]; }
+    var lag = wmul(W, z), num = 0;
+    for (j = 0; j < n; j++) num += z[j] * lag[j];
+    var s = wsums(W);
+    if (!s.S0 || !den) return { I: NaN, p: NaN, z: NaN, expected: NaN };
+    var I = (n / s.S0) * num / den;
+    var E = -1 / (n - 1), m2 = den / n, m4 = 0;
+    for (j = 0; j < n; j++) m4 += z[j] * z[j] * z[j] * z[j];
+    m4 /= n;
+    var b2 = m4 / (m2 * m2), S0 = s.S0, S1 = s.S1, S2 = s.S2;
+    var A = n * ((n * n - 3 * n + 3) * S1 - n * S2 + 3 * S0 * S0),
+        B = b2 * ((n * n - n) * S1 - 2 * n * S2 + 6 * S0 * S0);
+    var V = (A - B) / ((n - 1) * (n - 2) * (n - 3) * S0 * S0) - E * E;
+    if (!(V > 0)) return { I: I, p: NaN, z: NaN, expected: E };
+    var zs = (I - E) / Math.sqrt(V);
+    return { I: I, p: normalP(zs), z: zs, expected: E };
   }
 
   // ------------------------------------------------------------------- colours
@@ -1016,20 +1229,17 @@ body[data-present="1"] footer { display: none; }
     { id: "hh",  label: "Households", cap: "Private households" },
     { id: "inc", label: "Income",     cap: "Median household income" }
   ];
-  var VIEWS_B = [
-    { id: "res", label: "What the model misses", cap: "What the model misses" },
-    { id: "lq",  label: "Share of reports",       cap: "Share of the city's reports" }
-  ];
 
   var params = new URLSearchParams(location.search);
-  var zoning = "da", seed = 1, view = "be", viewB = "res", present = false;
+  var zoning = "da", seed = 1, view = "be", present = false;
+  var wkind = "touch";
   var crime = D.types[0].key;
-  var modelMode = params.get("m") === "lag" ? "lag" : "ols";
+  var modelMode = params.get("m") === "err" ? "err" : "ols";
   if (params.get("c") && D.crime[params.get("c")]) crime = params.get("c");
   BE = D.crime[crime];
   if (params.get("z") && ZONINGS.some(function (z) { return z.id === params.get("z"); })) zoning = params.get("z");
   if (params.get("v") && VIEWS.some(function (v) { return v.id === params.get("v"); })) view = params.get("v");
-  if (params.get("w") && VIEWS_B.some(function (v) { return v.id === params.get("w"); })) viewB = params.get("w");
+  if (params.get("w") && WKINDS.some(function (v) { return v.id === params.get("w"); })) wkind = params.get("w");
   var sp = parseInt(params.get("s"), 10); if (sp > 0 && sp < 1e6) seed = sp;
   present = params.get("present") === "1";
 
@@ -1073,34 +1283,45 @@ body[data-present="1"] footer { display: none; }
     return d;
   }
 
-  function compute() {
-    var zs;
-    if (zoning === "da") zs = zonesDA();
-    else if (zoning === "ct") zs = zonesCT();
-    else zs = zonesRandom(zoning === "r40" ? 40 : 118, seed);
+  function compute(zoningId, seedVal) {
+    var zid = zoningId || zoning, sd = seedVal || seed, zs;
+    if (zid === "da") zs = zonesDA();
+    else if (zid === "ct") zs = zonesCT();
+    else zs = zonesRandom(zid === "r40" ? 40 : 118, sd);
     var ag = aggregate(zs.zone, zs.k);
-    // The graph has to exist before the model does: the spatial model needs it, and the
-    // residual test needs the same one, so both are built from the same area list.
-    var idx0 = [], q;
-    for (q = 0; q < zs.k; q++) if (ag.use[q]) idx0.push(q);
     var nbr = zoneNbr(zs.zone, zs.k);
-    var g = buildGraph(idx0, nbr, zs.k);
-    var model = fit(ag, modelMode, g);
-    var I = NaN, p = NaN;
+    var W = makeW(wkind, ag, nbr);
+    var model = fit(ag, modelMode, W);
+    var mor = { I: NaN, p: NaN, z: NaN };
     if (model) {
-      var v = new Float64Array(g.n), j;
-      for (j = 0; j < g.n; j++) v[j] = model.resid[model.idx[j]];
-      I = moranG(v, g);
-      p = moranP(I, v, g);
+      var v = new Float64Array(W.n), j;
+      for (j = 0; j < W.n; j++) v[j] = model.resid[model.idx[j]];
+      mor = moranI(v, W);
     }
-    // location quotient: share of break-ins over share of households
-    var totBE = 0, totHH = 0, i;
-    for (i = 0; i < zs.k; i++) if (ag.use[i]) { totBE += ag.be[i]; totHH += ag.hh[i]; }
-    var lq = new Float64Array(zs.k);
-    for (i = 0; i < zs.k; i++)
-      lq[i] = (ag.use[i] && ag.hh[i] > 0 && totBE > 0)
-        ? (ag.be[i] / totBE) / (ag.hh[i] / totHH) : NaN;
-    return { zone: zs.zone, k: zs.k, ag: ag, model: model, I: I, p: p, lq: lq, nbr: nbr };
+    return { zone: zs.zone, k: zs.k, ag: ag, model: model,
+             I: mor.I, p: mor.p, zscore: mor.z, W: W };
+  }
+
+  // Twenty other ways of drawing the same number of areas. Fotheringham and Wong asked
+  // for exactly this in 1991: report how the answer moves across zoning systems rather
+  // than reporting one of them. Cached, because it is twenty full fits.
+  var STRIP_SEEDS = 20, stripCache = null, stripKey = "";
+
+  function strip() {
+    var k = state ? state.k : 0;
+    if (zoning === "da") return null;
+    var key = [crime, zoning, wkind, modelMode].join("|");
+    if (stripCache && stripKey === key) return stripCache;
+    var runs = [], s2, st, n = zoning === "r40" ? 40 : 118;
+    var zid = zoning === "r40" ? "r40" : "r118";
+    for (s2 = 1; s2 <= STRIP_SEEDS; s2++) {
+      st = compute(zid, s2);
+      if (st.model) runs.push({ seed: s2, r2: st.model.r2, I: st.I,
+                                pInc: st.model.p[2], pHH: st.model.p[1] });
+    }
+    runs.sort(function (a, b) { return a.r2 - b.r2; });
+    stripCache = runs; stripKey = key;
+    return runs;
   }
 
   function valuesFor(which, st) {
@@ -1110,7 +1331,6 @@ body[data-present="1"] footer { display: none; }
       out[i] = which === "be" ? st.ag.be[i]
              : which === "hh" ? st.ag.hh[i]
              : which === "inc" ? st.ag.inc[i]
-             : which === "lq" ? st.lq[i]
              : (st.model ? st.model.resid[i] / (st.model.sd || 1) : NaN);
     }
     return out;
@@ -1119,11 +1339,10 @@ body[data-present="1"] footer { display: none; }
   function paint(paths, which, st, legEl, end0, end1) {
     var k = st.k, vals = valuesFor(which, st), i, finite = [], v;
     for (i = 0; i < k; i++) if (isFinite(vals[i])) finite.push(vals[i]);
-    var diverging = (which === "res" || which === "lq");
-    var breaks, ramp = diverging ? DIV : SEQ, centre = which === "lq" ? 1 : 0;
+    var diverging = (which === "res");
+    var breaks, ramp = diverging ? DIV : SEQ;
     if (diverging) {
-      if (which === "res") breaks = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5];
-      else breaks = [0.25, 0.5, 0.8, 1.25, 2, 4];
+      breaks = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5];
     } else {
       breaks = quantileBreaks(finite);
     }
@@ -1139,8 +1358,8 @@ body[data-present="1"] footer { display: none; }
       legEl.appendChild(s);
     }
     if (diverging) {
-      end0.textContent = which === "res" ? "fewer than predicted" : "under its share";
-      end1.textContent = which === "res" ? "more than predicted" : "over its share";
+      end0.textContent = "fewer than predicted";
+      end1.textContent = "more than predicted";
     } else {
       finite.sort(function (a, b) { return a - b; });
       end0.textContent = fmtVal(which, finite[0]);
@@ -1160,13 +1379,62 @@ body[data-present="1"] footer { display: none; }
     return x.toFixed(digits);
   }
 
+  // The strip: twenty other ways of drawing the same number of areas, as dots along the
+  // range of R squared they produce. The current one is filled in; the extremes are
+  // labelled. Clicking a dot loads that partition, so the range is somewhere you can go
+  // rather than a claim you have to take.
+  function drawStrip() {
+    var box = document.getElementById("strip"), line = document.getElementById("stripline");
+    var runs = strip();
+    if (!runs || runs.length < 3) { box.hidden = true; return; }
+    box.hidden = false;
+    var lo = runs[0].r2, hi = runs[runs.length - 1].r2;
+    // The axis runs the whole 0 to 1 of R squared. Stretching it to the observed spread
+    // would make any spread look total, which is the opposite of the point.
+    function at(v) { return Math.max(0, Math.min(1, v)) * 100; }
+    line.textContent = "";
+    runs.forEach(function (r, i) {
+      var d = document.createElement("button");
+      d.type = "button";
+      d.className = "dot" + (isRandom() && r.seed === seed ? " here" : "") +
+                    (i === 0 ? " lo" : i === runs.length - 1 ? " hi" : "");
+      d.style.left = at(r.r2) + "%";
+      d.title = "R\u00b2 " + r.r2.toFixed(3);
+      d.setAttribute("aria-label", "Partition with R squared " + r.r2.toFixed(3));
+      d.addEventListener("click", function () {
+        zoning = (zoning === "r40") ? "r40" : "r118";
+        seed = r.seed; picked = -1; render();
+        liveEl.textContent = "Loaded the partition with R squared " + r.r2.toFixed(3) + ".";
+      });
+      line.appendChild(d);
+    });
+    // Where the arrangement on screen sits among the twenty. For the real census tracts
+    // this is the whole point: published units against arbitrary ones of the same count.
+    if (state && state.model && isFinite(state.model.r2)) {
+      var cur = state.model.r2, mark = document.createElement("span");
+      mark.className = "mark";
+      mark.style.left = at(cur) + "%";
+      line.appendChild(mark);
+    }
+    document.getElementById("strip0").textContent = "0";
+    document.getElementById("strip1").textContent = "1";
+    var nSig = runs.filter(function (r) { return r.pInc < 0.05; }).length;
+    document.getElementById("stripnote").textContent =
+      (zoning === "ct" ? "Real census tracts, against 20 arbitrary "
+                       : "Where you are, against 20 ") +
+      "ways of drawing " + (zoning === "r40" ? 40 : 118) + " areas: " +
+      lo.toFixed(2) + " to " + hi.toFixed(2) + ". Income holds up in " + nSig + " of the 20.";
+  }
+
+  function isRandom() { return zoning === "r118" || zoning === "r40"; }
+
   function render() {
     state = compute();
     var st = state, m = st.model;
 
     paint(pathsA, view, st, document.getElementById("lega"),
           document.getElementById("lega0"), document.getElementById("lega1"));
-    paint(pathsB, viewB, st, document.getElementById("legb"),
+    paint(pathsB, "res", st, document.getElementById("legb"),
           document.getElementById("legb0"), document.getElementById("legb1"));
 
     // Zone lines are only worth drawing when they are not simply every line on the map.
@@ -1177,8 +1445,7 @@ body[data-present="1"] footer { display: none; }
     var label = D.types.filter(function (t) { return t.key === crime; })[0].label;
     document.getElementById("capa").textContent =
       view === "be" ? label + ", reported" : VIEWS.filter(function (v) { return v.id === view; })[0].cap;
-    document.getElementById("capb").textContent =
-      VIEWS_B.filter(function (v) { return v.id === viewB; })[0].cap;
+    document.getElementById("capb").textContent = "What the model misses";
 
     document.getElementById("r2").textContent = m ? sig(m.r2, 3) : "—";
     document.getElementById("nareas").textContent =
@@ -1186,27 +1453,43 @@ body[data-present="1"] footer { display: none; }
 
     var eq = document.getElementById("eq");
     if (m) {
-      var DIGITS = { households: 5, income: 3, neighbours: 3 };
-      var html = '<span class="term">reports = ' + sig(m.b[0], 2) + "</span> ", q;
-      for (q = 0; q < m.names.length; q++)
-        html += term(m.b[q + 1], m.p[q + 1], DIGITS[m.names[q]], m.names[q]) + " ";
-      eq.innerHTML = html;
+      eq.innerHTML = '<span class="term">reports = ' + sig(m.b[0], 2) + "</span> " +
+        term(m.b[1], m.p[1], 5, "households") + " " + term(m.b[2], m.p[2], 3, "income");
       var dead = [];
-      for (q = 0; q < m.names.length; q++) if (m.p[q + 1] >= 0.05) dead.push(m.names[q]);
+      if (m.p[1] >= 0.05) dead.push("households");
+      if (m.p[2] >= 0.05) dead.push("income");
       document.getElementById("eqnote").innerHTML =
         "income in thousands of dollars &middot; " +
-        (dead.length === 0 ? "every predictor holds up"
-         : dead.length === m.names.length ? "no predictor holds up"
-         : dead.join(" and ") + " could be chance");
+        (dead.length === 0 ? "both predictors hold up"
+         : dead.length === 2 ? "neither predictor holds up"
+         : dead[0] + " could be chance");
     } else {
       eq.textContent = "—";
       document.getElementById("eqnote").textContent = "";
     }
 
     document.getElementById("moran").textContent = sig(st.I, 3);
-    document.getElementById("moranp").textContent =
-      isFinite(st.p) ? (st.p <= 0.001 ? "p = 0.001 or less, the smallest 999 shuffles can show"
-                        : "p = " + st.p.toFixed(3)) : "";
+    document.getElementById("moranp").innerHTML = isFinite(st.p)
+      ? (st.p < 0.0001 ? "p below 0.0001" : "p = " + st.p.toFixed(4)) +
+        " &middot; if the values were dealt out at random it would sit near " +
+        (-1 / (st.model.n - 1)).toFixed(3)
+      : "";
+
+    var deg = st.W.dense ? (st.model.n - 1)
+            : (st.W.off[st.W.n] / st.W.n);
+    document.getElementById("degnote").textContent =
+      st.W.dense ? "every other area counts, weighted by distance"
+                 : deg.toFixed(1) + " neighbours each, on average";
+
+    var lamEl = document.getElementById("lamnote");
+    if (modelMode === "err" && m && isFinite(m.lambda)) {
+      // The search runs to 0.95. An estimate sitting on that edge is not an estimate.
+      lamEl.textContent = Math.abs(m.lambda) >= 0.949
+        ? "lambda " + m.lambda.toFixed(3) + " — at the edge of what can be estimated, so do not trust it"
+        : "lambda " + m.lambda.toFixed(3) + " — how much of what is left out runs together";
+    } else lamEl.textContent = "";
+
+    drawStrip();
 
     ZONINGS.forEach(function (z) {
       zbtn[z.id].setAttribute("aria-pressed", z.id === zoning ? "true" : "false");
@@ -1220,8 +1503,8 @@ body[data-present="1"] footer { display: none; }
     VIEWS.forEach(function (v) {
       vbtn[v.id].setAttribute("aria-pressed", v.id === view ? "true" : "false");
     });
-    VIEWS_B.forEach(function (v) {
-      wbtn[v.id].setAttribute("aria-pressed", v.id === viewB ? "true" : "false");
+    WKINDS.forEach(function (v) {
+      wbtn[v.id].setAttribute("aria-pressed", v.id === wkind ? "true" : "false");
     });
 
     showPick();
@@ -1261,7 +1544,7 @@ body[data-present="1"] footer { display: none; }
     if (crime !== D.types[0].key) p.set("c", crime);
     if (modelMode !== "ols") p.set("m", modelMode);
     if (view !== "be") p.set("v", view);
-    if (viewB !== "res") p.set("w", viewB);
+    if (wkind !== "touch") p.set("w", wkind);
     if (present) p.set("present", "1");
     var q = p.toString();
     history.replaceState(null, "", location.pathname + (q ? "?" + q : ""));
@@ -1277,21 +1560,21 @@ body[data-present="1"] footer { display: none; }
       b.innerHTML = z.label + ' <span class="n">' + z.n + "</span>";
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {
-        zoning = z.id; picked = -1; render();
+        zoning = z.id; stripCache = null; picked = -1; render();
         liveEl.textContent = z.label + ", " + z.n + " of them. R squared " +
           (state.model ? state.model.r2.toFixed(3) : "not available") + ".";
       });
       zbtn[z.id] = b; host.appendChild(b);
     });
     var MODELS = [{ id: "ols", label: "Each area on its own" },
-                  { id: "lag", label: "Areas plus their neighbours" }];
+                  { id: "err", label: "What is left out has a shape" }];
     var hm = document.getElementById("modelbtns");
     MODELS.forEach(function (mo) {
       var b = document.createElement("button");
       b.className = "opt"; b.type = "button"; b.textContent = mo.label;
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {
-        modelMode = mo.id; render();
+        modelMode = mo.id; stripCache = null; render();
         liveEl.textContent = mo.label + ". Moran's I of the errors is now " +
           (isFinite(state.I) ? state.I.toFixed(3) : "not available") + ".";
       });
@@ -1303,7 +1586,7 @@ body[data-present="1"] footer { display: none; }
       b.className = "opt"; b.type = "button"; b.textContent = t.label;
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {
-        crime = t.key; BE = D.crime[crime]; picked = -1; render();
+        crime = t.key; BE = D.crime[crime]; stripCache = null; picked = -1; render();
         liveEl.textContent = t.label + ". R squared " +
           (state.model ? state.model.r2.toFixed(3) : "not available") + ".";
       });
@@ -1318,11 +1601,15 @@ body[data-present="1"] footer { display: none; }
       vbtn[v.id] = b; h2.appendChild(b);
     });
     var h3 = document.getElementById("viewbbtns");
-    VIEWS_B.forEach(function (v) {
+    WKINDS.forEach(function (v) {
       var b = document.createElement("button");
       b.className = "opt"; b.type = "button"; b.textContent = v.label;
       b.setAttribute("aria-pressed", "false");
-      b.addEventListener("click", function () { viewB = v.id; render(); });
+      b.addEventListener("click", function () {
+        wkind = v.id; stripCache = null; render();
+        liveEl.textContent = "Neighbours are now: " + v.label + ". Moran's I is " +
+          (isFinite(state.I) ? state.I.toFixed(3) : "not available") + ".";
+      });
       wbtn[v.id] = b; h3.appendChild(b);
     });
   })();
@@ -1337,8 +1624,8 @@ body[data-present="1"] footer { display: none; }
   });
 
   document.getElementById("reset").addEventListener("click", function () {
-    zoning = "da"; seed = 1; view = "be"; viewB = "res"; picked = -1;
-    crime = D.types[0].key; BE = D.crime[crime]; modelMode = "ols";
+    zoning = "da"; seed = 1; view = "be"; wkind = "touch"; picked = -1;
+    crime = D.types[0].key; BE = D.crime[crime]; modelMode = "ols"; stripCache = null;
     render();
     liveEl.textContent = "Back to dissemination areas.";
   });

@@ -1,73 +1,82 @@
 # Drawing the lines: MAUP in Vancouver
 
-`web/maup/` &middot; live at
-<https://foldingspace.github.io/interactive/maup/>
+`web/maup/` &middot; live at <https://foldingspace.github.io/interactive/maup/>
 
 ## The one thing
 
-The same data, modelled the same way, gives a different answer depending on how the city
-is cut into areas — and not only because the areas get bigger. Holding the number of areas
-fixed at 118 and moving only the boundaries, R<sup>2</sup> ranges from 0.076 to 0.385 and
-one of the two predictors moves in and out of significance.
+A statistical result about places can be an artefact of the boxes. Three choices move the
+answer and none of them is in the data: how many areas you cut the city into, where you put
+the boundaries, and what you decide counts as *near*.
 
 ## What it is
 
-Incidents reported to Vancouver police in 2015 and 2016, explained by the number of
-private households in an area and the median household income there. Two maps: the
-records on the left, what the model misses on the right. Three numbers: R<sup>2</sup>, the
-equation, and Moran's I of the residuals. One control that matters: how the city is cut up.
+Incidents reported to Vancouver police in 2015 and 2016, against the number of private
+households in an area and the median household income there. Two maps, three numbers, and
+four controls that each change the answer without changing a single record.
+
+The question on screen is deliberately not "what explains incidents". It is **does who
+lives in an area predict where incidents get reported?** — which is all the model does, and
+naming it that way makes the mismatch the subject rather than a caveat. Most of these
+incidents happen where people are, not where they sleep.
 
 It comes out of GEOG 370's Lab 3, which compares dissemination areas with census tracts.
-The lab demonstrates the scale half of the modifiable areal unit problem and describes the
-zoning half in its introduction without ever showing it. This widget shows it.
+The lab shows the scale half of the modifiable areal unit problem and describes the zoning
+half in its introduction without ever demonstrating it. This does both, and adds a third
+thing the lab never raises at all.
+
+The lab worked through in full is in `lab3-worked.md` in the local working folder — **not
+in this repository**, because that file is an answer key and this repository is public.
 
 ### It deliberately will not do the lab
 
-**Residential break and enter is not one of the categories offered.** It is what the lab
-asks students to model, and a page that printed its regression equation, its R<sup>2</sup>
-and its residual Moran's I would be an answer key on the open web. The widget offers
-mischief, theft from vehicle, theft of bicycle and commercial break and enter instead:
-same city, same census data, same model, same method, and nothing a student can copy.
+Residential break and enter is not offered. It is what the lab asks students to model, and
+a page printing its regression, its R<sup>2</sup> and its residual Moran's I would be an
+answer key on the open web. Bicycle theft, theft from vehicle, commercial break and enter
+and mischief are offered instead: same city, same census data, same method, nothing to copy.
 
-The substitution improves the teaching rather than compromising it. Reporting rates differ
-sharply between these categories — a stolen bicycle often goes unreported, a break-in at a
-business is reported because a claim needs a file number — so comparing them is a way into
-the point the lab's own reference list makes and its exercises never reach. And the
-question a student is left with, *does the story I found for break-ins hold for mischief
-too*, is a better question than the one the answer would have settled.
+The substitution teaches better than duplication would have. Reporting rates differ sharply
+between those categories, which is the point the lab's own reference list makes and its
+exercises never reach.
 
-The lab worked through in full, with every question answered and checked, is in
-`lab3-worked.md` in the local working folder — **not in this repository**, because that
-file is an answer key and this repository is public.
+**Bicycle theft is the default and mischief is not.** A negative income coefficient on a
+category whose name sounds like a judgement of people is the single result here most open
+to being read as a claim about who lives where. It is reached deliberately rather than met
+on arrival. Bicycle theft also gives the more useful lesson: a coefficient that looks solid
+across 996 areas dissolves across 118.
 
-### Crime data is not crime, and the widget is built that way
+### The critical literature is used as method, not as claims
 
-The lab's reference list is sharp about police-reported crime and its own instructions say
-crime reports are not crime occurrences. That belongs in how the thing is built, not in a
-disclaimer at the bottom.
+Lally and Jefferson are cited for how they work, not for findings transplanted onto data
+they never touched. Lally's claim is scoped to *minor*, officer-initiated offences; these
+four categories are mostly citizen-reported, so his marijuana finding does not carry over
+and is not made to.
 
-So: the map caption reads "Mischief, reported", not "Mischief". The equation's left side
-is `reports`, not the name of the offence. The location quotient is a share of the city's
-*reports*. The (i) panel on the category control leads with the three steps a record has to
-survive — someone reports it, an officer writes it down, it is filed under this heading —
-and none of them happens at the same rate everywhere. The residual panel says plainly that
-a red area can be more incidents, more reporting, or more police attention, and that the
-map cannot tell them apart. The Moran panel notes that when a model's errors cluster, one
-of the things with a geography is the recording itself.
+What carries over is the approach. Interrogate what the data records about the institution
+that made it. Interrogate the categories themselves, because the schema decides what can be
+said at all. Refuse the idea that a technical improvement settles anything. Then use the
+records anyway.
+
+So the schema interrogation lives at the category control, where a student practises the
+move rather than reading about someone who made it: these headings were written by an
+institution for its own purposes, change one and the city changes shape, and some of what
+moves is how each kind of incident comes to be written down. Jefferson's charge that people
+become interchangeable objects in reductive categories, and space an invariant coordinate
+system, describes this page too. It says so once, in a line, and the 996 smallest areas stay
+drawn under every grouping so what aggregation discards is never quite off the screen.
 
 ## The data
 
-996 dissemination areas, each carrying households, median household income, population,
-its census tract, and counts of reported incidents in four categories. The tracts are not
-shipped: all 996 DAs nest exactly inside the 118 tracts, so a tract is drawn by filling its
-member DAs, and every other set of areas is built the same way.
+996 dissemination areas with households, median household income, population, census tract,
+and counts of reported incidents in four categories. Census tracts are not shipped: all 996
+DAs nest exactly inside the 118 tracts, so a tract is drawn by filling its member DAs, and
+every other set of areas is built the same way.
 
-Generated by `tools/lab3-extract.py` from the lab's `MAUP.gdb`, which is course material
-and is not in this repository. Geometry is quantised to a 2 m grid in BC Albers and
-delta-encoded as base64 varints. Quantising before encoding snaps shared boundaries to
-identical vertices, which does two jobs at once: neighbouring polygons stay coincident with
-no slivers, and contiguity can be read straight off the shared vertices instead of needing
-a geometry library.
+Generated by `tools/lab3-extract.py` from the lab's `MAUP.gdb`, which is course material and
+is not in this repository. Geometry is quantised to a 2 m grid in BC Albers and delta-encoded
+as base64 varints. Quantising before encoding snaps shared boundaries to identical vertices,
+which does two jobs: neighbouring polygons stay coincident with no slivers, and contiguity
+falls out of the shared vertices instead of needing a geometry library. Area centres for the
+distance weights are computed in the browser from the same rings, so nothing extra ships.
 
 | | |
 |---|---|
@@ -76,217 +85,235 @@ a geometry library.
 | Vertices after quantising | 22,779 |
 | Encoded geometry | 49,488 bytes |
 | `data.js` | 137 KB |
-| Neighbours per DA (queen) | min 1, mean 6.40, max 17 |
+| Neighbours per DA (touching) | min 1, mean 6.40, max 17 |
 | Households, all DAs | 310,033 |
-
-Incident counts, as extracted and as falling inside a dissemination area:
 
 | category | in the layer | inside a DA |
 |---|---|---|
-| Mischief | 8,791 | 8,789 |
-| Theft from Vehicle | 23,357 | 23,351 |
 | Theft of Bicycle | 5,698 | 5,698 |
+| Theft from Vehicle | 23,357 | 23,351 |
 | Break and Enter Commercial | 5,143 | 5,143 |
+| Mischief | 8,791 | 8,789 |
 
-**This widget is two files, not one.** `data.js` sits beside `index.html`. It is the first
-here to need a data file, and inlining 137 KB into the page would have made the source
-unreadable for no gain — same folder, same request chain, no external host.
-`widget-pattern.md` anticipated this; it is the rule bending rather than breaking.
+**Two files, not one.** `data.js` sits beside `index.html`. Same folder, same request chain,
+no external host; inlining 137 KB would only have made the source unreadable.
+`widget-pattern.md` anticipated this — the rule bending rather than breaking.
 
 ## Verified values
 
-Every number below was computed twice: once by the widget's own code, sliced out of
-`index.html` and run in Node, and once in Python with numpy by matrix algebra rather than
-the widget's normal equations. All twelve ordinary-least-squares combinations agree to
-within 4e-14, and the four spatial-lag fits reproduce an independent numpy two-stage least
-squares to every digit shown. **These are the regression suite.**
+Computed twice: once by the widget's own code sliced out of `index.html` and run in Node,
+once in Python with numpy by matrix algebra. **All 36 combinations of category, areas,
+neighbour definition and model agree to within 2e-12.** These are the regression suite.
 
-Ordinary least squares. Coefficients are households and income, income per $1,000:
+### Ordinary least squares, touching neighbours
 
-| category / areas | n | R<sup>2</sup> | households (p) | income (p) | Moran's I |
+Coefficients are households and income, income per $1,000.
+
+| category / areas | n | R<sup>2</sup> | households (p) | income (p) | Moran's I | z |
+|---|---|---|---|---|---|---|
+| bicycle / DA | 995 | 0.559979 | 0.05761 (4.4e-178) | 0.0614 (8.1e-4) | 0.164995 | 9.60 |
+| bicycle / CT | 118 | 0.530771 | 0.05370 (2.8e-20) | 0.1926 (0.51) | 0.170231 | 3.50 |
+| bicycle / random 118, seed 7 | 118 | 0.551529 | 0.04857 (2.1e-21) | 0.2032 (0.55) | 0.374657 | 7.39 |
+| vehicle / DA | 995 | 0.338375 | 0.15203 (1.1e-89) | 0.0780 (0.31) | 0.223855 | 15.78 |
+| vehicle / CT | 118 | 0.315180 | 0.14550 (2.5e-10) | −0.8333 (0.51) | 0.285025 | 6.90 |
+| vehicle / random 118, seed 7 | 118 | 0.433684 | 0.13825 (1.0e-14) | −1.4245 (0.26) | 0.373125 | 7.90 |
+| commercial / DA | 995 | 0.486442 | 0.03938 (2.0e-140) | −0.0188 (0.20) | 0.300142 | 17.40 |
+| commercial / CT | 118 | 0.531708 | 0.04401 (9.5e-19) | −0.4696 (0.064) | 0.287483 | 5.86 |
+| commercial / random 118, seed 7 | 118 | 0.513828 | 0.03769 (1.2e-17) | −0.6462 (0.035) | 0.399286 | 7.90 |
+| mischief / DA | 995 | 0.341322 | 0.05350 (3.1e-87) | −0.0453 (0.098) | 0.219791 | 15.30 |
+| mischief / CT | 118 | 0.320115 | 0.04865 (5.9e-9) | −1.1130 (0.019) | 0.311799 | 6.84 |
+| mischief / random 118, seed 7 | 118 | 0.403973 | 0.05030 (6.4e-12) | −1.4463 (0.0079) | 0.307055 | 6.59 |
+
+### What counts as a neighbour, bicycle theft, same residuals throughout
+
+| areas | neighbours | Moran's I | z | p |
+|---|---|---|---|---|
+| DA | touching | 0.164995 | 9.60 | <0.0001 |
+| DA | touching, and theirs | 0.082913 | 8.85 | <0.0001 |
+| DA | all, by 1/distance | 0.012499 | 8.09 | <0.0001 |
+| CT | touching | 0.170231 | 3.50 | 0.0005 |
+| CT | touching, and theirs | 0.059665 | 2.38 | 0.0174 |
+| CT | all, by 1/distance | 0.017131 | 2.55 | 0.0109 |
+
+**Read the two columns against each other.** The size falls by more than a factor of ten
+as the circle widens, and the test never stops rejecting. Widening dilutes — adding distant
+pairs with nothing to do with each other waters down what the near pairs showed — but with
+995 areas even a faint pattern is easy to detect. So the neighbour control cannot be used
+to make the problem go away, and the widget says so where a student might try.
+
+This closes an open thread from the first widget, which recorded the experiment as unrun
+and my guess about it as a guess. The guess was right about the drift and wrong to imply it
+would reach "no autocorrelation".
+
+### The error model
+
+Kelejian and Prucha's generalised moments estimator: lambda from the residuals, then the
+equation refitted with that structure removed. No determinant, so it runs in a browser.
+
+| category / areas | lambda | R<sup>2</sup> | income | Moran's I | z after |
 |---|---|---|---|---|---|
-| bicycle / DA | 995 | 0.559979 | 0.05761 (4.4e-178) | 0.0614 (8.1e-4) | 0.164995 |
-| bicycle / CT | 118 | 0.530771 | 0.05370 (2.8e-20) | 0.1926 (0.51) | 0.170231 |
-| bicycle / random 118, seed 7 | 118 | 0.551529 | 0.04857 (2.1e-21) | 0.2032 (0.55) | 0.374657 |
-| vehicle / DA | 995 | 0.338375 | 0.15203 (1.1e-89) | 0.0780 (0.31) | 0.223855 |
-| vehicle / CT | 118 | 0.315180 | 0.14550 (2.5e-10) | −0.8333 (0.51) | 0.285025 |
-| vehicle / random 118, seed 7 | 118 | 0.433684 | 0.13825 (1.0e-14) | −1.4245 (0.26) | 0.373125 |
-| commercial / DA | 995 | 0.486442 | 0.03938 (2.0e-140) | −0.0188 (0.20) | 0.300142 |
-| commercial / CT | 118 | 0.531708 | 0.04401 (9.5e-19) | −0.4696 (0.064) | 0.287483 |
-| commercial / random 118, seed 7 | 118 | 0.513828 | 0.03769 (1.2e-17) | −0.6462 (0.035) | 0.399286 |
-| mischief / DA | 995 | 0.341322 | 0.05350 (3.1e-87) | −0.0453 (0.098) | 0.219791 |
-| mischief / CT | 118 | 0.320115 | 0.04865 (5.9e-9) | −1.1130 (0.019) | 0.311799 |
-| mischief / random 118, seed 7 | 118 | 0.403973 | 0.05030 (6.4e-12) | −1.4463 (0.0079) | 0.307055 |
+| bicycle / DA | 0.373 | 0.5600 → 0.5185 | 0.0614 → 0.0688 | 0.1650 → −0.1151 | −6.61 |
+| bicycle / CT | 0.399 | 0.5308 → 0.4097 | 0.1926 → 0.3224 | 0.1702 → 0.0642 | 1.46 |
+| bicycle / random 118, seed 7 | 0.784 | 0.5515 → 0.5008 | 0.2032 → 0.6819 | 0.3747 → 0.0091 | 0.34 |
+| mischief / DA | 0.443 | 0.3413 → 0.2825 | −0.0453 → −0.0029 | 0.2198 → −0.0551 | −4.09 |
+| mischief / CT | 0.563 | 0.3201 → 0.2308 | −1.1130 → −0.5453 | 0.3118 → −0.0294 | −0.47 |
+| mischief / random 118, seed 7 | 0.623 | 0.4040 → 0.2645 | −1.4463 → −1.1428 | 0.3071 → −0.0112 | −0.06 |
 
-Spatial lag model, same data, estimated by two-stage least squares:
+Three things here are worth more than the fact that it works.
 
-| category / areas | R<sup>2</sup> | rho, the neighbours term (p) | Moran's I of residuals |
-|---|---|---|---|
-| bicycle / DA | 0.5693 | 0.065 (0.069) | 0.1099 |
-| bicycle / CT | 0.6397 | 0.505 (2.0e-6) | −0.0408 |
-| bicycle / random 118, seed 7 | 0.5159 | −0.108 (0.51) | 0.4139 |
-| vehicle / DA | 0.4037 | 0.246 (1.4e-5) | 0.0732 |
-| vehicle / CT | 0.4513 | 0.448 (0.0036) | −0.0018 |
-| commercial / DA | 0.5546 | 0.223 (1.2e-8) | 0.1616 |
-| commercial / CT | 0.6043 | 0.266 (0.012) | 0.1058 |
-| mischief / DA | 0.3811 | 0.150 (0.0084) | 0.1197 |
-| mischief / CT | 0.4340 | 0.313 (0.048) | 0.1093 |
+**The coefficients move, sometimes a lot.** The textbook account is that ordinary least
+squares stays unbiased under this model and only its standard errors are wrong. Mischief
+across census tracts halves its income coefficient; across dissemination areas it goes to
+essentially nothing. That is spatial confounding: the equation cannot tell income apart
+from everything else smooth over the same parts of the city, which is where the statistical
+reading and the critical reading arrive at the same sentence from opposite directions.
 
-**The teaching is in the flips, and every one of them is real.** With bicycle theft, income
-is significant across 996 dissemination areas (p = 0.0008) and gone across 118 census
-tracts (p = 0.51). With mischief it runs the other way: not significant at DA level
-(p = 0.098), significantly negative at tract level (p = 0.019). With commercial break-ins
-it is significant at neither real scale but becomes significant under random areas of the
-same count (p = 0.035). Nothing about Vancouver changes in any of this.
+**It overshoots.** Across 996 areas the repair pushes the clustering past zero to −0.115,
+z = −6.61. A different problem, not a solved one.
 
-Across seeds 1 to 20 at 118 random areas, R<sup>2</sup> for bicycle theft runs from 0.3735
-to 0.6364, median 0.5362; for mischief from 0.2713 to 0.5054, median 0.3993, with income
-significant in 13 of 20 draws and negative in 20 of 20. Household counts per area vary with
-a coefficient of variation of 0.481, against 0.43 for the real census tracts.
+**Lambda hits the ceiling.** With 1/distance weights the estimate runs to 0.950, the edge
+of the search. The widget says so on screen and tells the reader not to trust it, rather
+than printing a number that looks like an estimate.
 
-The households sum of 310,033 matches the constant the lab hard-codes, which is the one
-external check available on the whole extraction.
+The lag model was built, verified, and removed. Its coefficients are not marginal effects —
+feedback through neighbours means reading them that way is wrong without a direct and
+indirect impact decomposition — and printing them beside ordinary ones would teach something
+false. The same clustering admits both stories and the data cannot choose; making the choice,
+and saying why, is the move a student has to learn.
 
-### The spatial model behaves, and stops behaving where it should
+### The range across zonings
 
-At real units the lag term is positive and significant and the residual clustering largely
-goes: bicycle theft across census tracts goes from I = 0.170 to I = −0.041, and theft from
-vehicle from 0.285 to −0.002. Under random areas the same model often finds nothing —
-rho turns negative and insignificant, and Moran's I does not fall. That is not a defect. The
-instruments are the neighbours' characteristics, and randomly drawn areas cut across the
-structure the model is trying to use.
+Twenty other ways of drawing the same number of areas, R<sup>2</sup> sorted:
 
-### The p-values are exact, and were checked against closed forms
+| category | areas | min | median | max | income |
+|---|---|---|---|---|---|
+| bicycle | 118 | 0.3735 | 0.5362 | 0.6364 | significant in 0 of 20 |
+| bicycle | 40 | 0.1664 | 0.5760 | 0.7450 | significant in 1 of 20 |
+| mischief | 118 | 0.2713 | 0.3993 | 0.5054 | significant in 13 of 20 |
+| mischief | 40 | 0.2231 | 0.5470 | 0.7199 | significant in 12 of 20 |
 
-Coefficient p-values come from the regularised incomplete beta function, so they are exact
-rather than looked up or approximated. Checked against three independent closed forms:
-I<sub>0.5</sub>(0.5, 0.5) = 0.5 and I<sub>x</sub>(1,1) = x; the Cauchy form for one degree
-of freedom, 1 − (2/π)·arctan|t|; and the two-degree form, 1 − |t|/√(2+t²). All agree to ten
-decimal places, and t = 1.959964 at a million degrees of freedom returns 0.050000.
+Bicycle theft is the sharpest case in the whole widget. Income is significant across 996
+dissemination areas at p = 0.0008, is not across the real 118 census tracts, and is not
+significant in a single one of twenty arbitrary 118-area partitions. The finding does not
+survive the boxes.
 
-### What reproducing R-squared cannot catch
+Fotheringham and Wong end their 1991 paper by asking for "a technology that will allow the
+user to rezone data, to aggregate it in a specified number of ways, and to report a summary
+of calibration results for each of the different zoning systems". That is the strip, thirty
+years late.
 
-Reproducing one R<sup>2</sup> is necessary and not sufficient. A coding error treating
-income as dollars rather than thousands would still fit, still give the same
-R<sup>2</sup>, and only the coefficient would move. That is why the coefficients and their
-p-values are in the table and not just the fit.
+### Exact inference, checked against closed forms
 
-## Choices, and the ones that were rejected
+Coefficient p-values come from the regularised incomplete beta function. Checked against
+I<sub>0.5</sub>(0.5, 0.5) = 0.5, I<sub>x</sub>(1,1) = x, the Cauchy form for one degree of
+freedom and the two-degree form; all agree to ten decimal places, and t = 1.959964 at a
+million degrees of freedom returns 0.050000.
 
-**Random areas are grown to equal household counts, not grown freely.** The first version
-grew them by unconstrained breadth-first search from random seeds. It produced R<sup>2</sup>
-between 0.291 and 0.505 — far above the real tracts, and for the wrong reason: free growth
-makes wildly uneven areas, and when both the count of break-ins and the count of households
-scale with an area's size, uneven sizes manufacture correlation. Real census units are
-built to hold similar populations. Growing to a balanced household count reproduces that,
-which leaves the comparison about where the lines are rather than how uneven the areas are.
-It also lands the real tracts at the median of the random draws rather than far outside
-them, which is the more honest picture.
+Moran's I uses the exact randomisation moments rather than a permutation test. That is
+faster, identical across all three neighbour definitions, and follows the repository's rule
+about preferring the closed form. It also had to be: 1/distance is a dense matrix of about a
+million weights, and 999 shuffles of it would be a billion operations.
+
+The residual caveat stands and is on screen. These residuals come from a model already
+fitted to this data, so the ordinary null is not quite right; Cliff and Ord derived the
+corrected moments in 1972. At z ≈ 10 the conclusion is not in doubt.
+
+## Design decisions worth keeping
+
+**Random areas are grown to equal household counts.** Free growth gave R<sup>2</sup> far
+above the real tracts for the wrong reason: uneven areas manufacture correlation when both
+counts scale with size. Balanced growth reproduces how census units are actually built and
+lands the real tracts among the random ones rather than outside them.
 
 **Census tracts are built from the DAs rather than read from the census.** Income for a
-grouped area is the household-weighted mean of its DAs' medians. Against the published
-tract figures: correlation 0.988, median absolute difference $857, worst $22,467, and
-R<sup>2</sup> of 0.160 rather than 0.188. Using the published figure for tracts and an
-aggregate for random areas would have confounded "different boundaries" with "different
-definition of income", and that comparison is the entire widget. The (i) panel says so.
+grouped area is the household-weighted mean of its DAs' medians. Against the published tract
+figures: correlation 0.988, median difference $857. Using published figures for tracts and
+aggregates for random areas would confound "different boundaries" with "different definition
+of income", which is the entire comparison.
 
-**Moran's I uses queen contiguity, row standardised.** Areas that touch, each area's
-neighbours averaged. ArcGIS's tool defaults to inverse distance between centroids, so a
-student following the lab will get a different number; the sign and the conclusion agree.
-Row standardisation matters here in a way it did not in the grid widget, where every cell
-had almost the same number of neighbours: here the count runs from 1 to 17.
+**The strip runs 0 to 1.** Stretching the axis to the observed spread would make any spread
+look total.
 
-**The Moran p-value is presented with a caveat on screen.** Residuals come from a model
-already fitted to this data, so shuffling them is not quite testing what it appears to.
-At z ≈ 18 the conclusion is not in doubt, and saying so is better than a silent p.
-
-**Colours.** ColorBrewer YlGn for quantities, RdBu for the diverging maps, both from the
-set the scheme's authors mark as safe for the commonest colour blindness. The lab asks for
-blue-negative red-positive residuals and that is what this does.
+**Colours.** ColorBrewer YlGn for quantities, RdBu for the residuals, both from the set the
+scheme's authors mark as safe for the commonest colour blindness.
 
 ## Layout notes
 
-Narrow: the two maps sit side by side rather than stacked. Stacked, the page was 2,255 px
-tall and the controls sat three screens below the thing they control.
+Narrow: two maps side by side rather than stacked, which took the page from 2,255 px to
+about 1,800.
 
-Presenting: the width cap comes off — leaving it on squeezed the readout into a sliver at
-1920 — and the content centres vertically. The (i) buttons hide, because nobody reads an
-explanation from the back of a room and they cost the height the controls need. Below 820 px
-of viewport height the hover readout hides too. Verified with nothing clipped and no
-overflow at 1920×1080, 1280×900 and 1280×720.
+Presenting: the width cap comes off, content centres vertically, controls run as one wide row
+beneath everything, and the (i) buttons hide. Things then drop out in order of how little a
+lecturer drives them — the left map's own view, then the hover readout, then the category,
+which is normally set in the URL on the slide. Below 820 px of height the readout pairs its
+two headline numbers, because the readout and not the maps sets the height of the top row.
+Verified with nothing clipped and no overflow at 375×812, 1280×900, 1280×720 and 1920×1080.
 
 ## Performance
 
-Measured in the page, at 1280 wide:
+Measured in the page, never in a harness — the same code timed at top level in Node ran
+several times slower and sent me optimising something that was not slow.
 
 | view | full redraw |
 |---|---|
-| 996 areas, 1280 wide | 56.7 ms |
-| 996 areas, 1920 wide, spatial model | 100.4 ms |
-| 118 census tracts | 6.2 ms |
-| 118 random areas | 11.4 ms |
-| page load to DOMContentLoaded | 163 ms |
+| 996 areas, touching | 14 ms |
+| 118 areas, cached strip | 10 ms |
+| 118 areas, cold strip (20 fits) | 63 ms |
+| 996 areas, 1/distance | 47 ms |
+| 996 areas, 1/distance, error model | 148 ms |
 
-A redraw recomputes the zoning, the model, the neighbour graph, 999 permutations and the
-fill of 1,992 SVG paths.
-
-**Do not time this in a harness.** The same code sliced out of the page and run at top
-level in Node reported 208 ms for the 996-area view and blamed the random number
-generator, which sent me optimising something that was not slow. Top-level script code is
-not optimised the way code inside a function is. Verify *values* in the harness; measure
-*time* in the page.
+The last of those is the worst case: a dense million-weight matrix, a moment estimator and a
+refit. The weight sums are cached on the matrix, because Moran's I and the estimator both
+want them.
 
 ## Known limits and open threads
 
-**No geographically weighted regression yet.** The widget now handles spatial dependence
-globally, with one lag term for the whole city. GWR handles it locally, fitting an equation
-at every area, and the lab's second half does exactly that. It is computed and recorded in
-the local worked-lab file. A second map view showing local coefficients would parallel the
-local Moran's I in the first widget and is the obvious next addition.
+**The maps are not keyboard navigable.** Pointing at an area shows its numbers; there is no
+keyboard route to the same thing. Making 996 polygons tabbable is not the answer — a list, or
+arrow-key movement between areas, would be. The strip's dots *are* buttons and are reachable.
 
-**The zoning is random, not adversarial.** Openshaw's point was partly that boundaries can
-be drawn *deliberately* to produce a wanted answer. Random draws show the answer is
-unstable; a "draw me the boundaries that maximise R<sup>2</sup>" button would show it is
-steerable, which is the sharper and more uncomfortable version.
+**No geographically weighted regression.** The widget handles spatial dependence globally.
+GWR fits an equation at every area, and the lab's second half does exactly that; it is
+computed and recorded in the local worked-lab file. A second map view of local coefficients
+would parallel the first widget's local Moran's I.
 
-**The maps are not keyboard navigable.** Pointing at an area shows its numbers; there is
-no keyboard route to the same thing. Making 996 polygons tabbable is not the answer. A
-list, or arrow-key movement between areas, would be.
+**The zoning is random, not adversarial.** Openshaw's sharper point was that boundaries can
+be drawn *deliberately* to produce a wanted answer — he called it applied gerrymandering and
+drove an Iowa correlation anywhere from −0.99 to +0.99. Random draws show the answer is
+unstable. A "draw the boundaries that maximise R<sup>2</sup>" button would show it is
+steerable, which is worse and more useful.
 
-**Whether the crime-data critique lands.** It is now in the captions, the equation, the
-category panel, the residual panel and the Moran panel rather than only in the footer.
-Whether a student who came to move sliders actually takes it in is not something this
-build can tell us, and it is the first thing to ask about in a classroom test.
+**Whether the critical framing lands.** It is in the question the page asks, the captions,
+the equation, the category panel and the residual panel rather than in a footer. Whether a
+student who came to press buttons takes it in is not something this build can tell us, and
+it is the first thing to ask in a classroom.
 
 **The crime layer has no `B_E_Resid`, `Mischief` or `Auto_Theft` columns**, though the lab
-says three such columns were added. Counts here come from the `TYPE` string instead. For
+says three such columns were added. Counts come from the `TYPE` string instead. For
 residential break and enter that gives 6,114 against the 6,116 the lab's location-quotient
-formula divides by, so the instructors' processed layer was not identical to the one that
-ships. It changes nothing, and it is worth fixing before the lab runs again. Recorded in
-the local worked-lab file.
+formula divides by. It changes nothing and is worth fixing before the lab runs again.
 
 ## Picking this up again
 
 Live: <https://foldingspace.github.io/interactive/maup/>. Source in `web/maup/`, data
 regenerated by `python3 tools/lab3-extract.py <path to MAUP.gdb> > web/maup/data.js`.
 
-Preview locally with the `widgets` server in `.claude/launch.json`, or
+Preview with the `widgets` server in `.claude/launch.json`, or
 `python3 -m http.server 8791 --directory ~/teaching-interactive/github/web` and open
 `http://localhost:8791/maup/`.
 
-Check first: on the default view, bicycle theft across dissemination areas,
-R<sup>2</sup> = 0.559979 and Moran's I = 0.164995; switching to census tracts gives
-R<sup>2</sup> = 0.530771 with income moving from p = 0.0008 to p = 0.51. Then switch the
-model to "areas plus their neighbours" on census tracts and Moran's I should read −0.0408
-with rho = 0.505. If those come back, the model, the aggregation and the estimator are
-intact. `window.MAUP_TEST` exposes `compute()`,
-`state()` and `setZoning(id, seed)` for checking from the console.
+Check first: bicycle theft across dissemination areas gives R<sup>2</sup> = 0.559979 and
+Moran's I = 0.164995. Switch to census tracts and income moves from p = 0.0008 to p = 0.51.
+Switch neighbours to 1/distance and I falls to 0.012499 with z still 8.09. Switch the model
+on at census tracts and lambda reads 0.399 with I at 0.0642. If those four come back, the
+model, the aggregation, the weights and the estimator are all intact.
 
-To verify against something that shares no code with the widget, slice the maths out of
-`index.html` and run it in Node against `data.js` — the functions between `mulberry32` and
-the colour section are self-contained given `D`, `N`, `HH`, `INC`, `BE`, `NBR`, `CT` and
-`OK` —
-then compare with numpy. That is how every number in the tables above was checked.
+`window.MAUP_TEST` exposes `compute()`, `state()` and `setZoning(id, seed)`.
+
+To check against something sharing no code with the widget, slice the maths out of
+`index.html` — everything between `decodeGeom` and the colour section is self-contained
+given `D` and `N` — run it in Node against `data.js`, and compare with numpy. That is how
+every number above was checked.
 
 ## Review record
 
@@ -295,50 +322,30 @@ Widget: maup
 Reviewed: 2026-08-21
 ```
 
-**Pedagogical critique — changes requested, and made.** Three, each of which changed the
-build rather than the wording. The widget originally modelled residential break and enter
-and so displayed the answers to three of the lab's graded questions on the open web; the
-category was removed and four others put in its place. The crime-data critique was a footer
-disclaimer; it moved into the captions, the equation, and four of the six explanation
-panels. Mischief was the default and is no longer: a negative income coefficient on a
-category whose name sounds like a judgement of people is the one result here most open to
-being read as a claim about who lives where.
+**Pedagogical critique — changes requested, and made.** Run as a full interview rather than
+a read-through, and it changed the build four times. The widget originally modelled
+residential break and enter and so published the answers to three graded questions; the
+category was removed. The crime-data critique was a footer disclaimer; it became the
+question the page asks. Mischief was the default and is no longer. A spatial lag model was
+built and then removed once it was clear its coefficients cannot be read as ordinary
+effects. The neighbours control and the range strip were both added because the literature
+being taught asks for them.
 
-**Correctness — pass.** Every statistic computed twice by routes sharing no code: the
-widget's own source run in Node, and numpy by matrix algebra. Twelve OLS fits agree to
-4e-14 across four categories and three sets of areas; the spatial lag fits reproduce an
-independent numpy two-stage least squares to every digit; p-values check against three
-closed forms. The one external check available, the household total of 310,033, matches the
-constant the lab hard-codes.
+**Correctness — pass.** 36 combinations verified against numpy by an independent route, all
+within 2e-12; p-values checked against three closed forms. One error was caught in the
+documentation rather than the code: a spread of R<sup>2</sup> values was written down before
+it was computed, and the computed range is wider than the invented one.
 
-What the tests would not have caught, and how that was handled: reproducing a single
-R<sup>2</sup> would survive treating income as dollars rather than thousands, so the
-coefficients are recorded too. A wrong random zoning would still produce plausible numbers,
-so the household-count spread is recorded against the real tracts' spread.
+**Text — pass.** Scanned against the anti-AI list, then read again for plainness. 1,929
+words in total, 243 of them visible before any (i) is opened. Mean sentence 13.5 words.
 
-One error was caught in this file rather than in the code: a spread of R<sup>2</sup> values
-for bicycle theft was written down before it was computed. The computed range is wider than
-the invented one. Nothing else in the tables was asserted before it was measured.
+**Accessibility — pass, with one fix.** Contrast measured: body text 17.8:1, soft labels
+6.3:1, captions 7.0:1, buttons 17.8:1, area outlines 17.8:1. The dissemination-area hairline
+measured 2.6:1, below the 3:1 minimum, and it matters because the palest fill is within
+1.1:1 of the page — the line is what shows where a low-valued area ends. Darkened to 3.18:1
+light, 3.03:1 dark. Touch targets 44px, (i) buttons 25px, strip dots 18px on touch. Both
+ramps colourblind-safe. Live region announces every change.
 
-**Text — pass, after the pedagogical pass rewrote most of it.** Read for the anti-AI rules
-and for a reader with little background. The one place the reading level rises is the
-two-stage estimation paragraph, which is unavoidable and sits behind an (i).
-
-**Accessibility — pass, with one fix.** Contrast measured rather than eyeballed: body text
-17.8:1, soft labels 6.3:1, captions 7.0:1, buttons 17.8:1, area-of-analysis outlines
-17.8:1. The dissemination-area hairline measured 2.6:1, below the 3:1 minimum for a
-graphical object, and it matters here because the palest fill in both ramps is within 1.1:1
-of the page — the line is what shows where such an area ends. Darkened to 3.18:1 in light
-and 3.03:1 in dark. Touch targets are 44px under a coarse pointer, (i) buttons 25px against
-a 24px minimum. Both ramps are ColorBrewer schemes marked safe for the commonest colour
-blindness. Every control has an accessible name, changes are announced in a live region,
-and the maps carry `role="img"` with the caption as the label.
-
-Known gap: the maps are not keyboard navigable. The hover readout is a supplement — every
-number it shows is also derivable from the visible maps and the readout — but a keyboard or
-screen-reader user cannot inspect a single area. Recorded as a limit, not a pass.
-
-**Device and room — pass.** No horizontal overflow and nothing clipped at 375×812,
-1280×900, 1280×720 and 1920×1080, in both presentation and normal mode, light and dark.
-Every control exercised in sequence on a phone viewport with every resulting fit finite.
-Not yet checked on the lecture machine or in a compressed recording.
+**Device and room — pass.** No overflow and nothing clipped at four viewport sizes in both
+modes, light and dark. Every control exercised in sequence on a phone with every resulting
+fit finite. Not yet checked on the lecture machine or in a compressed recording.

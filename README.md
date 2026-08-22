@@ -19,12 +19,12 @@ install.
   asserted.
 
 - [**Drawing the lines: MAUP in Vancouver**](https://foldingspace.github.io/interactive/maup/)
-  — the same police-reported incidents, the same two predictors, and a control that changes
-  how the city is cut into areas. Census tracts and dissemination areas are the real units;
-  random areas grown to the same size hold the number of areas still and move only the
-  boundaries. A predictor can be significant across 996 areas and gone across 118 without a
-  single figure in the data changing. A spatial lag model is there to deal with the
-  clustered errors, and the widget is candid about what dealing with them does not fix.
+  — does who lives in an area predict where incidents get reported to police? Three choices
+  move the answer and none of them is in the data: how many areas you cut the city into,
+  where the boundaries go, and what counts as *near*. A coefficient can be significant across
+  996 areas, absent across 118, and absent in every one of twenty other ways of drawing 118.
+  A spatial error model is there to deal with the clustered errors, and the page is candid
+  about what dealing with them does not fix.
 
 ## How they are built
 

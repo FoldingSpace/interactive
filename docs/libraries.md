@@ -160,10 +160,11 @@ share exact vertices, so contiguity is a hash of shared points rather than a top
 computation, and simplification cannot open slivers between neighbours. Deciding how the
 data is written is often the cheaper half of deciding what code to run over it.
 
-**Exact p-values needed about sixty lines.** The regularised incomplete beta function by
-continued fraction gives coefficient p-values with no table and no library, and checks
-against three closed forms to ten decimal places. Anything that would have pulled in a
-statistics library was smaller than the import.
+**Exact inference beat simulation twice.** Coefficient p-values come from the regularised
+incomplete beta function in about sixty lines, checked against three closed forms. Moran's I
+uses the exact randomisation moments rather than a permutation test — which was not only
+tidier but necessary, since one of the weight matrices on offer is dense and 999 shuffles of
+it would have been a billion operations.
 
 **Two files, not one.** This is the first widget with a separate `data.js`, at 130 KB.
 The single-file rule was about having no external dependency, and a sibling file in the
@@ -183,6 +184,7 @@ which of the project's habits are about to be tested.
 |---|---|---|
 | Computation on made-up data | none so far | Speed and exactness. Prefer a closed form; keep the main thread free. |
 | Vector polygons with attributes | none so far | Quantise coordinates before encoding, and adjacency comes free. Watch the file size and the licence. |
+| Spatial statistics on irregular areas | none so far | Dense weight matrices rule out simulation; use exact moments. Estimators that need a determinant do not fit in a browser, ones built on moment conditions do. |
 | Maps and basemaps | MapLibre, PMTiles | Network calls after load, tile licensing, default styles that fail on a projector. |
 | Projections and geometry | proj4js, turf, d3-geo | Which definition of a projection is being used, and whether it matches what students are taught. |
 | Data-backed | possibly none; DuckDB-WASM only if genuinely large | File size over classroom wifi and phone data. Licence and provenance of the extract. |
