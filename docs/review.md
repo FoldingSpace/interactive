@@ -63,6 +63,16 @@ should be reachable from the presets in one click.
 **What should the instructor say while this is on screen?** If that is not obvious, the
 widget probably needs a caption or a clearer default.
 
+**And what does the room do for five minutes?** Every widget carries a **For the classroom**
+panel with one pair activity in it, and this pass is where it is examined rather than
+admired. Four questions, and a task that fails any one of them goes back. Does each student
+commit to an answer before anything is revealed? Will two reasonable people disagree — say
+the wrong answer's reasoning out loud and check that it sounds sensible? Does it work with no
+screen at all, one phone between two, and five minutes including the share-back? And does the
+instructor know what to do with the answers when they come in? See `principles.md` section
+16. The task is designed with whoever teaches the course, by interrogation, and both it and
+the candidates dropped along the way are recorded in the widget's file.
+
 The critique produces requested changes, in priority order. Changes that affect what
 students learn come before changes that affect how it looks.
 
@@ -315,14 +325,17 @@ argument. See `principles.md` section 13.
 
 ## Before the push
 
-Three things that are not a pass but are part of shipping, and all three have been
+Four things that are not a pass but are part of shipping, and all of them have been
 forgotten at least once.
 
 The widget is listed on `web/index.html` with a one-line description. A widget missing
 from the front page is reachable only by people who were handed the URL.
 
-Its file exists in `docs/widgets/` and has the five required parts listed in
+Its file exists in `docs/widgets/` and has the six required parts listed in
 `docs/widgets/README.md`, the verified numbers among them.
+
+It has a **For the classroom** panel, the panel survives `?present=1`, and the activity in it
+was settled with the person who will teach it rather than drafted alone.
 
 If a bug was fixed in the widget, `template/` was checked for the same bug. Copying is
 what keeps the widgets independent, and it is also what lets one mistake live in several

@@ -201,7 +201,10 @@ size through `calc()`.
 6. Add the widget to `web/index.html` and to the list in `README.md`.
 7. Log anything borrowed in `docs/attributions.md`, and anything tried, used, or ruled out
    in `docs/libraries.md`.
-8. Run all five passes in `docs/review.md`.
+8. Design the **For the classroom** activity with whoever will teach it, by interrogation
+   rather than by drafting — `principles.md` section 16 — and write it, and the candidates
+   dropped, into the widget's file.
+9. Run all five passes in `docs/review.md`.
 
 ## What goes where
 

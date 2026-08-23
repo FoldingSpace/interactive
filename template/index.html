@@ -10,9 +10,13 @@
   this repository is required to have, already wired up and already tested.
 
   Keep:  the colour tokens and dark mode, the --ui scale, presentation mode, the (i)
-         panel handler, the live region, URL state, the credit line.
+         panel handler, the live region, URL state, the credit line, and the
+         "For the classroom" fieldset, which every widget is required to carry and
+         which is the one (i) panel that stays visible on a projector.
   Replace: the title, the intro, the stage, the readout, the controls, the (i) text.
   Delete: anything you genuinely do not need. An unused control is worse than none.
+         Not the classroom panel: that one is settled with whoever will teach it,
+         by interrogation, and then written. principles.md section 16.
 
   See docs/widget-pattern.md for what each piece is for and what usually goes wrong.
 -->
@@ -63,6 +67,10 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 .intro { margin: 0; color: var(--ink-soft); max-width: 42em; }
 /* Nobody at the back of a room reads the intro. */
 body[data-present="1"] .intro { display: none; }
+/* Every (i) panel hides on a projector except this one, whose reader is the person at the
+   front in the moment before the room is asked to do something. principles.md section 16. */
+body[data-present="1"] .help-panel:not(.classroom) { display: none; }
+body[data-present="1"] .info:not(.classroom-btn) { display: none; }
 
 /* ---- layout ------------------------------------------------------------
    Narrow: one column, stacked, controls last so the thumb reaches them.
@@ -205,6 +213,26 @@ body[data-present="1"] footer { display: none; }
              jargon.</p>
           <p class="refs"><b>For more, see:</b> nothing yet — delete this line rather
              than shipping an unchecked citation.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>For the classroom
+          <button class="info classroom-btn" data-info="info-classroom" aria-expanded="false"
+                  aria-controls="info-classroom" title="Five minutes, in pairs">i</button>
+        </legend>
+        <!-- REPLACE, and do not draft this alone. The activity is settled with whoever will
+             teach it, by interrogation: principles.md section 16, and the process is a
+             /grill-me session about the pedagogy rather than about the interface. Keep the
+             shape below — commit first, then pair, then the room — and keep the whole thing
+             inside five minutes. This panel stays visible in presentation mode. -->
+        <div class="help-panel classroom" id="info-classroom" hidden>
+          <p><b>On your own, one minute.</b> REPLACE with the question each student writes an
+             answer to before anything is revealed. It has to be answerable with no screen.</p>
+          <p><b>In pairs, two minutes.</b> REPLACE. Compare the two answers and say why they
+             differ. One phone between two is enough.</p>
+          <p><b>Back to the room, two minutes.</b> REPLACE with the two or three positions
+             pairs will land in, and what to run at the front to settle between them.</p>
         </div>
       </fieldset>
 

@@ -666,6 +666,83 @@ as an answer key is not the same as pretending to be unrelated, and a student wh
 that the widget is about the same methods as their lab has understood something rather than
 cheated.
 
+## 16. Five minutes with somebody else
+
+Every widget carries a panel labelled **For the classroom**, holding one activity: five
+minutes, in pairs, done on one of the pair's own phones or on the back of a page. It is the
+only part of a widget addressed to whoever is running the room rather than to a reader alone,
+and it is the part that decides whether the widget gets used at all.
+
+Why it is a requirement and not a nice addition. A widget on a projector is a demonstration,
+and a demonstration is watched. What a student keeps is the thing they committed to and had
+to defend to one other person. Everything else in this document is about making a widget say
+something true; this section is about the five minutes in which somebody else has to say it
+back.
+
+**The task starts with a commitment made before anything is revealed.** Each student writes
+one answer down — a prediction, a sign, a ranking, a number, a which-of-these — before the
+pair talks and before the widget is run. A pair-and-share with no prior commitment is a
+conversation, and a conversation about something on a screen leaves nothing behind. The build
+queue already asks this of build 2 for the same reason: being wrong about something you have
+written down is what makes the correction stick.
+
+**Pick a question two reasonable people will answer differently.** If the whole room says the
+same thing the pair has nothing to do and the share-back has nowhere to go. So the question is
+found by looking for where in the widget's own range plausible readers diverge — measured, the
+way section 5 asks that a control be measured rather than described from its design intent.
+The test of a good one: you can write the wrong answer's reasoning in a sentence and it sounds
+sensible.
+
+**Pen and paper has to be a real version of it.** Lecture wifi fails, half a room will not
+open a link, and a phone in the third row is smaller than the diagram at the front. What
+satisfies both is a split where the paper half is the *prediction* and the device half is the
+*test* — what a student writes needs no screen, and then the widget settles it. A task that
+requires reading a value off the display has failed this, and has usually failed the rule
+above it too.
+
+**Say what happens to the answers.** The five minutes ends with the room, and an instructor
+who does not know what to do with what the pairs produced ends it in a shrug. Name the two or
+three positions pairs will land in, and say what to run at the front to settle between them.
+Write it so somebody teaching this for the first time can run it having read it once.
+
+**Five minutes is the whole budget, share-back included.** Put the split on the panel: about a
+minute alone, two in the pair, two back to the room. An activity that needs eight minutes does
+not get run twice.
+
+**One concept, and it is the widget's own.** The task tests the sentence at the top of the
+widget's file — the one thing it teaches — not a feature of the interface. If it can be passed
+by somebody who has understood the controls and not the idea, it is testing the wrong thing.
+
+**Where a widget came from a lab, section 15 still governs.** The task must not be the lab
+question in a smaller box, and the check is the same: say what the widget would have to become
+for the task to hand over an answer that is being marked.
+
+**This panel stays in presentation mode.** Every other (i) hides on a projector, because
+nobody at the back reads a paragraph. This one's reader is the person at the front in the
+moment before the room is asked to do something, which is exactly when the projector is on. It
+costs one CSS rule, and it is the only exception section 3 makes.
+
+### It is designed by interrogation, not written
+
+What a room will actually do in five minutes is not derivable from the widget. So the activity
+is settled in conversation with whoever teaches the course, one question at a time, before any
+of it is written: what the students already have, what they will get wrong, what the wrong
+answers are made of, and what the instructor says next. That is a `/grill-me` session and its
+subject is the pedagogy, not the interface.
+
+Generating a plausible activity and shipping it is the failure this rule exists to stop.
+Plausible is exactly what a bad pair task looks like — it reads well, it runs to time, and the
+room learns nothing because nobody was ever going to be wrong.
+
+Record it in the widget's file: the task, what it is testing, the wrong answers expected and
+what makes each of them reasonable, what the share-back does with them, and the candidates
+tried and dropped. Pair tasks are easy to reinvent, and half the value of those files is
+stopping a rejected idea coming back.
+
+Then the ordinary rules apply. The prompt a student reads is student-facing text and obeys
+section 8. Anything it cites goes through section 11's adversarial check like every other
+citation in the repository.
+
 ---
 
 ## Open questions

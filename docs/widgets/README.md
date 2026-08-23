@@ -20,7 +20,7 @@ goes stale in one of them.
 
 ## What every one of these has to contain
 
-The order is up to you and the headings can be whatever suits the widget. These five have
+The order is up to you and the headings can be whatever suits the widget. These six have
 to be in there somewhere, because each of them has already been needed.
 
 **The one thing it teaches**, in a sentence, at the top. If that sentence is hard to
@@ -38,6 +38,11 @@ is stopping the same rejected idea from being reinvented.
 **Known limits and open threads.** What the widget cannot do, what is misleading about it,
 and the questions raised and not settled. Mark a guess as a guess. Anything not yet
 computed must be computed before it appears anywhere a student can read it.
+
+**The five-minute task.** What the **For the classroom** panel asks, what it is testing,
+the wrong answers expected and what makes each one reasonable, what the share-back does with
+them, and the candidates tried and dropped. `../principles.md` section 16. Pair tasks are
+easy to reinvent, which is why the rejected ones matter as much as the one that shipped.
 
 **Picking it up again.** The live URL, where the code is, how to preview it locally, and
 which numbers to check first. Written for a reader with no memory of building it, because

@@ -68,6 +68,11 @@ short: they become the URL, and the URL goes on slides and into QR codes.
    exists, that its details are exact, and that it supports the claim attached to it.
    Unconfirmable citations are removed, not hedged.
 10. Nothing ships without going through `docs/review.md`, including its correctness pass.
+11. Every widget carries a **For the classroom** panel: one five-minute pair activity, doable
+    on one phone between two or on paper, starting from an answer each student commits to
+    before anything is revealed. It is designed in conversation with whoever teaches it, not
+    drafted, and it is the one (i) panel that stays visible in presentation mode.
+    `principles.md` section 16.
 
 ## Where things stand
 
@@ -82,6 +87,10 @@ on relative space, which is the first one here not built beside an assessment at
 has a file in `docs/widgets/` carrying its verified
 numbers, review record, open threads and a "picking this up again" section. **Read that
 before changing one** — the recorded values are the regression suite.
+
+None of the four carries a **For the classroom** panel yet — the requirement post-dates
+them. Each one needs its own grilling session with Luke before it is written; see
+`principles.md` section 16, and the note at the end of each widget's file.
 
 Neither lab widget is an answer key, and each refuses structurally rather than by asking
 students not to look — see `principles.md` section 15, which is the working order both

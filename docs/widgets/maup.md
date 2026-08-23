@@ -578,3 +578,16 @@ the grid that was supposed to lay the cards out in a row.
 Still to do: the vertical space under the map row is unused, and on a phone the six maps
 stack to about 2,900 px, which is a long scroll for a page whose point is the comparison
 across them.
+
+
+## For the classroom — not yet written
+
+`principles.md` section 16 requires a **For the classroom** panel: one five-minute pair
+activity, doable on one phone between two or on paper, starting from an answer each student
+commits to before anything is revealed. This widget shipped before that rule existed and does
+not have one.
+
+It is not something to draft alone. The activity is settled with Luke by interrogation — what
+the students already have, what they will get wrong, what the wrong answers are made of, and
+what the share-back does with them — and then the task, and the candidates dropped on the way,
+are recorded here.

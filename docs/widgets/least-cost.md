@@ -645,3 +645,16 @@ brush stroke the median frame is 16.7 ms.
 **Outstanding:** the phone layout is a 2238 px scroll, which is long but has no better
 answer while the map, nine bars and the kept proposals all have to be on one page. Not
 checked on a real phone or on a projector yet — both are in the list above the sign-off.
+
+
+## For the classroom — not yet written
+
+`principles.md` section 16 requires a **For the classroom** panel: one five-minute pair
+activity, doable on one phone between two or on paper, starting from an answer each student
+commits to before anything is revealed. This widget shipped before that rule existed and does
+not have one.
+
+It is not something to draft alone. The activity is settled with Luke by interrogation — what
+the students already have, what they will get wrong, what the wrong answers are made of, and
+what the share-back does with them — and then the task, and the candidates dropped on the way,
+are recorded here.
