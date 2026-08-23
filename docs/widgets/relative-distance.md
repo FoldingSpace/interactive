@@ -49,7 +49,7 @@ Data, as shipped 2026-08-22:
 | Shape points between junctions | 7,557 |
 | Junctions off the LiDAR mosaic, on CDEM instead | 94 |
 | Coordinate origin, UTM zone 10N | 483000 E, 5453100 N, 2 m per unit |
-| `data.js` | 916,878 bytes, 234,262 gzipped |
+| `data.js` | 916,940 bytes, 234,194 gzipped |
 | `basemap.jpg` | 219,948 bytes, 1150 x 1131, 16 m |
 | Mesh over the photograph | 92 x 91 cells, 200 m |
 | Mesh cells with no travel time behind them | about 54% on foot, 84% avoiding steep ground |
@@ -620,6 +620,22 @@ Device and room: partly checked.
   read at fifteen metres. (i) panels and the footer drop; the sentence the widget
   is for stays in the reading flow.
 
+Since the first sign-off, and all found after it shipped:
+  A start you cannot set off from drew a blank map. Reported from a shared link,
+  fixed, and the URL is now a regression test. principles.md section 11's new
+  subsection is the general form of the deeper problem behind it.
+  The Lions Gate one-way tagging made a detour look like a hill, and both
+  implementations agreed on the wrong figure. Corrected on Luke's local
+  knowledge; the rule that replaced it frees 42 shared-use paths in the window
+  and leaves 942 contraflow bike lanes alone.
+  The photograph was pushed much harder at Luke's ask, which cost the path
+  network its contrast. Recorded as a deliberate concession rather than drifted
+  into.
+  Traveller and start changes now morph, by two different routes and for a
+  stated reason, and neither unclips the ground on the way.
+  The travel models are explained for a reader who has not met them, one
+  traveller at a time.
+
 Outstanding, and all of it needs a real device or a real room:
   - The transition has never been seen running. The browser pane used for checking
     reports the page hidden, so requestAnimationFrame never fires in it. The
@@ -633,4 +649,8 @@ Outstanding, and all of it needs a real device or a real room:
   - Colour-blindness simulation not run. The two pins differ in shape as well as
     hue, and the street classes differ in width as well as lightness, so nothing
     rests on hue alone — but that is an argument, not a measurement.
+  - A reader reports that mode transitions "don't work at all" from
+    ?m=3&o=622,348. Driven on the deployed page the morph fires — 67 frames, the
+    drawn s tracing 0 to 1, both states healthy — so the mechanism is not the
+    problem and something about how it looks is. Not reproduced; not closed.
 ```

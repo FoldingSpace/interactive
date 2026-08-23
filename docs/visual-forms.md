@@ -213,6 +213,73 @@ and would also start steering interpretation.
 
 ---
 
+## Drawing over a photograph
+
+**No flat colour clears 3:1 across a photograph's whole range.** A dark line fails over
+water and forest; a pale line fails over roofs and sand. Measured against a washed
+Sentinel-2 image, the pale end of a three-step street palette sat at 1.6:1, and lightening
+the image far enough to fix it left no image. The cartographic answer is a casing — a light
+halo under a dark line — but a cased line is a loud line, and it is the wrong thing to
+spend on a mesh of 32,000 back lanes.
+
+**So decide which layer is the argument and hold that one to the standard.** In
+`relative-distance` the skeleton keeps it (major streets 4.02:1, minor 3.11:1 against the
+darkest land in the shipped image) and the path network is given up as texture: pale, thin,
+half transparent, and knowingly below the line. **Write the concession down where the
+palette is defined and in the widget's file.** A standard quietly abandoned is worse than
+one deliberately spent, and the next person needs to know which happened.
+
+**Both ends of that trade get measured, not eyeballed.** Wash the photograph harder and the
+streets are comfortable while the ground is a rumour; wash it less and the ground reads
+while the lines stop being lines. Sweep the wash parameters, print the contrast at each,
+and pick. Then give the reader a way to turn the photograph off, which is also the right
+answer on a projector, where dark tones crush.
+
+**Antialiasing does not add up.** Two clipped shapes sharing an edge are each antialiased
+against it, and two half-covered edges do not make one covered edge, so a pale seam runs
+down every join. A mesh of them reads as a grid ruled across the whole picture. Push each
+shape's corners a fraction of a pixel out from its own centre before clipping, so
+neighbours overlap.
+
+## Warping a picture by a field
+
+**Warp only where the field is defined, and let the rest go.** A travel-time surface exists
+on the street network and nowhere else. Interpolate it across the whole plane and Burrard
+Inlet stretches like everything else, which says the sea is merely slow. It is not slow; it
+is not there. Cells with no reachable network within a set radius are held where they are
+and faded out instead, and about half the mesh is in that state. The refusal is the most
+honest thing the layer does.
+
+**A cell lying across a discontinuity has to be held too.** Where one corner is a minute
+from the origin and the next is half an hour, a quadrilateral cannot draw the tear, and
+letting it try produces long shards reaching across the map that read as a broken renderer.
+Hold any cell that would be stretched past a few times its own width. On this data that
+costs 20 cells in 8,372 and removes almost all of it.
+
+**When a set changes mid-animation, cross-fade it rather than swapping it.** Which cells are
+held, and which streets exist, both change with the traveller. Swapping at the midpoint pops;
+blending across the transition does not. For stroked lines that is three passes instead of
+one — in both sets at full strength, leaving-only fading out, arriving-only fading in — and
+it is cheap enough not to think about.
+
+## Labels
+
+**Measure the ink, not an estimate of it.** Guessing a string's width from its character
+count is close enough for a two-word marker and not close enough for place names: two labels
+the estimate called clear sat on top of each other on a phone. Put the text in the tree,
+read `getBBox()`, and remove it again if it collides.
+
+**Place them in priority order and drop what will not fit.** A map whose names sit on top of
+one another has stopped naming anything. Marks the reader is looking at go first, then names
+around them.
+
+**Space for a mark is claimed, not requested.** Asking cost an hour here: a pin's caption
+sits just under its own marker, so the collision test found the marker's box, returned
+false, and never recorded the caption — which left every place name free to be drawn
+straight through it. Anything that is drawn unconditionally records its box unconditionally.
+
+---
+
 ## After you change what is displayed
 
 **Audit every control for whether it still controls something.** The MAUP widget carried a

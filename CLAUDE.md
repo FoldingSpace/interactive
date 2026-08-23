@@ -71,12 +71,15 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 
 ## Where things stand
 
-Three widgets, deployed and live:
+Four widgets, deployed and live:
 [spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/);
 [drawing the lines](https://foldingspace.github.io/interactive/maup/), on the modifiable
-areal unit problem, from GEOG 370's Lab 3; and
+areal unit problem, from GEOG 370's Lab 3;
 [least cost, whose cost?](https://foldingspace.github.io/interactive/least-cost/), on
-least-cost paths, from Lab 4. Each has a file in `docs/widgets/` carrying its verified
+least-cost paths, from Lab 4; and
+[Vancouver, measured in minutes](https://foldingspace.github.io/interactive/relative-distance/),
+on relative space, which is the first one here not built beside an assessment at all. Each
+has a file in `docs/widgets/` carrying its verified
 numbers, review record, open threads and a "picking this up again" section. **Read that
 before changing one** — the recorded values are the regression suite.
 
@@ -188,6 +191,17 @@ where anyone reads past the fifth. Grouped now. Every one was paid for.
 - **A citation is not checked until you have read the thing.** An adversarial agent
   fabricated a full set of verifications for this repository, complete with quotations and
   catalogue records, and then retracted them. Get the paper.
+- **An independent implementation cannot see a wrong input.** Two routes agreed to six
+  decimals on a cycling time that was wrong about Vancouver, and the widget's own file
+  explained the error as a hill when it was a detour. Recomputation tests the arithmetic;
+  the input needs a second source, an independent tool, or somebody who knows the place.
+  `principles.md` section 11.
+- **A number you can explain is not thereby a number you have checked.** The wrong figure
+  above survived because it came with a story that fitted. Same failure as reaching for a
+  citation because it fits a claim.
+- **A comment that states an intent is a claim.** One here said "does this traveller have
+  any way to leave the start?" over code that asked something else, and shipped a blank map.
+  Check the code against the comment the way you check a source against its claim.
 - **The citation most likely to be attached to a claim it does not make** is the one
   supporting a framing rather than a method. Cite the argument, objection included.
   `principles.md` section 11.

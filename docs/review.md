@@ -102,6 +102,27 @@ implementation, and say which is which where you record them. If ties are possib
 that is itself worth putting on the page: which answer you are shown is a property of the
 software, not of the subject.
 
+**Compare the counts, not only the values.** A `Float32Array` threshold in
+`relative-distance` excluded 93 streets at exactly five in a hundred from the one traveller
+defined by that threshold. Every recorded travel time stayed correct to six decimals,
+because none of the recorded routes used one of those 93. The independent check agreed on
+every *number* and disagreed about how many junctions were reachable — 7,433 against 7,360
+— and that is the only place it showed. Have the independent route report cardinalities as
+well as quantities, and diff those too.
+
+**Build the data twice and diff it.** A generated data file that cannot be reproduced
+cannot be regression-checked, and the failure is silent: the origin of a quantised grid was
+`floor(min)`, so the last bit of a projection moved it a whole metre between runs and half
+the deltas in the file changed. Two runs, byte-identical, before anything is recorded
+against it.
+
+**A probe has to read the same state the drawing reads.** While an animation runs there are
+two answers to "where is this drawn" — the settled one and the one on screen — and a test
+helper that reads the wrong one reports the widget broken while it is fine, or fine while
+it is broken. Here the markers really *were* reading the settled value and jumping while
+the streets travelled, and the probe read it too, so the two agreed and the bug looked like
+a test artefact. Route everything through one accessor.
+
 **But when the thing being checked is generated data, run the real code.** A
 reimplementation is right for checking a *formula*, where a second route is the whole
 point. It is wrong for checking a *generator*, where any drift makes the two disagree about
@@ -180,6 +201,12 @@ match is worse than no test.
 
 **A test that fails because it describes the layout you just replaced is the suite working.**
 Two did. Re-record rather than loosen.
+
+**A scripted edit that matches nothing changes nothing, and says nothing.** Editing files
+with `str.replace` from a script is fast and it fails silently: the suite went green here on
+a test that had not been replaced, because the search string said "real map" where the file
+said "metre map". Assert the match count before writing, and make the whole batch atomic so
+a later mismatch does not leave earlier edits half-applied.
 
 **A console keeps its errors across reloads.** A fixed error goes on being reported until the
 tab is replaced, which is a fast way to spend twenty minutes re-fixing something. Read the

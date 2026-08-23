@@ -4,7 +4,7 @@ What we use, what worked, what did not, and what is worth trying. Update this ev
 a library earns or loses a place. Licences below are recorded from prior knowledge and
 must be checked against the project's own repository before anything ships publicly.
 
-Started 2026-08-19. Three widgets built so far and none needed a library, so the
+Started 2026-08-19. Four widgets built so far and none needed a library, so the
 "in use" table is still empty and everything below it remains a candidate.
 
 Worth being exact about what that claim now covers, because the third widget uses more of
@@ -31,7 +31,8 @@ that happens rather than contorting the widget to keep them true. See section 13
 |---|---|---|---|
 | _(none)_ | | | Spatial autocorrelation needed no dependency at all. Worth trying that first each time. |
 
-Three widgets in, the streak is holding, and the third was the one most likely to break it.
+Four widgets in, the streak is holding. The third looked most likely to break it, and the
+fourth — a street network, a routing problem and a warped photograph — looked worse.
 `web/least-cost` runs Dijkstra over 41,800 cells and repaints a raster on every animation
 frame, which sounds like a job for a graph library and a canvas library and is neither. A
 binary heap on two typed arrays is about forty lines. Painting the land is one
@@ -281,18 +282,9 @@ vertices. Algorithm first, and in this case the algorithm was enough.
 small set of integers over 800,000 cells. Here the costs are continuous and the graph is
 thirty times smaller, so the heap never showed up in a measurement.
 
-**`Float32Array` is not a free optimisation when a threshold is involved.** A grade stored
-as exactly 50 per mille reads back as 0.050000001 and fails `> 0.05`. Keep the integer the
-data actually holds and compare integers; use `Float64Array` wherever an independent check
-has to agree with you. See `docs/widgets/relative-distance.md`.
-
-**Antialiasing does not add up.** Two clipped shapes sharing an edge are each
-antialiased against it, and two half-covered edges do not make one covered edge, so a
-pale seam runs down every join. A mesh of them shows as a grid across the whole picture.
-Push each shape's corners a fraction of a pixel out from its own centre before clipping.
-
-**`requestAnimationFrame` is not a promise.** A page in a background tab gets no frames at
-all, so anything a reader reads must be written before the first one, not in the last one.
+Three lessons that came out of this build are about code and drawing rather than about
+libraries, so they live where they belong: typed arrays at a threshold and animation
+frames in `widget-pattern.md`, antialiased seams in `visual-forms.md`.
 
 ### Warping a photograph: three libraries considered, none used
 

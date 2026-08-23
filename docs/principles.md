@@ -130,6 +130,19 @@ Changes are immediate and visible. Something on screen must move when a control 
 Every widget has a reset. A student who has made a mess gets back to the opening state
 in one tap.
 
+**A control whose middle means nothing should not be continuous.** The relative-distance
+map had a slider from metres to minutes for its first hour. Half way along it was half a
+distance added to half a scaled time, which is not a way of measuring anything, and the two
+buttons sitting under it at the ends were the design already admitting it. The tell is in
+the explanation: if the (i) panel can only describe the two ends, the thing between them is
+not a state.
+
+What a slider like that is really buying is the *movement*, and the movement is worth
+keeping — watching one place travel outward past another is how a reader does the
+comparison, where a cut between two still pictures makes them do it from memory. So: two
+states, and the change drawn as a transition. Respect `prefers-reduced-motion` by snapping
+straight across.
+
 **It must stay responsive while being used.** A control that stutters while it is being
 dragged teaches that the thing is fragile. Two rules serve this. Anything expensive goes
 off the main thread, into a worker, so the interface never waits for it; and the cheap
@@ -242,6 +255,18 @@ costs a line and it converts the widget's worst moment into its best one.
 
 The related habit is to build the failing case into the presets deliberately, so it can be
 reached in one click and demonstrated on purpose rather than stumbled into.
+
+**Sometimes the right answer is to draw nothing, and to make the nothing visible.** The
+relative-distance map stretches a satellite photograph by travel time. Travel time exists on
+the street network and nowhere else, so interpolating it across the whole plane would
+stretch Burrard Inlet like everything else and say the sea was merely slow. It is not slow;
+it is not there. Ground with no reachable network near it is held where it is and faded out,
+and about half the picture is in that state. A reader watching the city deform around an
+empty middle has been shown the limit rather than told it.
+
+The general form: where a method has no answer, the drawing should decline rather than
+interpolate. An interpolated answer in a region the method cannot reach is the confident
+version of a blank result, and this section is about both.
 
 ### Some limits are a reason to build something else
 
@@ -490,6 +515,36 @@ The repair is not to soften the claim. It is to cite the argument rather than th
 you like, objection included. That is more accurate, and it is better teaching — a student
 who is told a thing is contested and shown by whom has been given something to do.
 
+### An independent check cannot see a wrong input
+
+This section is about citations, and the same failure applies to data in a form that is
+harder to catch, because everything about the process looks right.
+
+`relative-distance` reported that cycling from Waterfront Station to Park Royal took 57.7
+minutes out and 20.0 back, and the widget's own file explained the thirty-eight minute gap
+as the climb onto Lions Gate Bridge. `relative-distance-verify.py`, which shares no code
+with the widget and rebuilds the routing from the written description, reproduced 57.788652
+to six decimal places. Two implementations, perfect agreement, and wrong about the world:
+OpenStreetMap maps the crossing as a pair of one-way cycleways, taking that literally sends
+a northbound cyclist the long way round, and the real figure is 22.2. **It was a detour and
+the documentation called it a hill.**
+
+What caught it was Luke, who cycles the bridge.
+
+The rule: **checking by recomputation tests the arithmetic and cannot test the input.** A
+source can be real, correctly attributed, openly licensed, current, and wrong about the
+thing you are using it for. An independent implementation is necessary and is not
+sufficient, and the gap has to be closed some other way — against a second source, against
+an independent tool, or against somebody who knows the place. Here an independent router
+was available and agreed on the walking time to within 1.5%, which is exactly the check
+that would have caught this one had it been run on the cycling number too.
+
+The other half is about the explanation. The wrong number came with a confident story
+attached, and the story is what let it survive: a thirty-eight minute asymmetry *looks* like
+a hill if you are expecting hills. **A number you can explain is not thereby a number you
+have checked**, and an explanation invented to fit a figure is the same failure as a
+citation reached for to fit a claim.
+
 ### The claim drives the citation, never the reverse
 
 When what a widget does changes, the sources attached to it have to be re-examined, and the
@@ -518,6 +573,15 @@ Graphical decisions recur across widgets while their subjects do not, so they li
 decomposes, colour, and the audit to run after changing what is displayed. Two rules from it
 are load-bearing enough to repeat here. A count is never a choropleth. And a row of small
 multiples needs one shared scale, or it is a row of unrelated pictures.
+
+**And a third, about standards rather than about drawing.** Sometimes a measured standard
+has to be given up: `relative-distance` puts a satellite photograph under its streets, and
+no flat line colour clears 3:1 across a photograph's whole range. Its path network is now
+knowingly below that line. What matters is that the decision was *made* rather than drifted
+into — which layer is the argument, which is texture, what the numbers actually are, and who
+decided. Write it where the palette is defined and in the widget's own file. A standard
+quietly abandoned is worse than one deliberately spent, because the next person cannot tell
+which happened.
 
 ## 13. What is at stake belongs on the face of the page
 

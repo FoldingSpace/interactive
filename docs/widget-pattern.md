@@ -98,6 +98,50 @@ against.** A drawing banner placed inside the map box made the box taller than t
 so a press near the top mapped to a negative row and silently did nothing. Put the chrome
 beside the canvas, not around it, and the pointer arithmetic stays one subtraction.
 
+## What the fourth widget added
+
+A street network, a warped photograph and two kinds of animated transition. Six things
+that will be true of the next one too.
+
+**A typed array is not a free optimisation when a threshold is involved.** `Float32Array`
+stores a grade of exactly 50 per mille as 0.050000001, so `> 0.05` was true and 93 streets
+were quietly excluded from the one traveller defined by that threshold. Every recorded
+travel time stayed correct, so no worked example could have caught it. Keep the integer the
+data actually holds and compare integers; use `Float64Array` anywhere an independent check
+has to agree with you to more than six figures.
+
+**`requestAnimationFrame` is not a promise.** A page in a background tab gets no frames at
+all. Anything a reader reads — a readout, a control's pressed state, the URL — must be
+written before the first frame, not in the last one, or the widget can sit half way through
+a transition describing neither end. Keep a timer as a backstop that snaps the drawing into
+place if the frames never come.
+
+**`floor(min)` is not a stable anchor.** Quantised coordinates need an origin, and taking
+it from the minimum of a projected extent means the last bit of a projection decides it:
+two runs over identical input put the southernmost point either side of a whole metre, and
+half the deltas in the file changed. Anchor to a round number below the minimum. Then build
+the data twice and diff it — a data file that cannot be reproduced cannot be checked.
+
+**To move between two models, find the state they agree on and go through it.** There is no
+half-way point between "on foot" and "by car": the costs, the scale and the frame all
+change at once, and an average of two answers is an answer to nothing. But an undeformed
+map is the same map for every traveller, so a change can collapse to it, swap the model
+where both sides agree, and rebuild the other way. The join is exact rather than blended.
+The first half has to be played back from a snapshot, because by then the model is gone.
+
+**Two questions that look like one are usually two.** How far the map was deformed and how
+much of the hidden ground was allowed to show were the same variable, which was fine until
+a transition passed through the undeformed state and unclipped everything for a frame.
+Separating them was the whole fix. When an animation does something ugly only in the middle,
+suspect a variable that is answering two questions.
+
+**A comment that states an intent is a claim, and it can be false.** One here read *"does
+this traveller have any way to leave the start?"* above code that marked a junction usable
+if a usable arc *touched* it, in either direction. Being able to arrive somewhere is not
+being able to leave it, and the gap between the comment and the code shipped a blank map.
+Read the comment as an assertion and check the code against it, the same way a citation
+gets checked against its claim.
+
 ## What changes with the sort of widget
 
 The first widget was pure computation with no data and no dependencies. Most of what it
