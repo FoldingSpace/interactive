@@ -191,6 +191,47 @@ module.exports = function (t) {
     a.close(radius(), minutes, 0.01, "and it arrives exactly where it started from");
   });
 
+  t("changing the traveller goes through the true map", function (a) {
+    // There is no half-way state between "on foot" and "by car" — the times, the scale
+    // and the frame all change at once. What there is, is a state every one of these
+    // maps agrees on: at the metres end the drawing is just Vancouver. So the change
+    // collapses to it, swaps the model there, and deforms again. This checks the middle
+    // really is the true map and not an average of two deformed ones.
+    var w = open();
+    var quay = rd(w).node("Lonsdale Quay"), comm = rd(w).node("Commercial & Hastings");
+    function ratio() {
+      var o = rd(w).drawnXY(rd(w).state().start);
+      var p = rd(w).drawnXY(quay), q = rd(w).drawnXY(comm);
+      return Math.hypot(p[0] - o[0], p[1] - o[1]) / Math.hypot(q[0] - o[0], q[1] - o[1]);
+    }
+    var onFoot = ratio();
+    a.ok(onFoot > 3, "on foot the quay is drawn more than three times further out");
+
+    var btn = w.doc.querySelectorAll("[data-mode]").filter(function (b) { return b.dataset.mode === "3"; })[0];
+    btn.click();
+    // The readout is the new traveller's before a single frame has run.
+    a.ok(text(w, "outA").indexOf("12 min") === 0, "the numbers are the car's immediately");
+    // Sample the whole morph rather than guessing which frame the middle lands on. The
+    // ratio has to come down through the metre ratio on its way from one shape to the
+    // other; if the change were a cross-fade it would pass through an average instead,
+    // and 3.47/3.06 is nowhere near the average of 3.5 and 3.13.
+    var seen = [ratio()];
+    for (var f = 0; f < 90; f++) { w.flushFrames(1); seen.push(ratio()); }
+    var low = Math.min.apply(null, seen);
+    a.close(low, 3.47 / 3.06, 0.06, "it passes through the real map, not through an average");
+    w.flushFrames(300);
+    a.close(ratio(), 12.050535 / 3.847020, 0.05, "and arrives at the car's shape");
+  });
+
+  t("moving the start morphs rather than jumping", function (a) {
+    var w = open();
+    click(w, "Lonsdale Quay");
+    a.equal(text(w, "fromline"), "From Lonsdale Quay", "the readout moves at once");
+    w.flushFrames(300);
+    var st = rd(w).state();
+    a.equal(st.start, rd(w).node("Lonsdale Quay"), "and the start lands where it was sent");
+  });
+
   t("the drawing separates two places the ground does not", function (a) {
     // The picture, not the model. On the ground the two pins are within 12% of the
     // same distance from the start. Drawn in minutes they must be far apart, and in

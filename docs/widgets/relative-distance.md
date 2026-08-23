@@ -172,6 +172,37 @@ still maps makes them do it from memory instead. So the movement stayed and the 
 went: two states, animated between, with `prefers-reduced-motion` snapping straight
 across.
 
+### Changing the traveller, or the start, morphs through the true map
+
+Luke asked for the same movement when the traveller changes and when the start moves,
+and those are a harder case than the slider. There is no half-way state between "on foot"
+and "by car": the travel times, the scale factor and the frame all change at once, and an
+average of two deformations is not a map of anything.
+
+There is, though, one state every one of these maps agrees on **exactly**. At the metres
+end the drawing is just Vancouver — the same picture whoever is travelling and wherever
+they start. So a change goes through it. The deformed city collapses back to the real one,
+the model is swapped underneath at the moment the two sides agree, and it deforms again
+the new way. Nothing is cross-faded and nothing is approximated: the join is a picture both
+models can draw, so it is seamless by construction rather than by blending.
+
+The first half is played back from a snapshot, because by the time it runs the model has
+already been replaced. What is captured is the drawn world position of every vertex, which
+edges were drawn, the mesh positions and held flags, the old origin and the old frame —
+about 1.5 MB of copying, under a millisecond. The frame is interpolated once across the
+whole morph rather than once per half, so it does not change direction in the middle.
+
+Measured on the shipped page, the drawn ratio between the two pins traces
+3.51 → **1.16** → 3.13 as the traveller goes from on foot to by car. The metre ratio is
+3.47/3.06 = 1.13. It really does pass through the true map; a cross-fade would have passed
+through the average of the two deformations, which is nowhere near it.
+
+**One bug this turned up.** The streets read the morph's effective `s` and the markers read
+the settled `sVal`, so the pins jumped straight to the far side while the streets travelled
+through. Every function that positions anything now reads one `effS()`. The test samples
+the whole morph and asserts the ratio comes *down* through the metre ratio, rather than
+guessing which frame the midpoint lands on.
+
 **The state changes at the start of the animation, not at the end.** That is not a
 preference. Animation frames do not always arrive — a page in a background tab gets none
 at all — and the first version wrote the settled state in the last frame, so the widget
