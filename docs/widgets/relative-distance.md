@@ -199,22 +199,36 @@ Measured on the shipped page, the drawn ratio between the two pins traces
 3.47/3.06 = 1.13. It really does pass through the true map; a cross-fade would have passed
 through the average of the two deformations, which is nowhere near it.
 
-**Moving the start goes straight across, and the reason is the flash.** At the real map
-nothing is held back — the water and every other patch the traveller cannot speak for
-returns to full strength for an instant. When the traveller changes that reads as the city
-returning to itself before deforming a new way, which is the thing worth watching. When
-only the start moves it reads as a fault: a bright unclipped Vancouver blinking through
-the middle of what is really a re-centring. Luke called it distracting and he is right.
+**Moving the start goes straight across.** The traveller has not changed, so the two maps
+are the same kind of map, and the old drawn positions are simply pulled to the new ones
+with the drawing held at the minutes end throughout. There is no join to make seamless,
+because the model is swapped before the first frame and only positions travel. 800 ms
+rather than 1100, because a re-centring is a smaller thing than a change of traveller.
 
-So a start change takes a direct route. The traveller has not changed, so the two maps are
-the same kind of map, and the old drawn positions are simply pulled to the new ones with
-the drawing held at the minutes end throughout. There is no join to make seamless, because
-the model is swapped before the first frame and only positions travel. 800 ms rather than
-1100, because a re-centring is a smaller thing than a change of traveller.
+**And neither route unclips the ground on the way.** This took two goes. The first version
+routed both changes through the real map, and at the real map nothing is held back — the
+water and every other patch the traveller cannot speak for returns to full strength.
+Luke called the flash distracting, and it is: a bright complete Vancouver blinking through
+the middle of a change reads as a fault rather than as a map.
 
-Both routes are asserted from the same probe, so they cannot quietly become the same
-thing: across a start change the drawn `s` never falls below 0.98, and across a traveller
-change it reaches 0.
+The fix turned out to separate two things that had been one. **How far the map is
+deformed** and **how much of the held ground is allowed to show** were both driven by the
+same `s`. They are now different questions. The deformation still collapses to the true
+map when the traveller changes, because watching the city return to itself before
+deforming a new way is the thing worth seeing. The clipping does not follow it down: while
+a morph runs it stays where the morph is *going*, so the water hole never closes. At rest
+it follows the slider as before, and the metre map is complete, because that is what an
+ordinary map of Vancouver looks like.
+
+The two sets of held cells differ between travellers, so they are cross-faded across the
+morph rather than swapped at the midpoint, and the streets get the same treatment in three
+passes: the ones both travellers can use at full strength, the old traveller's only fading
+out, the new one's fading in. Three extra strokes a frame, and no pop in the middle.
+
+All of it is asserted from two probes, so the routes cannot quietly become one thing.
+Across a start change the drawn `s` never falls below 0.98. Across a traveller change it
+reaches 0 while the ground fade never rises above 0. At rest at metres the ground fade is
+exactly 1.
 
 **One bug this turned up.** The streets read the morph's effective `s` and the markers read
 the settled `sVal`, so the pins jumped straight to the far side while the streets travelled

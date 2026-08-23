@@ -864,6 +864,16 @@ body[data-present="1"] footer { display: none; }
     return (hi - lo) * kScale > 6 * ((IMG.x1 - IMG.x0) / m.nx);
   }
 
+  // How far the ground the traveller cannot speak for is allowed to show. It follows the
+  // slider at rest, so the metre map is complete. It does NOT follow the collapse through
+  // the middle of a morph: going that way would return the water and every other held
+  // patch to full strength for one frame, and a bright unclipped Vancouver blinking
+  // through the middle of a change reads as a fault rather than as a map. While a morph
+  // runs it stays where the morph is going.
+  function groundFade(s) {
+    return Math.max(0, 1 - 2 * (morphU >= 0 ? sTarget / 100 : s));
+  }
+
   var OUTSET = 0.6;
   function out4(x, y, cx, cy, lineTo) {
     var dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy) || 1;
@@ -877,24 +887,26 @@ body[data-present="1"] footer { display: none; }
     if (!m) return;
     var sw = IMG.w / m.nx, sh = IMG.h / m.ny;
     var dn = downFactor();
-    var snap = (dn > 0 && SNAP && SNAP.mesh && SNAP.mesh.gw === m.gw) ? SNAP.mesh : null;
-    var replay = replaying() && snap;
+    var snap = (morphU >= 0 && SNAP && SNAP.mesh && SNAP.mesh.gw === m.gw) ? SNAP.mesh : null;
     var px = new Float64Array(m.gw * m.gh), py = new Float64Array(m.gw * m.gh);
     for (var k = 0; k < px.length; k++) {
       var t = m.tt[k];
       var r = (t === INF) ? m.rr[k] : (1 - s) * m.rr[k] + s * t * kScale;
       var wx = originX + r * m.ux[k], wy = originY + r * m.uy[k];
-      if (snap) { wx = wx * (1 - dn) + snap.x[k] * dn; wy = wy * (1 - dn) + snap.y[k] * dn; }
+      if (snap && dn > 0) { wx = wx * (1 - dn) + snap.x[k] * dn; wy = wy * (1 - dn) + snap.y[k] * dn; }
       px[k] = sx(wx); py[k] = sy(wy);
     }
-    // While the first half plays back, the fade follows where the map was, not where it
-    // is going: a cell the old traveller could speak for should not blink out early.
-    var fade = Math.max(0, 1 - 2 * (replay ? s * (1 - dn) + dn * (sVal / 100) : s));
+    var fade = groundFade(s);
     for (var j = 0; j < m.ny; j++) {
       for (var i = 0; i < m.nx; i++) {
         var a = j * m.gw + i, b = a + 1, c = a + m.gw + 1, d = a + m.gw;
-        var held = replay ? snap.held[j * m.nx + i] === 1 : cellHeld(m, a);
-        if (held && fade <= 0.01) continue;
+        // Which cells are held changes with the traveller, so the two sets are
+        // cross-faded across the morph rather than swapped at the midpoint.
+        var newOn = cellHeld(m, a) ? 0 : 1;
+        var on = snap ? (snap.held[j * m.nx + i] === 1 ? 0 : 1) * (1 - morphU) + newOn * morphU
+                      : newOn;
+        var alpha = on + (1 - on) * fade;
+        if (alpha <= 0.012) continue;
         // off screen?
         if (Math.min(px[a], px[b], px[c], px[d]) > CW || Math.max(px[a], px[b], px[c], px[d]) < 0 ||
             Math.min(py[a], py[b], py[c], py[d]) > CH || Math.max(py[a], py[b], py[c], py[d]) < 0) continue;
@@ -914,7 +926,7 @@ body[data-present="1"] footer { display: none; }
         out4(px[a], py[a], mxc, myc); out4(px[b], py[b], mxc, myc, 1);
         out4(px[c], py[c], mxc, myc, 1); out4(px[d], py[d], mxc, myc, 1);
         ctx.closePath(); ctx.clip();
-        if (held) ctx.globalAlpha = fade;
+        if (alpha < 0.999) ctx.globalAlpha = alpha;
         ctx.transform(ax, ay, bx, by, px[a] - s0x * ax - s0y * bx, py[a] - s0x * ay - s0y * by);
         ctx.drawImage(img, 0, 0);
         ctx.restore();
@@ -966,34 +978,52 @@ body[data-present="1"] footer { display: none; }
 
   function draw() {
     var s = effS();
-    var dn = downFactor(), snap = dn > 0 ? SNAP : null, replay = replaying();
+    var dn = downFactor(), snap = morphU >= 0 ? SNAP : null;
     fitView();
     ctx.clearRect(0, 0, CW, CH);
     drawGround(s);
     var css = getComputedStyle(document.documentElement);
     var uiScale = present ? 1.6 : 1;
+    // Which streets exist changes with the traveller, so during a morph the set is drawn
+    // in three passes rather than swapped at the midpoint: the ones both travellers can
+    // use at full strength, the ones only the old traveller could use fading out, and
+    // the ones only the new one can use fading in. Three extra strokes a frame, and no
+    // pop in the middle. At rest there is one pass and nothing changes.
+    var bands = morphU >= 0 && SNAP
+      ? [[3, 1], [1, 1 - morphU], [2, morphU]]     // [which set, alpha]
+      : [[3, 1]];
     for (var c = 2; c >= 0; c--) {
       var list = BYCLASS[c];
-      ctx.beginPath();
-      for (var q = 0; q < list.length; q++) {
-        var e = list[q];
-        if (!(replay ? snap.edraw[e] : EDRAW[e])) continue;
-        var o = VOFF[e], last = VOFF[e + 1] - 1;
-        for (var i = o; i <= last; i++) {
-          var r = (1 - s) * VR[i] + s * VTR[i];
-          var wx = originX + r * VUX[i], wy = originY + r * VUY[i];
-          if (snap) { wx = wx * (1 - dn) + snap.vx[i] * dn; wy = wy * (1 - dn) + snap.vy[i] * dn; }
-          var px = CW / 2 + (wx - viewX) * scale;
-          var py = CH / 2 - (wy - viewY) * scale;
-          if (i === o) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      for (var bi = 0; bi < bands.length; bi++) {
+        var want = bands[bi][0], bandA = bands[bi][1];
+        if (bandA <= 0.01) continue;
+        ctx.beginPath();
+        var drew = false;
+        for (var q = 0; q < list.length; q++) {
+          var e = list[q];
+          var now = EDRAW[e] ? 1 : 0;
+          var was = SNAP ? (SNAP.edraw[e] ? 1 : 0) : now;
+          var band = (was && now) ? 3 : (was ? 1 : (now ? 2 : 0));
+          if (band !== want) continue;
+          drew = true;
+          var o = VOFF[e], last = VOFF[e + 1] - 1;
+          for (var i = o; i <= last; i++) {
+            var r = (1 - s) * VR[i] + s * VTR[i];
+            var wx = originX + r * VUX[i], wy = originY + r * VUY[i];
+            if (snap && dn > 0) { wx = wx * (1 - dn) + snap.vx[i] * dn; wy = wy * (1 - dn) + snap.vy[i] * dn; }
+            var px = CW / 2 + (wx - viewX) * scale;
+            var py = CH / 2 - (wy - viewY) * scale;
+            if (i === o) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
         }
+        if (!drew) continue;
+        ctx.strokeStyle = css.getPropertyValue(COLOUR[c]).trim() || "#888";
+        ctx.globalAlpha = LINEA[c] * bandA;
+        ctx.lineWidth = LINEW[c] * uiScale;
+        ctx.lineJoin = "round"; ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.globalAlpha = 1;
       }
-      ctx.strokeStyle = css.getPropertyValue(COLOUR[c]).trim() || "#888";
-      ctx.globalAlpha = LINEA[c];
-      ctx.lineWidth = LINEW[c] * uiScale;
-      ctx.lineJoin = "round"; ctx.lineCap = "round";
-      ctx.stroke();
-      ctx.globalAlpha = 1;
     }
     drawOverlay(s);
   }
@@ -1387,10 +1417,6 @@ body[data-present="1"] footer { display: none; }
     if (morphU < 0 || morphRoute === "direct") return sVal / 100;
     return Math.max(0, (morphU - MORPH_MID) / (1 - MORPH_MID)) * (sTarget / 100);
   }
-  // Whether the drawing is currently playing back the old state's own choices about what
-  // to draw. On the direct route it never is: the new traveller's choices apply from the
-  // first frame and only the positions travel.
-  function replaying() { return morphRoute === "through" && downFactor() > 0 && SNAP; }
 
   function morphTo(change, route) {
     stopAnim();
@@ -1692,6 +1718,7 @@ body[data-present="1"] footer { display: none; }
                                    held: meshHeld() }; },
     drawnXY: function (node) { return drawnPos(node, effS()); },
     drawS: function () { return effS(); },
+    groundFade: function () { return groundFade(effS()); },
     arcUsable: function (e, fwd) { return arcCost(e * 2 + (fwd ? 0 : 1), mode) !== INF; },
     gradeMilli: function (e) { return EGM[e]; },
     set: function (o) {

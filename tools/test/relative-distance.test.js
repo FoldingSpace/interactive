@@ -240,15 +240,32 @@ module.exports = function (t) {
     a.close(rd(w).drawS(), 1, 1e-9, "settled at minutes");
   });
 
-  t("changing the traveller still does go through the real map", function (a) {
-    // The other route, asserted from the same probe, so the two cannot quietly become
-    // the same thing.
+  t("changing the traveller goes through the real map without unclipping it", function (a) {
+    // The shape still collapses to the true map, which is the thing worth watching. What
+    // does not happen on the way is the water and every other held patch returning to
+    // full strength for a frame. Two probes, because these are two different things: the
+    // geometry passes through metres, the clipping does not.
     var w = open();
     var btn = w.doc.querySelectorAll("[data-mode]").filter(function (b) { return b.dataset.mode === "3"; })[0];
     btn.click();
-    var low = 1;
-    for (var f = 0; f < 90; f++) { w.flushFrames(1); low = Math.min(low, rd(w).drawS()); }
-    a.ok(low < 0.02, "it passes through the metre map");
+    var lowS = 1, highFade = 0;
+    for (var f = 0; f < 90; f++) {
+      w.flushFrames(1);
+      lowS = Math.min(lowS, rd(w).drawS());
+      highFade = Math.max(highFade, rd(w).groundFade());
+    }
+    a.ok(lowS < 0.02, "the shape passes through the real map");
+    a.ok(highFade < 0.01, "and the held ground stays held the whole way across");
+  });
+
+  t("at rest the metre map is still complete", function (a) {
+    // The clipping is held only while something is moving. Standing at metres, the
+    // photograph is whole — that is what an ordinary map of Vancouver looks like.
+    var w = open();
+    a.close(rd(w).groundFade(), 0, 1e-9, "at minutes, the held ground is hidden");
+    click(w, "Metres");
+    w.flushFrames(300);
+    a.close(rd(w).groundFade(), 1, 1e-9, "at metres, all of it shows");
   });
 
   t("the drawing separates two places the ground does not", function (a) {
