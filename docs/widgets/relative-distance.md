@@ -174,10 +174,12 @@ across.
 
 ### Changing the traveller, or the start, morphs through the true map
 
-Luke asked for the same movement when the traveller changes and when the start moves,
-and those are a harder case than the slider. There is no half-way state between "on foot"
-and "by car": the travel times, the scale factor and the frame all change at once, and an
-average of two deformations is not a map of anything.
+Luke asked for the same movement when the traveller changes and when the start moves.
+They turned out to want different routes, and the difference is worth stating.
+
+**Changing the traveller goes through the real map.** There is no half-way state between
+"on foot" and "by car": the travel times, the scale factor and the frame all change at
+once, and an average of two deformations is not a map of anything.
 
 There is, though, one state every one of these maps agrees on **exactly**. At the metres
 end the drawing is just Vancouver — the same picture whoever is travelling and wherever
@@ -196,6 +198,23 @@ Measured on the shipped page, the drawn ratio between the two pins traces
 3.51 → **1.16** → 3.13 as the traveller goes from on foot to by car. The metre ratio is
 3.47/3.06 = 1.13. It really does pass through the true map; a cross-fade would have passed
 through the average of the two deformations, which is nowhere near it.
+
+**Moving the start goes straight across, and the reason is the flash.** At the real map
+nothing is held back — the water and every other patch the traveller cannot speak for
+returns to full strength for an instant. When the traveller changes that reads as the city
+returning to itself before deforming a new way, which is the thing worth watching. When
+only the start moves it reads as a fault: a bright unclipped Vancouver blinking through
+the middle of what is really a re-centring. Luke called it distracting and he is right.
+
+So a start change takes a direct route. The traveller has not changed, so the two maps are
+the same kind of map, and the old drawn positions are simply pulled to the new ones with
+the drawing held at the minutes end throughout. There is no join to make seamless, because
+the model is swapped before the first frame and only positions travel. 800 ms rather than
+1100, because a re-centring is a smaller thing than a change of traveller.
+
+Both routes are asserted from the same probe, so they cannot quietly become the same
+thing: across a start change the drawn `s` never falls below 0.98, and across a traveller
+change it reaches 0.
 
 **One bug this turned up.** The streets read the morph's effective `s` and the markers read
 the settled `sVal`, so the pins jumped straight to the far side while the streets travelled

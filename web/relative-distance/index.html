@@ -876,8 +876,9 @@ body[data-present="1"] footer { display: none; }
     var m = mesh;
     if (!m) return;
     var sw = IMG.w / m.nx, sh = IMG.h / m.ny;
-    var dn = downFactor(), snap = (dn > 0 && SNAP && SNAP.mesh && SNAP.mesh.gw === m.gw)
-             ? SNAP.mesh : null;
+    var dn = downFactor();
+    var snap = (dn > 0 && SNAP && SNAP.mesh && SNAP.mesh.gw === m.gw) ? SNAP.mesh : null;
+    var replay = replaying() && snap;
     var px = new Float64Array(m.gw * m.gh), py = new Float64Array(m.gw * m.gh);
     for (var k = 0; k < px.length; k++) {
       var t = m.tt[k];
@@ -888,11 +889,11 @@ body[data-present="1"] footer { display: none; }
     }
     // While the first half plays back, the fade follows where the map was, not where it
     // is going: a cell the old traveller could speak for should not blink out early.
-    var fade = Math.max(0, 1 - 2 * (snap ? s * (1 - dn) + dn * (sVal / 100) : s));
+    var fade = Math.max(0, 1 - 2 * (replay ? s * (1 - dn) + dn * (sVal / 100) : s));
     for (var j = 0; j < m.ny; j++) {
       for (var i = 0; i < m.nx; i++) {
         var a = j * m.gw + i, b = a + 1, c = a + m.gw + 1, d = a + m.gw;
-        var held = snap ? snap.held[j * m.nx + i] === 1 : cellHeld(m, a);
+        var held = replay ? snap.held[j * m.nx + i] === 1 : cellHeld(m, a);
         if (held && fade <= 0.01) continue;
         // off screen?
         if (Math.min(px[a], px[b], px[c], px[d]) > CW || Math.max(px[a], px[b], px[c], px[d]) < 0 ||
@@ -965,7 +966,7 @@ body[data-present="1"] footer { display: none; }
 
   function draw() {
     var s = effS();
-    var dn = downFactor(), snap = dn > 0 ? SNAP : null;
+    var dn = downFactor(), snap = dn > 0 ? SNAP : null, replay = replaying();
     fitView();
     ctx.clearRect(0, 0, CW, CH);
     drawGround(s);
@@ -976,7 +977,7 @@ body[data-present="1"] footer { display: none; }
       ctx.beginPath();
       for (var q = 0; q < list.length; q++) {
         var e = list[q];
-        if (!(snap ? snap.edraw[e] : EDRAW[e])) continue;
+        if (!(replay ? snap.edraw[e] : EDRAW[e])) continue;
         var o = VOFF[e], last = VOFF[e + 1] - 1;
         for (var i = o; i <= last; i++) {
           var r = (1 - s) * VR[i] + s * VTR[i];
@@ -1311,15 +1312,28 @@ body[data-present="1"] footer { display: none; }
   //
   // The first half is played back from a snapshot of where everything was, because by
   // then the model has already been replaced.
-  var SNAP = null, morphU = -1;
-  var MORPH_MS = 1100, MORPH_MID = 0.45;
+  // Two routes, because the two changes are not the same shape of change.
+  //
+  // THROUGH — for the traveller. There is no half-way state between "on foot" and "by
+  // car", so the change goes via the one picture both sides can draw: the real map.
+  //
+  // DIRECT — for the start. Here the traveller has not changed, so the two maps are the
+  // same kind of map and the old drawn positions can simply be pulled to the new ones.
+  // Going via the real map would work, but at the real map nothing is held back, so the
+  // whole city including the water snaps to full strength for an instant. That flash
+  // reads as an error in the middle of a re-centring. Straight across, no flash.
+  var SNAP = null, morphU = -1, morphRoute = "through";
+  var MORPH_MID = 0.45;
 
   function captureSnapshot() {
     if (ground && meshIsFine) { mesh = buildMesh(GRID_FAST); meshIsFine = false; }
     var s = sVal / 100;
     var vx = new Float64Array(NVERT), vy = new Float64Array(NVERT);
     for (var i = 0; i < NVERT; i++) {
-      var r = (1 - s) * VR[i] + s * VTR[i];
+      // A vertex the old traveller could not reach has no time radius, so it is recorded
+      // where it actually is. Without this the snapshot holds infinities, and anything
+      // that becomes reachable slides in from nowhere.
+      var r = VTR[i] === INF ? VR[i] : (1 - s) * VR[i] + s * VTR[i];
       vx[i] = originX + r * VUX[i]; vy[i] = originY + r * VUY[i];
     }
     var snap = { vx: vx, vy: vy, edraw: EDRAW.slice(), box: { x0: BOX.x0, x1: BOX.x1, y0: BOX.y0, y1: BOX.y1 },
@@ -1361,19 +1375,26 @@ body[data-present="1"] footer { display: none; }
 
   // How far through the collapse we are, 1 at the start and 0 when the map is true.
   function downFactor() {
-    return morphU < 0 ? 0 : Math.max(0, 1 - morphU / MORPH_MID);
+    if (morphU < 0) return 0;
+    if (morphRoute === "direct") return 1 - morphU;
+    return Math.max(0, 1 - morphU / MORPH_MID);
   }
   // The s the drawing is at right now: the plain slider value at rest, and the second
   // half of the morph while one is running. Everything that positions anything has to
   // read this and not sVal, or the streets travel through the true map while the pins
   // jump straight to the far side of it.
   function effS() {
-    return morphU < 0 ? sVal / 100
-         : Math.max(0, (morphU - MORPH_MID) / (1 - MORPH_MID)) * (sTarget / 100);
+    if (morphU < 0 || morphRoute === "direct") return sVal / 100;
+    return Math.max(0, (morphU - MORPH_MID) / (1 - MORPH_MID)) * (sTarget / 100);
   }
+  // Whether the drawing is currently playing back the old state's own choices about what
+  // to draw. On the direct route it never is: the new traveller's choices apply from the
+  // first frame and only the positions travel.
+  function replaying() { return morphRoute === "through" && downFactor() > 0 && SNAP; }
 
-  function morphTo(change) {
+  function morphTo(change, route) {
     stopAnim();
+    morphRoute = route || "through";
     captureSnapshot();
     change();                       // mutates the state and calls recompute()
     sVal = sTarget;
@@ -1383,11 +1404,11 @@ body[data-present="1"] footer { display: none; }
     // Even at the metres end this is worth running: the positions do not move, but the
     // frame does when the start changes, and a frame that jumps reads as a different map.
     if (reduce) { morphU = -1; SNAP = null; refine(); return; }
-    var started = -1;
+    var started = -1, dur = morphRoute === "direct" ? 800 : 1100;
     morphU = 0;
     function step(now) {
       if (started < 0) started = now;
-      var u = Math.min(1, (now - started) / MORPH_MS);
+      var u = Math.min(1, (now - started) / dur);
       morphU = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
       draw();
       if (u < 1) anim = requestAnimationFrame(step);
@@ -1396,7 +1417,7 @@ body[data-present="1"] footer { display: none; }
     anim = requestAnimationFrame(step);
     animGuard = setTimeout(function () {
       stopAnim(); morphU = -1; SNAP = null; refine();
-    }, MORPH_MS + 400);
+    }, dur + 400);
   }
 
   var anim = 0, animGuard = 0;
@@ -1514,7 +1535,7 @@ body[data-present="1"] footer { display: none; }
       b.className = "preset"; b.dataset.start = String(i);
       b.textContent = PLACES[i].name;
       b.addEventListener("click", function () {
-        morphTo(function () { startNode = PLACE_NODE[i]; recompute(); });
+        morphTo(function () { startNode = PLACE_NODE[i]; recompute(); }, "direct");
         say("Now starting from " + PLACES[i].name + ".");
       });
       row.appendChild(b);
@@ -1546,7 +1567,7 @@ body[data-present="1"] footer { display: none; }
     });
   });
   document.getElementById("swap").addEventListener("click", function () {
-    morphTo(function () { var t = startNode; startNode = pinA; pinA = t; recompute(); });
+    morphTo(function () { var t = startNode; startNode = pinA; pinA = t; recompute(); }, "direct");
     say("Start and the blue pin have swapped.");
   });
   document.getElementById("reset").addEventListener("click", function () {
@@ -1606,7 +1627,7 @@ body[data-present="1"] footer { display: none; }
   cv.addEventListener("pointerdown", function (ev) {
     var p = mapPoint(ev), i = nodeAtScreen(p[0], p[1]);
     if (i < 0) return;
-    morphTo(function () { startNode = i; recompute(); });
+    morphTo(function () { startNode = i; recompute(); }, "direct");
     say("Now starting from " + placeName(startNode) + ".");
   });
 
@@ -1670,6 +1691,7 @@ body[data-present="1"] footer { display: none; }
     ground: function () { return { on: ground, ready: imgReady, cells: mesh ? mesh.nx * mesh.ny : 0,
                                    held: meshHeld() }; },
     drawnXY: function (node) { return drawnPos(node, effS()); },
+    drawS: function () { return effS(); },
     arcUsable: function (e, fwd) { return arcCost(e * 2 + (fwd ? 0 : 1), mode) !== INF; },
     gradeMilli: function (e) { return EGM[e]; },
     set: function (o) {

@@ -223,13 +223,32 @@ module.exports = function (t) {
     a.close(ratio(), 12.050535 / 3.847020, 0.05, "and arrives at the car's shape");
   });
 
-  t("moving the start morphs rather than jumping", function (a) {
+  t("moving the start does not flash the whole city on the way", function (a) {
+    // Moving the start takes the direct route, not the one through the real map. At the
+    // real map nothing is held back, so the water and everything else the traveller
+    // cannot speak for snaps to full strength for an instant. That flash reads as an
+    // error in the middle of a re-centring, so the drawing stays at the minutes end the
+    // whole way across and only the positions travel.
     var w = open();
     click(w, "Lonsdale Quay");
     a.equal(text(w, "fromline"), "From Lonsdale Quay", "the readout moves at once");
+    var low = 1;
+    for (var f = 0; f < 90; f++) { w.flushFrames(1); low = Math.min(low, rd(w).drawS()); }
+    a.ok(low > 0.98, "it never drops back towards the metre map");
     w.flushFrames(300);
-    var st = rd(w).state();
-    a.equal(st.start, rd(w).node("Lonsdale Quay"), "and the start lands where it was sent");
+    a.equal(rd(w).state().start, rd(w).node("Lonsdale Quay"), "and the start lands where it was sent");
+    a.close(rd(w).drawS(), 1, 1e-9, "settled at minutes");
+  });
+
+  t("changing the traveller still does go through the real map", function (a) {
+    // The other route, asserted from the same probe, so the two cannot quietly become
+    // the same thing.
+    var w = open();
+    var btn = w.doc.querySelectorAll("[data-mode]").filter(function (b) { return b.dataset.mode === "3"; })[0];
+    btn.click();
+    var low = 1;
+    for (var f = 0; f < 90; f++) { w.flushFrames(1); low = Math.min(low, rd(w).drawS()); }
+    a.ok(low < 0.02, "it passes through the metre map");
   });
 
   t("the drawing separates two places the ground does not", function (a) {
