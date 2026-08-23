@@ -154,7 +154,8 @@ table.times tbody td { border-top: 1px solid var(--edge); }
   border-radius: calc(0.5rem * var(--ui));
   padding: calc(0.5rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.7rem * var(--ui));
 }
-.card h2 { font-size: calc(0.95rem * var(--ui)); margin: 0 0 calc(0.3rem * var(--ui)); font-weight: 620; }
+.card h2 { font-size: calc(0.95rem * var(--ui)); margin: 0 0 calc(0.3rem * var(--ui)); font-weight: 620; display: inline; }
+.card > .info { margin-left: calc(0.3rem * var(--ui)); vertical-align: text-bottom; }
 .verdict { margin: calc(0.5rem * var(--ui)) 0 0; }
 .cannot { margin: calc(0.5rem * var(--ui)) 0 0; color: var(--ink-soft); font-size: calc(0.88rem * var(--ui)); }
 
@@ -235,6 +236,22 @@ body[data-present="1"] footer { display: none; }
     <div class="readout">
       <div class="card">
         <h2 id="fromline">From Waterfront Station</h2>
+        <button class="info" data-info="info-times" aria-expanded="false"
+                aria-controls="info-times" title="What do these times mean?">i</button>
+        <div class="help-panel" id="info-times" hidden>
+          <p><b>There</b> is the quickest trip from the start to the place.
+             <b>Back</b> is the quickest trip the other way. They are worked out
+             separately, and they are usually not the same, because hills and one-way
+             streets both run in one direction.</p>
+          <p>A trip counts as finished once you are within 150 metres of where you were
+             going &mdash; you park, or you walk the last bit. Without that rule a pin
+             dropped in a park is unreachable by car, which is true and useless. With it,
+             <b>&mdash;</b> means something: the place really cannot be reached that way
+             at all, not merely that you cannot drive onto the grass.</p>
+          <p><b>Straight line</b> is the distance as the crow flies. It takes no notice
+             of water, hills or streets, and comparing it with the other two columns is
+             most of what this page is for.</p>
+        </div>
         <table class="times">
           <thead>
             <tr><th scope="col">Place</th><th scope="col">Straight line</th>
@@ -268,6 +285,13 @@ body[data-present="1"] footer { display: none; }
              the line running out from the start, to a distance set by how long the
              trip takes. The direction a place lies in never changes. Only how far
              away it is.</p>
+          <p>The idea has a name. Geographers call the ordinary version
+             <b>absolute space</b>, where distance is a property of the ground and does
+             not care who you are. The other is <b>relative space</b>, where distance is
+             whatever it costs you to cross it &mdash; in minutes here, but it could as
+             easily be money, or effort, or risk. Neither is the true one. The whole
+             point of putting them on one screen is that you can watch the same city be
+             both.</p>
           <p>There are two maps here and no map in between, so the change is shown as
              a movement rather than as a dial. Half way between metres and minutes
              would be half of one measurement added to half of another, which is not
@@ -298,22 +322,22 @@ body[data-present="1"] footer { display: none; }
           <button class="preset" data-mode="3">By car</button>
         </div>
         <div class="help-panel" id="info-mode" hidden>
-          <p id="modehelp"></p>
-          <p>Nobody&rsquo;s trip is this fast. There are no traffic lights here, no
-             queues, no waiting to cross, and no time spent parking. Every traveller on
-             this page moves as if the way were clear, because there is no open record
-             of Vancouver traffic that could say otherwise. What the map shows is how
-             the ground and the network shape a trip, not how long the trip takes.</p>
-          <p>Walking speed comes from Waldo Tobler&rsquo;s hiking function, which is
-             fastest on ground falling gently away and slower both uphill and steeply
-             down. It gives 5 km/h on the level. Tobler fitted it for walking on paths
-             in hilly country rather than on city pavement, so what it is really lending
-             this map is the shape of the curve.</p>
-          <p>Cycling speed is a rider putting 150 watts through the pedals against
-             gravity, rolling resistance and the air, with 90 kg of rider and bike, and
-             never going over 22 km/h, which is the rider&rsquo;s own choice rather than
-             physics. Driving speed is the posted limit. A traveller on steps moves at
-             1.5 km/h.</p>
+          <div id="modehelp"></div>
+          <p><b>How steep a street is.</b> A slope is written here as a rise over a
+             run: 5 in 100 means the ground climbs five metres for every hundred you
+             travel along it. That does not sound like much, and it is already the point
+             at which a walkway has to be built as a ramp. Vancouver has plenty of
+             streets at eight and ten. The heights come from a laser survey of the bare
+             ground, so a street&rsquo;s slope is the slope of the earth under it rather
+             than of the buildings beside it.</p>
+
+          <p><b>Nobody&rsquo;s trip is this fast.</b> There are no traffic lights here,
+             no queues, no waiting to cross, and no time spent parking. Every traveller
+             on this page moves as if the way were clear, because there is no open record
+             of Vancouver traffic that could say otherwise. It is the same assumption for
+             all four, so comparing them is fair. What the map shows is how the ground
+             and the network shape a trip, not how long the trip takes.</p>
+
           <p class="refs"><b>For more, see:</b> Waldo Tobler,
              &ldquo;Three presentations on geographical analysis and modeling&rdquo;,
              NCGIA Technical Report 93-1 (1993), where the hiking function is
@@ -512,21 +536,51 @@ body[data-present="1"] footer { display: none; }
   var MAX_GRADE_EASY = 50;             // per mille. 5 in 100: the slope an accessible route may run at
   var MODES = [
     { key: "foot", label: "on foot",
-      help: "Everything except motorways. One-way streets do not apply to someone walking." },
+      help: "<p><b>On foot.</b> Everything except motorways, and one-way streets do not " +
+            "apply to somebody walking. Speed comes from a rule Waldo Tobler fitted to " +
+            "measurements of how fast people really walk on slopes, rather than from a " +
+            "single figure. It gives about 5 km/h on level ground, a shade faster on a " +
+            "gentle downhill, and slower both uphill and on anything steeply down, " +
+            "because a steep descent is hard on the legs too.</p>" +
+            "<p>Up a 6 in 100 hill it falls to about 4 km/h; coming back down the same " +
+            "hill it is nearer 5.8. That gap is why the walk there and the walk back are " +
+            "not the same trip. Tobler fitted the rule for footpaths in hilly country " +
+            "rather than for city pavement, so what it lends this map is the shape of " +
+            "the curve more than the exact number. A flight of steps is a flat 1.5 km/h, " +
+            "and that one is a guess.</p>" },
     { key: "easy", label: "on foot, avoiding steep ground",
-      help: "The same walking speeds, but this traveller will not use steps and will not " +
-            "go up or down anything steeper than 5 in 100. That is the point at which a " +
-            "walking surface stops counting as one: an accessible route steeper than " +
-            "5 in 100 has to be built as a ramp, with landings, and with handrails " +
-            "once it rises more than 150 mm. Nothing " +
-            "else changes between this traveller and the one on foot, so whatever moves " +
-            "is the ground refusing rather than the walker slowing down." },
+      help: "<p><b>On foot, avoiding steep hills and steps.</b> Exactly the same speeds " +
+            "as walking. Only what this traveller will use is different: no steps, and " +
+            "nothing steeper than 5 in 100.</p>" +
+            "<p>That threshold is the point at which a walking surface stops counting as " +
+            "one. An accessible route steeper than 5 in 100 has to be built as a ramp, " +
+            "with landings, and with handrails once it rises more than 150 mm. Because " +
+            "nothing else changes between this traveller and the one on foot, whatever " +
+            "moves between the two maps is the ground refusing rather than the walker " +
+            "slowing down.</p>" },
     { key: "bike", label: "by bike",
-      help: "Streets, bike routes and shared paths. One-way streets apply unless the street " +
-            "is marked as two-way for bikes." },
+      help: "<p><b>By bike.</b> Streets, bike routes and shared paths. One-way streets " +
+            "apply unless the street is two-way for bikes. Speed here is not looked up, " +
+            "it is worked out. The page assumes a rider putting a steady 150 watts " +
+            "through the pedals &mdash; an ordinary effort somebody might hold for an " +
+            "hour &mdash; and 90 kg of rider and bicycle together.</p>" +
+            "<p>That effort has to cover three things at once: the tyres rolling, the " +
+            "air being pushed out of the way, and the rider being lifted up the hill. On " +
+            "the flat nearly all of it goes on air, which is why going faster costs so " +
+            "much. On a climb nearly all of it goes on gravity, which is why hills are " +
+            "so slow. The page solves for the speed at which the three add up to 150 " +
+            "watts.</p>" +
+            "<p>It never drops below walking pace, because past a certain steepness you " +
+            "get off and push, and never rises above 22 km/h, which is a decision about " +
+            "how fast this rider wants to go rather than anything physical. So on the " +
+            "flat the speed is chosen and on a hill it is calculated.</p>" },
     { key: "car", label: "by car",
-      help: "Streets only, at the posted speed limit, respecting one-way streets. No paths, " +
-            "no park routes, and no way through anywhere a car cannot go." }
+      help: "<p><b>By car.</b> Streets only, respecting one-way streets. No paths, no " +
+            "park routes, and no way through anywhere a car cannot go.</p>" +
+            "<p>Speed is the posted limit on each street, taken from OpenStreetMap where " +
+            "somebody has recorded it and from the usual limit for that kind of street " +
+            "where nobody has. Hills make no difference to a car, so this is the one " +
+            "traveller whose map is shaped by the network alone.</p>" }
   ];
 
   function arcCost(a, mode) {
@@ -685,23 +739,71 @@ body[data-present="1"] footer { display: none; }
     return a[Math.floor(a.length / 2)];
   }
 
+  // Reachability without weights, which is all this needs and is far cheaper than a
+  // shortest-path run.
+  function bfs(seed, graph, dirTo) {
+    var seen = new Uint8Array(n), queue = new Int32Array(n), head = 0, tail = 0, count = 0;
+    seen[seed] = 1; queue[tail++] = seed; count = 1;
+    while (head < tail) {
+      var u = queue[head++];
+      for (var k = graph.start[u]; k < graph.start[u + 1]; k++) {
+        var a = graph.idx[k];
+        if (ACOST[a] === INF) continue;
+        var v = dirTo ? ATO[a] : AFROM[a];
+        if (!seen[v]) { seen[v] = 1; queue[tail++] = v; count++; }
+      }
+    }
+    return { seen: seen, count: count };
+  }
+
+  // Junctions from which the bulk of this traveller's network can be reached.
+  //
+  // Pick a seed that can get about, then take everything that can reach the seed: from
+  // any of those you can reach the seed, and therefore everything the seed can reach.
+  // The named places are tried as seeds in turn, because one of them being in a pocket
+  // for some traveller is exactly the failure this is here to survive.
+  function mainBodyEntrances() {
+    var best = null, bestCount = -1;
+    for (var i = 0; i < PLACE_NODE.length; i++) {
+      var seed = PLACE_NODE[i];
+      var fwd = bfs(seed, OUT, true);
+      if (fwd.count > bestCount) { bestCount = fwd.count; best = seed; }
+      if (fwd.count > usableCount * 0.5) break;      // good enough, stop looking
+    }
+    return bfs(best, IN, false).seen;
+  }
+
   function recompute() {
     stopAnim(); sVal = sTarget;
     for (var a = 0; a < 2 * m; a++) ACOST[a] = arcCost(a, mode);
 
-    // Does this traveller have any way to leave the start? If not, move to the
-    // nearest node they can, and say so.
+    // How much of the city this traveller could use at all: any junction an arc they can
+    // travel touches, in either direction.
     var canUse = new Uint8Array(n);
     usableCount = 0;
     for (var a2 = 0; a2 < 2 * m; a2++) if (ACOST[a2] !== INF) { canUse[AFROM[a2]] = 1; canUse[ATO[a2]] = 1; }
     for (var v0 = 0; v0 < n; v0++) if (canUse[v0]) usableCount++;
+
+    // Where they could actually set off from, which is a different question and used to
+    // be treated as the same one.
+    //
+    // A junction at the far end of a one-way street is touched by an arc the traveller
+    // can use, so it counted as usable — but every arc there points inwards and nothing
+    // can be reached from it. Starting there produced a map of nothing: no edges drawn,
+    // the frame collapsed onto an empty extent, and the page showed a blank rectangle
+    // with the reason buried in the readout. Reported from a shared link.
+    //
+    // So: find the main body of the network for this traveller, and require the start to
+    // be somewhere that can reach it. Two breadth-first passes, a few milliseconds.
+    var canGo = mainBodyEntrances();
     var from = startNode;
     snapMsg = "";
-    if (!canUse[from]) {
-      var alt = nearestNode(NX[from], NY[from], function (v) { return canUse[v] === 1; });
+    if (!canGo[from]) {
+      var alt = nearestNode(NX[from], NY[from], function (v) { return canGo[v] === 1; });
       if (alt >= 0) {
         var d = Math.hypot(NX[alt] - NX[from], NY[alt] - NY[from]);
-        snapMsg = "The start is " + Math.round(d) + " m from the nearest street this traveller can use.";
+        snapMsg = "The start is " + Math.round(d) + " m from the nearest street this " +
+                  "traveller could set off along.";
         from = alt;
       }
     }

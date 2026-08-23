@@ -311,6 +311,33 @@ Bikeway, which are genuinely one-way. The Stanley Park Seawall bike path also st
 one-way, correctly, because it is tagged `foot=no`: it is cycle-only and it really does
 run one direction.
 
+### A start you cannot set off from
+
+Reported from a shared link: `?m=2&o=1100,882&a=270,308` drew a blank rectangle.
+
+The origin had snapped onto the far end of a one-way street, where every arc points
+inwards. Nothing was reachable, so no edges were drawn, so the frame collapsed onto an
+empty extent and the scale went to infinity. The readout said *100% of the streets this
+traveller could use cannot be reached from here*, which was true and was the only clue,
+buried beside a blank map.
+
+The cause was a comment that described the intent and code that did not implement it. It
+read *"does this traveller have any way to leave the start?"* — and then marked a junction
+usable if an arc the traveller can travel *touched* it, in either direction. **Being able
+to arrive somewhere is not being able to leave it.** The same snap reached through the
+swap button, which is why that could blank too.
+
+What replaced it is a real answer to the question the comment asked. Find the main body of
+the network for this traveller — a seed that can get about, tried against the named places
+in turn so that one of them being in a pocket for some traveller is survivable — then take
+everything that can *reach* that seed, by breadth-first search on the reversed graph. From
+any of those you can reach the seed and therefore everything the seed can reach. The start
+snaps to the nearest of them. Two unweighted passes, a few milliseconds, and no shortest
+paths involved.
+
+The default start is in that set for every traveller, so none of the recorded numbers
+moved.
+
 ### Free-flow, which is the missing control
 
 The build queue asked for a departure-hour control. There is none, and the reason is a
@@ -435,6 +462,27 @@ round 100 m. Two consecutive runs now produce byte-identical output.
 context could not record a stroked path. It records them now, which is what lets the test
 "the drawing separates two places the ground does not" read the picture instead of the
 model.
+
+### What the (i) panels have to explain
+
+Luke asked for the travel models to be explained for a reader who has not met them, which
+turned out to be a bigger ask than it sounds: Tobler's function, a cycling power equation,
+an accessibility threshold, a free-flow assumption and a 150 m arrival rule are five
+separate pieces of background, and all five were being either asserted or omitted.
+
+Written out in one panel they came to 679 words and 2,293 px, which nobody reads. So the
+traveller panel now shows **only the traveller you have selected** — each one explaining
+what it will use and where its speed comes from, in about 150 words. That is better
+teaching as well as shorter: you read about the choice you just made. The shared material
+that is true of all four, how a gradient is written and the free-flow assumption, stays
+below it.
+
+The readout gained its own panel, because the 150 m arrival rule decides what a dash in
+the table means and was explained nowhere at all.
+
+Four separate strings that can each go missing on their own is the empty-card failure
+again, so a test asserts each traveller has a real explanation, that no two are the same
+string, and that the walking one names Tobler and the cycling one names its 150 watts.
 
 ## Known limits and open threads
 

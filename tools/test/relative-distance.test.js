@@ -72,6 +72,35 @@ module.exports = function (t) {
     a.ok(text(w, "outA").indexOf("2 h 12") === 0, "and the walk there");
   });
 
+  t("each traveller explains its own speeds, and none of them is empty", function (a) {
+    // The panel used to carry all four at once and ran to 2,293 px, which nobody reads.
+    // It now shows the traveller you actually chose. That means four separate strings
+    // that can each go missing on their own, which is the empty-card failure again.
+    var w = open();
+    var seen = {};
+    ["On foot", "On foot, no steep hills or steps", "By bike", "By car"].forEach(function (label) {
+      click(w, label);
+      var txt = w.doc.getElementById("modehelp").textContent.trim();
+      a.ok(txt.length > 120, label + " has a real explanation");
+      a.ok(!seen[txt], label + " has its own, not the last one over again");
+      seen[txt] = 1;
+    });
+    click(w, "By bike");
+    var bike = w.doc.getElementById("modehelp").textContent;
+    a.ok(bike.indexOf("150 watts") > 0, "the cycling model says where its speed comes from");
+    click(w, "On foot");
+    a.ok(w.doc.getElementById("modehelp").textContent.indexOf("Tobler") > 0,
+         "and the walking model names the rule it uses");
+  });
+
+  t("the times column says what it counts as arriving", function (a) {
+    // The 150 m rule decides what a dash means, and it was explained nowhere on the page.
+    var w = open();
+    var p = w.doc.getElementById("info-times");
+    a.ok(p, "there is a panel on the two times");
+    a.ok(p.textContent.indexOf("150 metres") > 0, "and it gives the rule");
+  });
+
   t("every box on the page has something in it", function (a) {
     // A titled card with a collapsed body reads as a rendering glitch. One of these
     // sat live in another widget here for months.
@@ -135,6 +164,25 @@ module.exports = function (t) {
     a.ok(at50 >= 0 && at51 >= 0, "the data holds a segment at each side of the line");
     a.ok(rd(w).arcUsable(at50, true), "exactly 50 per mille is allowed");
     a.ok(!rd(w).arcUsable(at51, true), "51 per mille is refused");
+  });
+
+  t("a start you cannot set off from is moved to one you can", function (a) {
+    // The URL a reader sent in. It snapped the origin onto the far end of a one-way
+    // street, where every arc points inwards. Nothing was reachable, no edges were
+    // drawn, and the frame collapsed onto an empty extent, so the page showed a blank
+    // rectangle with the reason buried in the readout.
+    //
+    // The cause was a comment that described the intent and code that did not implement
+    // it: a junction counted as usable if an arc the traveller can travel *touched* it,
+    // in either direction. Being able to arrive somewhere is not being able to leave.
+    var w = open("?m=2&o=1100,882&a=270,308");
+    var st = rd(w).state();
+    a.ok(st.reach > st.usable * 0.5,
+         "most of what this traveller could use is reachable from where they were put");
+    a.ok(text(w, "cannot").indexOf("100%") < 0, "not a map of nothing");
+    a.ok(strokedPoints(w) > 20000, "and there are streets on the canvas");
+    var box = rd(w).state().R98;
+    a.ok(box > 1000 && box < 40000, "the frame is a sane size rather than collapsed");
   });
 
   t("a place that cannot be reached says so rather than going blank", function (a) {
