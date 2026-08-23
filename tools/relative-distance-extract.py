@@ -640,15 +640,15 @@ def build_basemap():
     Sentinel-2's true-colour product is dark — the median luminance over this window is
     0.089 — so it is stretched between the 2nd and 99th percentiles, gamma-lifted, most
     of its colour taken out, and blended toward the map's own land colour. Even then the
-    fifth percentile over land sits around 0.32, against which the widget's pale street
-    colour scores 1.6:1. Lightening far enough to fix that leaves no photograph, so the
-    widget carries a darker palette for when this is switched on. See the note beside
-    `body[data-basemap="1"]` in index.html.
+    fifth percentile over land ends up around 0.20.
 
-    These three numbers are the whole negotiation between the photograph and the streets,
-    and they were set by measurement in both directions. Washed harder, the streets are
-    comfortable and the ground is a rumour. Washed less, the ground reads and the paths
-    stop being lines. This is the strongest photograph the palette can carry.
+    How hard to wash it is the whole negotiation between the photograph and the streets,
+    and it was settled by Luke rather than by the standard: make the photograph pop, let
+    the paths go pale and thin. So this is washed only enough to keep the *skeleton*
+    measurable — the major and minor streets clear 4.07:1 and 3.15:1 against the darkest
+    land — and the path network is given up as texture. See the note beside
+    `body[data-basemap="1"]` in index.html for what that costs and why it is a defensible
+    thing to spend.
     """
     gdal.SetConfigOption("AWS_NO_SIGN_REQUEST", "YES")
     x0, y0, x1, y1 = IMG
@@ -663,13 +663,13 @@ def build_basemap():
                          % (100 * blank.mean()))
     lum = 0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
     lo, hi = np.percentile(lum, 2), np.percentile(lum, 99)
-    gam = np.clip((lum - lo) / max(1e-6, hi - lo), 0, 1) ** 0.48
+    gam = np.clip((lum - lo) / max(1e-6, hi - lo), 0, 1) ** 0.40
     col = rgb / np.maximum(lum, 1e-4)[..., None]
     out = np.clip(np.clip(col, 0, 3) * gam[..., None], 0, 1)
     grey = out.mean(-1, keepdims=True)
-    out = np.clip(grey + (out - grey) * 0.32, 0, 1)
+    out = np.clip(grey + (out - grey) * 0.60, 0, 1)
     land = np.array([0xf4, 0xf2, 0xee], np.float32) / 255.0
-    out = np.clip(land * 0.50 + out * 0.50, 0, 1)
+    out = np.clip(land * 0.24 + out * 0.76, 0, 1)
     m = gdal.GetDriverByName("MEM").Create("", w, h, 3, gdal.GDT_Byte)
     for i in range(3):
         m.GetRasterBand(i + 1).WriteArray((out[..., i] * 255).astype(np.uint8))

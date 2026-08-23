@@ -50,7 +50,7 @@ Data, as shipped 2026-08-22:
 | Junctions off the LiDAR mosaic, on CDEM instead | 94 |
 | Coordinate origin, UTM zone 10N | 483000 E, 5453100 N, 2 m per unit |
 | `data.js` | 916,878 bytes, 234,262 gzipped |
-| `basemap.jpg` | 166,877 bytes, 1150 x 1131, 16 m |
+| `basemap.jpg` | 219,948 bytes, 1150 x 1131, 16 m |
 | Mesh over the photograph | 92 x 91 cells, 200 m |
 | Mesh cells with no travel time behind them | about 54% on foot, 84% avoiding steep ground |
 | Whole frame, fine mesh | 10–14 ms |
@@ -308,20 +308,29 @@ would be stretched to more than six times its own width is now held as well. On 
 costs 20 cells out of 8,372.
 
 **And the cost that is not a bug.** Measured against the shipped image, the plain
-palette's pale path colour sits at **1.6:1** over the darkest land in the photograph,
-under the 3:1 a drawn line needs, and lightening the image far enough to fix it leaves no
-photograph. So turning the ground on switches the streets to a darker set: **5.16, 4.03
-and 3.09** to one against that same darkest land.
+palette's pale path colour sits at 1.6:1 over the darkest land in the photograph, under
+the 3:1 a drawn line needs, and no darker colour fixes it either. **No flat colour clears
+3:1 across a photograph's whole range.** A dark line fails over water and forest; a pale
+one fails over roofs and sand. The cartographic answer is a casing — a light halo under a
+dark line — but a cased line is a loud line, and there are 32,250 path segments here,
+mostly back lanes.
 
-The strength of the photograph and the darkness of the streets are one negotiation, and
-both ends of it were measured. Washed harder, the streets are comfortable and the ground
-is a rumour; washed less, the ground reads and the paths stop being lines. What ships is
-the strongest photograph the palette can carry — land at a fifth-percentile relative
-luminance of 0.318 — with the paths thinned from 0.6 px to 0.40 and darkened rather than
-paled, because paling is what breaks the standard and a thin dark line recedes perfectly
-well anyway. The three clear steps of lightness compress to two and a bit, and width takes
-up the slack. That is a real loss, and it is why the photograph can be turned off, which
-is also the right answer on a projector, where dark tones crush.
+So the trade was made explicitly, and by Luke rather than by the standard: make the
+photograph pop, let the paths go. What that means in numbers, measured on the shipped
+image, whose land sits at a fifth-percentile relative luminance of 0.198 and a median of
+0.391:
+
+| | over the darkest land | over typical land |
+|---|---|---|
+| Major streets, `#1e1c19` | **4.02:1** | 7.15:1 |
+| Minor streets, `#33302a` | **3.11:1** | 5.53:1 |
+| Paths, `#f2efe8` at half opacity | 2.34:1 | 1.54:1 |
+
+The skeleton is held to the standard and the path network is given up as texture: pale,
+0.32 px, and half transparent. That is a real concession and it is recorded here rather
+than glossed. The argument this page makes is carried by the shape of the space, and a
+full-strength path mesh competes with it for nothing. Anyone who wants the lines back has
+the Plain button, which is also the right answer on a projector, where dark tones crush.
 
 ### Colour and drawing
 

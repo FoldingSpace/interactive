@@ -39,16 +39,23 @@
     --a-text: #7cb2f2; --b-text: #f0a45f;
   }
 }
-/* With the photograph on, the pale end of that scale cannot survive. Measured against
-   the fifth percentile of the washed image over land, the path colour above sits at
-   1.9:1, well under the 3:1 a drawn line needs, and lightening the image far enough to
-   fix it leaves no image. So the photograph brings its own darker set. The hierarchy
-   compresses — three clear steps of lightness become two and a bit — and what takes up
-   the slack is line width. That is the trade; it is not free. */
+/* The photograph brings its own palette, and one deliberate concession.
+
+   No flat colour clears 3:1 across a photograph's whole range: a dark line fails over
+   water and forest, a pale one fails over roofs and sand. Cartographers answer that with
+   a casing — a light halo under a dark line — but a cased line is a loud line, and the
+   path network is 32,250 segments of mostly back lanes.
+   
+   So the skeleton is held to the standard and the paths are let go. Major and minor sit
+   at 4.07:1 and 3.15:1 against the darkest land in the shipped image, measured. The paths
+   are pale, thinner than a pixel at normal size, and part transparent, which puts them
+   under the 3:1 a drawn line is supposed to have. That is Luke's call and it is the right
+   one for what this page is for: the argument is carried by the shape of the space, and a
+   full-strength path mesh competes with it for no gain. They are texture. */
 body[data-basemap="1"] {
-  --road-major: #2a2824;   /* 5.2:1 against the darkest land in the photograph */
-  --road-minor: #3d3931;   /* 4.1:1 */
-  --road-path:  #4f4a41;   /* 3.0:1 */
+  --road-major: #1e1c19;   /* 4.07:1 against the darkest land in the photograph */
+  --road-minor: #33302a;   /* 3.15:1 */
+  --road-path:  #f2efe8;   /* pale, thin and part transparent — see below */
 }
 [hidden] { display: none !important; }
 * { box-sizing: border-box; }
@@ -938,7 +945,10 @@ body[data-present="1"] footer { display: none; }
   // are 32,250 segments and most of them are somebody's back lane. Thinner rather than
   // paler, because paler is what breaks the 3:1 a drawn line needs, and because a thin
   // dark line recedes perfectly well.
-  var LINEW = [1.5, 0.85, 0.40];
+  var LINEW = [1.5, 0.85, 0.32];
+  // Paths are drawn part transparent so they read as texture under the shape rather than
+  // as a third layer of lines arguing with it.
+  var LINEA = [1, 1, 0.5];
   var COLOUR = ["--road-major", "--road-minor", "--road-path"];
 
   function draw() {
@@ -963,9 +973,11 @@ body[data-present="1"] footer { display: none; }
         }
       }
       ctx.strokeStyle = css.getPropertyValue(COLOUR[c]).trim() || "#888";
+      ctx.globalAlpha = LINEA[c];
       ctx.lineWidth = LINEW[c] * uiScale;
       ctx.lineJoin = "round"; ctx.lineCap = "round";
       ctx.stroke();
+      ctx.globalAlpha = 1;
     }
     drawOverlay(s);
   }
