@@ -52,7 +52,16 @@ function Node(tag, ns) {
   this.hidden = false;
 }
 Node.prototype.appendChild = function (c) {
-  if (c && c._fragment) { c.children.forEach(function (x) { this.appendChild(x); }, this); return c; }
+  // Copy the list first: appending now detaches each child from the fragment, and
+  // splicing the array being iterated skips every other one.
+  if (c && c._fragment) { c.children.slice().forEach(function (x) { this.appendChild(x); }, this); return c; }
+  // A browser MOVES a node that already has a parent; the stub used to copy it, so a
+  // widget that appends a group early to measure it and again at the end to restack it
+  // ended up with the group twice and a test counting marks saw double.
+  if (c.parentNode) {
+    var i = c.parentNode.children.indexOf(c);
+    if (i >= 0) c.parentNode.children.splice(i, 1);
+  }
   c.parentNode = this; this.children.push(c); return c;
 };
 Node.prototype.setAttribute = function (k, v) {
@@ -131,6 +140,19 @@ Object.defineProperty(Node.prototype, "innerHTML", {
     parseFragment(String(v), this);
   }
 });
+Node.prototype.removeChild = function (c) {
+  var i = this.children.indexOf(c);
+  if (i >= 0) { this.children.splice(i, 1); c.parentNode = null; }
+  return c;
+};
+Node.prototype.remove = function () { if (this.parentNode) this.parentNode.removeChild(this); };
+Node.prototype.insertBefore = function (c, ref) {
+  var i = ref ? this.children.indexOf(ref) : -1;
+  if (i < 0) return this.appendChild(c);
+  this.children.splice(i, 0, c); c.parentNode = this;
+  return c;
+};
+
 Object.defineProperty(Node.prototype, "firstChild", {
   get: function () { return this.children[0] || null; }
 });
@@ -210,12 +232,41 @@ function makeDocument(vars) {
   doc.createElement = function (t) {
     var n = new Node(t); n.ownerDoc = doc;
     if (t === "canvas") {
+      // Two jobs. The raster widgets paint an ImageData and read it back; the vector
+      // ones stroke paths, so the context also records every path it is given. A test
+      // can then measure what was drawn instead of trusting what was computed.
       n.getContext = function () {
-        return {
+        if (n._ctx) return n._ctx;
+        var cur = null;
+        var ctx = {
+          strokes: [],
+          canvas: n,
+          setTransform: function () {},
+          clearRect: function () { ctx.strokes = []; },
+          beginPath: function () { cur = []; },
+          moveTo: function (x, y) { if (!cur) cur = []; cur.push([["M", x, y]]); },
+          lineTo: function (x, y) {
+            if (!cur || !cur.length) return;
+            cur[cur.length - 1].push(["L", x, y]);
+          },
+          stroke: function () {
+            if (cur && cur.length) {
+              ctx.strokes.push({ style: ctx.strokeStyle, width: ctx.lineWidth, paths: cur });
+            }
+            cur = null;
+          },
+          fill: function () { cur = null; },
+          closePath: function () {},
+          arc: function () {},
+          rect: function () {},
+          fillRect: function () {},
+          save: function () {}, restore: function () {},
           createImageData: function (w, h) { return { width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }; },
           putImageData: function (img) { n.painted = img; },
           getImageData: function () { return n.painted; }
         };
+        n._ctx = ctx;
+        return ctx;
       };
     }
     return n;

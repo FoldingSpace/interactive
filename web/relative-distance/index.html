@@ -1,0 +1,1540 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vancouver, measured in minutes</title>
+<style>
+:root {
+  --ui: 1;
+  --ink: #16181d;
+  --ink-soft: #545a63;
+  --page: #ffffff;
+  --panel: #f2f3f5;
+  --edge: #848b95;
+  --focus: #0b57d0;
+  /* The map keeps its own light palette in both page themes: pale ground under dark
+     streets reads on a projector, and inverting cartography for dark mode does not. */
+  --land: #f4f2ee;
+  /* Measured against --land, not chosen by eye. A graphical object needs 3:1 and the
+     path colour was at 2.01 before this: pale enough to look tidy and too pale to be a
+     line. The three weights are spread across lightness as well as width, because
+     lightness is the cue that survives a projector and a compressed recording. */
+  --road-major: #3a3832;   /* 10.7:1 */
+  --road-minor: #6b6459;   /*  5.2:1 */
+  --road-path:  #8f887c;   /*  3.1:1 */
+  --land-edge: #d8d3c9;
+  --ring: #5a6270;
+  --start: #101216;
+  --a: #0b4f9e;          /* pin A, blue */
+  --b: #b2500a;          /* pin B, orange */
+  --a-text: #0b4f9e;
+  --b-text: #8c3f07;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
+    --panel: #1e2128; --edge: #6e7682; --focus: #7cacff;
+    --a-text: #7cb2f2; --b-text: #f0a45f;
+  }
+}
+/* With the photograph on, the pale end of that scale cannot survive. Measured against
+   the fifth percentile of the washed image over land, the path colour above sits at
+   1.9:1, well under the 3:1 a drawn line needs, and lightening the image far enough to
+   fix it leaves no image. So the photograph brings its own darker set. The hierarchy
+   compresses — three clear steps of lightness become two and a bit — and what takes up
+   the slack is line width. That is the trade; it is not free. */
+body[data-basemap="1"] {
+  --road-major: #2a2824;   /* 5.2:1 against the darkest land in the photograph */
+  --road-minor: #3d3931;   /* 4.1:1 */
+  --road-path:  #4f4a41;   /* 3.0:1 */
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: calc(1rem * var(--ui));
+  line-height: 1.45;
+}
+body[data-present="1"] { --ui: 1.2; }
+
+.wrap {
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: calc(1rem * var(--ui)) calc(0.9rem * var(--ui)) calc(2rem * var(--ui));
+  display: flex; flex-direction: column;
+  gap: calc(0.8rem * var(--ui));
+}
+h1 { font-size: calc(1.2rem * var(--ui)); margin: 0; font-weight: 650; }
+.intro { margin: 0; max-width: 46em; }
+.intro b { font-weight: 620; }
+
+.main { display: grid; gap: calc(0.8rem * var(--ui)); grid-template-areas: "stage" "readout" "controls"; }
+.stage { grid-area: stage; }
+.readout { grid-area: readout; }
+.controls { grid-area: controls; }
+@media (min-width: 60rem) {
+  .main {
+    grid-template-areas: "stage readout" "stage controls";
+    grid-template-columns: minmax(0, 1.55fr) minmax(19rem, 1fr);
+    grid-template-rows: auto 1fr;
+    align-items: start;
+  }
+}
+
+/* ---- the map ---- */
+.mapbox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--land);
+  border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  overflow: hidden;
+  touch-action: manipulation;
+}
+@media (min-width: 60rem) { .mapbox { aspect-ratio: 5 / 4; } }
+.mapbox canvas, .mapbox svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mapbox canvas { cursor: crosshair; }
+.mapbox svg { pointer-events: none; }
+.mapbox svg .grab { pointer-events: auto; cursor: grab; }
+.pinlabel {
+  font: 650 calc(0.82rem * var(--ui))/1 system-ui, sans-serif;
+  paint-order: stroke fill; stroke: var(--land); stroke-width: calc(4px * var(--ui));
+  stroke-linejoin: round;
+}
+.placelabel {
+  font: 500 calc(0.72rem * var(--ui))/1 system-ui, sans-serif;
+  fill: #6a6355;
+  paint-order: stroke fill; stroke: var(--land); stroke-width: calc(3px * var(--ui));
+  stroke-linejoin: round;
+}
+.ringlabel {
+  font: 600 calc(0.72rem * var(--ui))/1 system-ui, sans-serif;
+  fill: var(--ring);
+  paint-order: stroke fill; stroke: var(--land); stroke-width: calc(3.5px * var(--ui));
+  stroke-linejoin: round;
+}
+.mapnote {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: calc(0.35rem * var(--ui)) calc(0.6rem * var(--ui));
+  background: color-mix(in srgb, var(--land) 88%, transparent);
+  color: #4a453c;
+  font-size: calc(0.82rem * var(--ui));
+  border-top: 1px solid #d8d3c9;
+}
+
+/* ---- readout ---- */
+table.times { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+table.times th, table.times td { padding: calc(0.28rem * var(--ui)) calc(0.3rem * var(--ui)); text-align: right; }
+table.times th:first-child, table.times td:first-child { text-align: left; }
+table.times thead th { font-weight: 500; color: var(--ink-soft); font-size: calc(0.82rem * var(--ui)); }
+table.times td { white-space: nowrap; }
+table.times tbody td { border-top: 1px solid var(--edge); }
+.big { font-size: calc(1.5rem * var(--ui)); font-weight: 650; line-height: 1.1; }
+.chip { display: inline-block; width: calc(0.72rem * var(--ui)); height: calc(0.72rem * var(--ui)); margin-right: 0.4em; vertical-align: baseline; }
+.chip.a { background: var(--a); border-radius: 50%; }
+.chip.b { background: var(--b); }
+.nameA { color: var(--a-text); font-weight: 620; }
+.nameB { color: var(--b-text); font-weight: 620; }
+.card {
+  background: var(--panel); border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.5rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.7rem * var(--ui));
+}
+.card h2 { font-size: calc(0.95rem * var(--ui)); margin: 0 0 calc(0.3rem * var(--ui)); font-weight: 620; }
+.verdict { margin: calc(0.5rem * var(--ui)) 0 0; }
+.cannot { margin: calc(0.5rem * var(--ui)) 0 0; color: var(--ink-soft); font-size: calc(0.88rem * var(--ui)); }
+
+/* ---- controls ---- */
+fieldset { border: 1px solid var(--edge); border-radius: calc(0.5rem * var(--ui)); margin: 0 0 calc(0.6rem * var(--ui)); padding: calc(0.5rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.7rem * var(--ui)); }
+legend { padding: 0 calc(0.3rem * var(--ui)); color: var(--ink-soft); font-size: calc(0.9rem * var(--ui)); }
+.row { display: flex; flex-wrap: wrap; gap: calc(0.35rem * var(--ui)); }
+.act, .preset {
+  font: inherit; font-size: calc(0.92rem * var(--ui));
+  /* 44 px in both layouts, not only under pointer: coarse. It costs a mouse user
+     nothing and it is what the other widgets here do. principles.md section 3. */
+  min-height: calc(2.75rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.65rem * var(--ui));
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: calc(0.4rem * var(--ui));
+  background: var(--page); color: var(--ink); cursor: pointer;
+}
+.preset[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+@media (pointer: coarse) { .act, .preset { min-height: 44px; } }
+.act:focus-visible, .preset:focus-visible, .info:focus-visible {
+  outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px;
+}
+.info {
+  font: inherit; font-size: calc(0.8rem * var(--ui)); font-style: italic; font-weight: 700; line-height: 1;
+  width: calc(1.55rem * var(--ui)); height: calc(1.55rem * var(--ui));
+  min-width: 24px; min-height: 24px;
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: 50%;
+  background: transparent; color: var(--ink-soft); cursor: pointer;
+}
+.info[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.help-panel {
+  background: var(--panel); border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.8rem * var(--ui)) calc(0.6rem * var(--ui));
+  font-size: calc(0.92rem * var(--ui));
+  margin-top: calc(0.45rem * var(--ui));
+}
+.help-panel p { margin: calc(0.55rem * var(--ui)) 0 0; }
+.refs b { color: var(--ink); font-weight: 600; }
+body[data-present="1"] .help-panel, body[data-present="1"] .info { display: none; }
+/* The page scale is 1.2; map lettering needs more than that, because it is read at
+   fifteen metres rather than at sixty centimetres. */
+body[data-present="1"] .placelabel { font-size: calc(1.0rem * var(--ui)); }
+body[data-present="1"] .pinlabel   { font-size: calc(1.15rem * var(--ui)); }
+body[data-present="1"] .ringlabel  { font-size: calc(1.0rem * var(--ui)); }
+
+/* Not behind an (i). How you move the start is the main thing a reader does here, and
+   presentation mode hides the (i) panels, so a lecture would lose it. */
+.hint { margin: calc(0.45rem * var(--ui)) 0 0; color: var(--ink-soft); font-size: calc(0.88rem * var(--ui)); }
+footer { color: var(--ink-soft); font-size: calc(0.82rem * var(--ui)); border-top: 1px solid var(--edge); padding-top: calc(0.5rem * var(--ui)); }
+footer a { color: inherit; }
+footer p { margin: calc(0.3rem * var(--ui)) 0 0; }
+body[data-present="1"] footer { display: none; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Vancouver, measured in minutes</h1>
+  <p class="intro">Press Metres, then Minutes, and watch the streets move: the map stops
+     measuring the ground and starts measuring the trip. <b>Change who is travelling, or
+     where they start, and you get a different city.</b></p>
+
+  <div class="main">
+
+    <div class="stage">
+      <div class="mapbox" id="mapbox">
+        <canvas id="map" role="img" aria-labelledby="mapalt"></canvas>
+        <p class="visually-hidden" id="mapalt"></p>
+        <svg id="over" aria-hidden="true"></svg>
+        <div class="mapnote" id="mapnote"></div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <div class="card">
+        <h2 id="fromline">From Waterfront Station</h2>
+        <table class="times">
+          <thead>
+            <tr><th scope="col">Place</th><th scope="col">Straight line</th>
+                <th scope="col">There</th><th scope="col">Back</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row"><span class="chip a"></span><span class="nameA" id="nameA">&nbsp;</span></th>
+                <td id="kmA">&nbsp;</td><td id="outA">&nbsp;</td><td id="backA">&nbsp;</td></tr>
+            <tr><th scope="row"><span class="chip b"></span><span class="nameB" id="nameB">&nbsp;</span></th>
+                <td id="kmB">&nbsp;</td><td id="outB">&nbsp;</td><td id="backB">&nbsp;</td></tr>
+          </tbody>
+        </table>
+        <p class="verdict" id="verdict">&nbsp;</p>
+        <p class="cannot" id="cannot">&nbsp;</p>
+      </div>
+    </div>
+
+    <div class="controls">
+
+      <fieldset>
+        <legend>Measured in
+          <button class="info" data-info="info-scale" aria-expanded="false"
+                  aria-controls="info-scale" title="What does this change?">i</button>
+        </legend>
+        <div class="row" role="group" aria-label="Measured in">
+          <button class="preset" data-s="0">Metres</button>
+          <button class="preset" data-s="100">Minutes</button>
+        </div>
+        <div class="help-panel" id="info-scale" hidden>
+          <p>In metres this is an ordinary map. In minutes every street slides along
+             the line running out from the start, to a distance set by how long the
+             trip takes. The direction a place lies in never changes. Only how far
+             away it is.</p>
+          <p>There are two maps here and no map in between, so the change is shown as
+             a movement rather than as a dial. Half way between metres and minutes
+             would be half of one measurement added to half of another, which is not
+             a way of measuring anything.</p>
+          <p>The map in minutes is true along the lines that run out from the start,
+             and only along those. The gap you see between two places that are not the
+             start is not their travel time, and nothing on this map can show it. That
+             is the trade a map projection makes too: to get one thing right, it gives
+             up the rest.</p>
+          <p class="refs"><b>For more, see:</b> David O&rsquo;Sullivan,
+             <i>Computing Geographically</i> (Guilford, 2024), Chapter 2 on relative
+             space and Figure 6.14, which is a map of this kind for Santa Barbara.
+             Alain L&rsquo;Hostis &amp; Farouk Abdou, &ldquo;What is the shape of
+             geographical time-space?&rdquo;, <i>ISPRS International Journal of
+             Geo-Information</i> 10(5), 340 (2021).</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Who is travelling
+          <button class="info" data-info="info-mode" aria-expanded="false"
+                  aria-controls="info-mode" title="What does this change?">i</button>
+        </legend>
+        <div class="row" role="group" aria-label="Who is travelling">
+          <button class="preset" data-mode="0">On foot</button>
+          <button class="preset" data-mode="1">On foot, no steep hills or steps</button>
+          <button class="preset" data-mode="2">By bike</button>
+          <button class="preset" data-mode="3">By car</button>
+        </div>
+        <div class="help-panel" id="info-mode" hidden>
+          <p id="modehelp"></p>
+          <p>Nobody&rsquo;s trip is this fast. There are no traffic lights here, no
+             queues, no waiting to cross, and no time spent parking. Every traveller on
+             this page moves as if the way were clear, because there is no open record
+             of Vancouver traffic that could say otherwise. What the map shows is how
+             the ground and the network shape a trip, not how long the trip takes.</p>
+          <p>Walking speed comes from Waldo Tobler&rsquo;s hiking function, which is
+             fastest on ground falling gently away and slower both uphill and steeply
+             down. It gives 5 km/h on the level. Tobler fitted it for walking on paths
+             in hilly country rather than on city pavement, so what it is really lending
+             this map is the shape of the curve.</p>
+          <p>Cycling speed is a rider putting 150 watts through the pedals against
+             gravity, rolling resistance and the air, with 90 kg of rider and bike, and
+             never going over 22 km/h, which is the rider&rsquo;s own choice rather than
+             physics. Driving speed is the posted limit. A traveller on steps moves at
+             1.5 km/h.</p>
+          <p class="refs"><b>For more, see:</b> Waldo Tobler,
+             &ldquo;Three presentations on geographical analysis and modeling&rdquo;,
+             NCGIA Technical Report 93-1 (1993), where the hiking function is
+             W&nbsp;=&nbsp;6&nbsp;exp(&minus;3.5&nbsp;|S&nbsp;+&nbsp;0.05|) km/h, with
+             S the rise over the run. David Gordon Wilson &amp; Theodor Schmidt, with
+             contributions by Jim Papadopoulos, <i>Bicycling Science</i> (4th edn, MIT
+             Press, 2020), chapter 4, for the power equation this simplifies. On the
+             slope limit: 2010 ADA Standards for Accessible Design &sect;403.3, and
+             CSA B651, both of which set 1:20; a ramp may go to 1:12, and needs
+             handrails once it rises past 150 mm.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Starting from
+          <button class="info" data-info="info-start" aria-expanded="false"
+                  aria-controls="info-start" title="What does this change?">i</button>
+        </legend>
+        <div class="row" id="startrow" role="group" aria-label="Starting point"></div>
+        <p class="hint">Or tap the map anywhere. Drag a pin to move it.</p>
+        <div class="row" style="margin-top: calc(0.4rem * var(--ui))">
+          <button class="act" id="swap">Start from the blue pin instead</button>
+        </div>
+        <div class="help-panel" id="info-start" hidden>
+          <p>Swapping the start with the blue pin is the test worth running. If getting
+             there and getting back took the same time, the two maps would be the same
+             map. They are not. One-way streets and hills both run one way, so the city
+             is a different shape depending on which end of the trip you are standing
+             at.</p>
+          <p class="refs"><b>For more, see:</b> David O&rsquo;Sullivan,
+             <i>Computing Geographically</i> (Guilford, 2024), Chapter 2:
+             &ldquo;It might take longer to travel from A to B than from B to A.&rdquo;</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Ground
+          <button class="info" data-info="info-ground" aria-expanded="false"
+                  aria-controls="info-ground" title="What does this change?">i</button>
+        </legend>
+        <div class="row" role="group" aria-label="What is under the streets">
+          <button class="preset" data-ground="1">Photograph</button>
+          <button class="preset" data-ground="0">Plain</button>
+        </div>
+        <div class="help-panel" id="info-ground" hidden>
+          <p>The photograph is stretched by the same rule as the streets, so you can watch
+             real ground pull apart. It is only stretched where the streets can say how
+             long it takes to get there. Water and mountainside have no answer, so they
+             stay where they are and fade out as the map turns to minutes.</p>
+          <p>That fading is the honest part. Interpolating a travel time across the inlet
+             would make the water stretch like everything else, which would say the sea is
+             merely slow. It is not slow. It is not there.</p>
+          <p>Turn it off if the streets are hard to read. On a projector, which crushes
+             dark tones, plain often wins.</p>
+          <p class="refs"><b>For more, see:</b> the image is Copernicus Sentinel-2, 12
+             August 2025, at 10 m, washed out and lightened here so that street lines
+             stay legible on top of it.</p>
+        </div>
+      </fieldset>
+
+      <div class="row">
+        <button class="act" id="reset">Reset</button>
+        <button class="act" id="present" aria-pressed="false">Big screen</button>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Streets from <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+       contributors, under the Open Database Licence. Slopes from Natural Resources
+       Canada, High Resolution Digital Elevation Model (Lower Mainland 2016) and the
+       Canadian Digital Elevation Model, under the Open Government Licence &ndash; Canada.
+       Contains modified Copernicus Sentinel data 2025.</p>
+    <p>Made by Luke Bergmann with Claude.
+       <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
+  </footer>
+
+  <p class="visually-hidden" id="live" aria-live="polite"></p>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var D = window.RD;
+  var INF = Infinity;
+
+  // ---- decode ---------------------------------------------------------------
+  var n = D.n, m = D.m;
+  var NX = new Float64Array(n), NY = new Float64Array(n);
+  (function () {
+    var x = 0, y = 0;
+    for (var i = 0; i < n; i++) {
+      x += D.nx[i]; y += D.ny[i];
+      NX[i] = D.x0 + x * D.q; NY[i] = D.y0 + y * D.q;
+    }
+  })();
+
+  var EU = new Int32Array(m), EV = new Int32Array(m);
+  // Float64, not Float32. The slope threshold below is an equality at the boundary,
+  // and in Float32 a grade stored as exactly 50 per mille comes back as 0.050000001
+  // and fails a "> 0.05" test. That silently dropped 93 streets, and reproducing a
+  // known travel time would not have caught it. EGM keeps the integer per mille so
+  // the threshold is compared as integers and cannot round at all.
+  var EL = new Float64Array(m), EG = new Float64Array(m), ES = new Float64Array(m);
+  var EGM = new Int16Array(m);
+  var EF = new Uint8Array(m), EC = new Uint8Array(m);
+  (function () {
+    var u = 0;
+    for (var i = 0; i < m; i++) {
+      u += D.eu[i]; EU[i] = u; EV[i] = u + D.ev[i];
+      EL[i] = D.el[i] / 10; EG[i] = D.eg[i] / 1000; ES[i] = D.es[i];
+      EGM[i] = D.eg[i];
+      EF[i] = D.ef[i]; EC[i] = D.ec[i];
+    }
+  })();
+
+  // Vertices, edge by edge: node u, the intermediate points, node v.
+  var VOFF = new Int32Array(m + 1);
+  for (var i = 0; i < m; i++) VOFF[i + 1] = VOFF[i] + D.epn[i] + 2;
+  var NVERT = VOFF[m];
+  var VX = new Float64Array(NVERT), VY = new Float64Array(NVERT);
+  var VFRAC = new Float64Array(NVERT);
+  (function () {
+    var k = 0;
+    for (var e = 0; e < m; e++) {
+      var o = VOFF[e], cnt = D.epn[e];
+      VX[o] = NX[EU[e]]; VY[o] = NY[EU[e]];
+      var qx = Math.round((NX[EU[e]] - D.x0) / D.q), qy = Math.round((NY[EU[e]] - D.y0) / D.q);
+      for (var j = 0; j < cnt; j++) {
+        qx += D.ep[k++]; qy += D.ep[k++];
+        VX[o + 1 + j] = D.x0 + qx * D.q; VY[o + 1 + j] = D.y0 + qy * D.q;
+      }
+      VX[o + cnt + 1] = NX[EV[e]]; VY[o + cnt + 1] = NY[EV[e]];
+      // fraction along the drawn polyline
+      var run = 0, d = [0];
+      for (var t = o; t < o + cnt + 1; t++) {
+        run += Math.hypot(VX[t + 1] - VX[t], VY[t + 1] - VY[t]); d.push(run);
+      }
+      for (var t2 = 0; t2 <= cnt + 1; t2++) VFRAC[o + t2] = run > 0 ? d[t2] / run : 0;
+    }
+  })();
+
+  // Edge indices grouped by drawing class, so a frame walks three flat lists.
+  var BYCLASS = [[], [], []];
+  for (var i2 = 0; i2 < m; i2++) BYCLASS[EC[i2]].push(i2);
+  BYCLASS = BYCLASS.map(function (a) { return Int32Array.from(a); });
+
+  // ---- arcs: two per edge, and a CSR by tail and by head --------------------
+  var ATO = new Int32Array(2 * m), AFROM = new Int32Array(2 * m);
+  for (var e2 = 0; e2 < m; e2++) {
+    AFROM[2 * e2] = EU[e2]; ATO[2 * e2] = EV[e2];
+    AFROM[2 * e2 + 1] = EV[e2]; ATO[2 * e2 + 1] = EU[e2];
+  }
+  function csr(key) {
+    var start = new Int32Array(n + 1), idx = new Int32Array(2 * m);
+    for (var a = 0; a < 2 * m; a++) start[key[a] + 1]++;
+    for (var v = 0; v < n; v++) start[v + 1] += start[v];
+    var fill = start.slice(0, n);
+    for (var a2 = 0; a2 < 2 * m; a2++) idx[fill[key[a2]]++] = a2;
+    return { start: start, idx: idx };
+  }
+  var OUT = csr(AFROM), IN = csr(ATO);
+  var ACOST = new Float64Array(2 * m);
+
+  // ---- speed models ---------------------------------------------------------
+  var STEP_SPEED = 1.5 / 3.6;          // m/s on a flight of steps
+  function vFoot(g, steps) {
+    if (steps) return STEP_SPEED;
+    return 6 * Math.exp(-3.5 * Math.abs(g + 0.05)) / 3.6;
+  }
+  // A rider putting 150 watts through the pedals: 90 kg of rider and bike, rolling
+  // resistance 0.005, drag area 0.40 m^2, air 1.226 kg/m^3. Never slower than pushing
+  // the bike, never faster than 22 km/h, which is the rider's own choice, not physics.
+  var BIKE_CAP = 22 / 3.6;
+  var BIKE = new Float32Array(701);
+  (function () {
+    for (var i = 0; i < 701; i++) {
+      var g = (i - 350) / 1000;
+      var a = 0.5 * 1.226 * 0.40, b = 90 * 9.80665 * (0.005 + g);
+      var lo = 0.02, hi = 30;
+      for (var k = 0; k < 40; k++) {
+        var mid = 0.5 * (lo + hi);
+        if (b * mid + a * mid * mid * mid < 150) lo = mid; else hi = mid;
+      }
+      BIKE[i] = Math.min(Math.max(lo, vFoot(g, 0)), BIKE_CAP);
+    }
+  })();
+  function vBike(g) {
+    var i = Math.round(g * 1000) + 350;
+    return BIKE[i < 0 ? 0 : (i > 700 ? 700 : i)];
+  }
+
+  var MAX_GRADE_EASY = 50;             // per mille. 5 in 100: the slope an accessible route may run at
+  var MODES = [
+    { key: "foot", label: "on foot",
+      help: "Everything except motorways. One-way streets do not apply to someone walking." },
+    { key: "easy", label: "on foot, avoiding steep ground",
+      help: "The same walking speeds, but this traveller will not use steps and will not " +
+            "go up or down anything steeper than 5 in 100. That is the point at which a " +
+            "walking surface stops counting as one: an accessible route steeper than " +
+            "5 in 100 has to be built as a ramp, with landings, and with handrails " +
+            "once it rises more than 150 mm. Nothing " +
+            "else changes between this traveller and the one on foot, so whatever moves " +
+            "is the ground refusing rather than the walker slowing down." },
+    { key: "bike", label: "by bike",
+      help: "Streets, bike routes and shared paths. One-way streets apply unless the street " +
+            "is marked as two-way for bikes." },
+    { key: "car", label: "by car",
+      help: "Streets only, at the posted speed limit, respecting one-way streets. No paths, " +
+            "no park routes, and no way through anywhere a car cannot go." }
+  ];
+
+  function arcCost(a, mode) {
+    var e = a >> 1, fwd = (a & 1) === 0, f = EF[e], g = fwd ? EG[e] : -EG[e];
+    if (mode === 0 || mode === 1) {
+      if (!(f & 1)) return INF;
+      if (mode === 1 && ((f & 8) || (EGM[e] > MAX_GRADE_EASY || EGM[e] < -MAX_GRADE_EASY))) return INF;
+      return EL[e] / vFoot(g, f & 8);
+    }
+    if (mode === 2) {
+      if (!(f & 2)) return INF;
+      if (!(fwd ? (f & 64) : (f & 128))) return INF;
+      return EL[e] / vBike(g);
+    }
+    if (!(f & 4)) return INF;
+    if (!(fwd ? (f & 16) : (f & 32))) return INF;
+    return EL[e] / (ES[e] / 3.6);
+  }
+
+  // ---- a grid index over the nodes, for snapping and radius searches --------
+  var GX0 = D.x0, GY0 = D.y0, GC = 200;
+  var GW = 0, GH = 0, GSTART = null, GIDX = null;
+  (function () {
+    var maxx = 0, maxy = 0;
+    for (var i = 0; i < n; i++) {
+      if (NX[i] > maxx) maxx = NX[i];
+      if (NY[i] > maxy) maxy = NY[i];
+    }
+    GW = Math.floor((maxx - GX0) / GC) + 1; GH = Math.floor((maxy - GY0) / GC) + 1;
+    var cells = GW * GH;
+    GSTART = new Int32Array(cells + 1); GIDX = new Int32Array(n);
+    var cell = new Int32Array(n);
+    for (var j = 0; j < n; j++) {
+      cell[j] = Math.floor((NY[j] - GY0) / GC) * GW + Math.floor((NX[j] - GX0) / GC);
+      GSTART[cell[j] + 1]++;
+    }
+    for (var c = 0; c < cells; c++) GSTART[c + 1] += GSTART[c];
+    var fill = GSTART.slice(0, cells);
+    for (var j2 = 0; j2 < n; j2++) GIDX[fill[cell[j2]]++] = j2;
+  })();
+
+  function eachNear(x, y, r, fn) {
+    var i0 = Math.max(0, Math.floor((x - r - GX0) / GC)), i1 = Math.min(GW - 1, Math.floor((x + r - GX0) / GC));
+    var j0 = Math.max(0, Math.floor((y - r - GY0) / GC)), j1 = Math.min(GH - 1, Math.floor((y + r - GY0) / GC));
+    var r2 = r * r;
+    for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+      var c = j * GW + i;
+      for (var k = GSTART[c]; k < GSTART[c + 1]; k++) {
+        var v = GIDX[k], dx = NX[v] - x, dy = NY[v] - y, d2 = dx * dx + dy * dy;
+        if (d2 <= r2) fn(v, d2);
+      }
+    }
+  }
+
+  function nearestNode(x, y, ok) {
+    var best = -1, bd = INF, r = 200;
+    while (best < 0 && r < 20000) {
+      eachNear(x, y, r, function (v, d2) {
+        if (ok && !ok(v)) return;
+        if (d2 < bd) { bd = d2; best = v; }
+      });
+      r *= 2;
+    }
+    return best;
+  }
+
+  // ---- state ----------------------------------------------------------------
+  var PLACES = D.places.map(function (p) {
+    return { name: p[0], x: D.x0 + p[1] * D.q, y: D.y0 + p[2] * D.q };
+  });
+  var PLACE_NODE = PLACES.map(function (p) { return nearestNode(p.x, p.y, null); });
+  var START_PRESETS = [0, 1, 2, 5];       // Waterfront, Lonsdale Quay, Commercial, Park Royal
+  var DEF = { mode: 0, s: 100, start: PLACE_NODE[0], a: PLACE_NODE[1], b: PLACE_NODE[2] };
+
+  var params = new URLSearchParams(location.search);
+  function nodeParam(key, dflt) {
+    var v = params.get(key);
+    if (!v) return dflt;
+    var p = v.split(",");
+    var x = Number(p[0]), y = Number(p[1]);
+    if (!isFinite(x) || !isFinite(y)) return dflt;
+    var i = nearestNode(D.x0 + x * 10, D.y0 + y * 10, null);
+    return i < 0 ? dflt : i;
+  }
+  var mode = Math.max(0, Math.min(3, parseInt(params.get("m"), 10) || 0));
+  var sTarget = params.get("s") === "0" ? 0 : DEF.s;
+  var sVal = sTarget;
+  var startNode = nodeParam("o", DEF.start);
+  var pinA = nodeParam("a", DEF.a);
+  var pinB = nodeParam("b", DEF.b);
+  var present = params.get("present") === "1";
+  var ground = params.get("g") === "0" ? 0 : 1;      // 1 = photograph, 0 = plain
+
+  // ---- what a run of Dijkstra produces --------------------------------------
+  var tOut = new Float64Array(n), tBack = new Float64Array(n);
+  var VT = new Float64Array(NVERT);          // minutes-radius input, seconds
+  var EDRAW = new Uint8Array(m);             // is this edge drawable at all
+  var VR = new Float64Array(NVERT);          // real distance from the start
+  var VUX = new Float64Array(NVERT), VUY = new Float64Array(NVERT);
+  var VTR = new Float64Array(NVERT);         // time distance from the start, in metres
+  var kScale = 1, R98 = 1000, RKM = 1000, RT = 1000, originX = 0, originY = 0;
+  var BOX = { x0: 0, x1: 1, y0: 0, y1: 1 };
+  var viewX = 0, viewY = 0;
+  var reachCount = 0, usableCount = 0, snapMsg = "";
+
+  function dijkstra(from, graph, dist) {
+    dist.fill(INF); dist[from] = 0;
+    var heapV = new Int32Array(n + 8), heapD = new Float64Array(n + 8), hs = 0;
+    function push(v, d) {
+      var i = hs++;
+      heapV[i] = v; heapD[i] = d;
+      while (i > 0) {
+        var p = (i - 1) >> 1;
+        if (heapD[p] <= heapD[i]) break;
+        var tv = heapV[p], td = heapD[p];
+        heapV[p] = heapV[i]; heapD[p] = heapD[i]; heapV[i] = tv; heapD[i] = td;
+        i = p;
+      }
+      if (hs >= heapV.length - 1) {                      // grow
+        var nv = new Int32Array(heapV.length * 2), nd = new Float64Array(heapV.length * 2);
+        nv.set(heapV); nd.set(heapD); heapV = nv; heapD = nd;
+      }
+    }
+    function pop() {
+      var v = heapV[0], d = heapD[0];
+      hs--;
+      heapV[0] = heapV[hs]; heapD[0] = heapD[hs];
+      var i = 0;
+      for (;;) {
+        var l = 2 * i + 1, r = l + 1, sm = i;
+        if (l < hs && heapD[l] < heapD[sm]) sm = l;
+        if (r < hs && heapD[r] < heapD[sm]) sm = r;
+        if (sm === i) break;
+        var tv = heapV[sm], td = heapD[sm];
+        heapV[sm] = heapV[i]; heapD[sm] = heapD[i]; heapV[i] = tv; heapD[i] = td;
+        i = sm;
+      }
+      return [v, d];
+    }
+    push(from, 0);
+    while (hs > 0) {
+      var top = pop(), u = top[0], du = top[1];
+      if (du > dist[u]) continue;
+      for (var k = graph.start[u]; k < graph.start[u + 1]; k++) {
+        var a = graph.idx[k], c = ACOST[a];
+        if (c === INF) continue;
+        var v = (graph === OUT) ? ATO[a] : AFROM[a];
+        var nd = du + c;
+        if (nd < dist[v]) { dist[v] = nd; push(v, nd); }
+      }
+    }
+  }
+
+  function median(sample) {
+    var a = Float64Array.from(sample).sort();
+    return a[Math.floor(a.length / 2)];
+  }
+
+  function recompute() {
+    stopAnim(); sVal = sTarget;
+    for (var a = 0; a < 2 * m; a++) ACOST[a] = arcCost(a, mode);
+
+    // Does this traveller have any way to leave the start? If not, move to the
+    // nearest node they can, and say so.
+    var canUse = new Uint8Array(n);
+    usableCount = 0;
+    for (var a2 = 0; a2 < 2 * m; a2++) if (ACOST[a2] !== INF) { canUse[AFROM[a2]] = 1; canUse[ATO[a2]] = 1; }
+    for (var v0 = 0; v0 < n; v0++) if (canUse[v0]) usableCount++;
+    var from = startNode;
+    snapMsg = "";
+    if (!canUse[from]) {
+      var alt = nearestNode(NX[from], NY[from], function (v) { return canUse[v] === 1; });
+      if (alt >= 0) {
+        var d = Math.hypot(NX[alt] - NX[from], NY[alt] - NY[from]);
+        snapMsg = "The start is " + Math.round(d) + " m from the nearest street this traveller can use.";
+        from = alt;
+      }
+    }
+    originX = NX[from]; originY = NY[from];
+
+    dijkstra(from, OUT, tOut);
+    dijkstra(from, IN, tBack);
+    reachCount = 0;
+    for (var v = 0; v < n; v++) if (tOut[v] !== INF) reachCount++;
+
+    // Per-vertex time, and which edges can be drawn.
+    for (var e = 0; e < m; e++) {
+      var cf = ACOST[2 * e], cb = ACOST[2 * e + 1];
+      var tu = tOut[EU[e]], tv = tOut[EV[e]];
+      var o = VOFF[e], last = VOFF[e + 1] - 1, ok = 1;
+      for (var i = o; i <= last; i++) {
+        var f = VFRAC[i];
+        var t1 = (cf === INF || tu === INF) ? INF : tu + cf * f;
+        var t2 = (cb === INF || tv === INF) ? INF : tv + cb * (1 - f);
+        var t = t1 < t2 ? t1 : t2;
+        VT[i] = t;
+        if (t === INF) ok = 0;
+      }
+      EDRAW[e] = ok;
+    }
+
+    // Direction and real distance from the start; then the scale that makes the
+    // time map about the size of the metre map, so the shape is what changes.
+    var sampleR = [], sampleT = [];
+    for (var i2 = 0; i2 < NVERT; i2++) {
+      var dx = VX[i2] - originX, dy = VY[i2] - originY;
+      var r = Math.hypot(dx, dy);
+      VR[i2] = r;
+      VUX[i2] = r > 0 ? dx / r : 0; VUY[i2] = r > 0 ? dy / r : 0;
+    }
+    for (var i3 = 0; i3 < NVERT; i3 += 17) {
+      if (VT[i3] === INF || VT[i3] === 0) continue;
+      sampleR.push(VR[i3]); sampleT.push(VT[i3]);
+    }
+    kScale = sampleT.length ? median(sampleR) / median(sampleT) : 1;
+    for (var i4 = 0; i4 < NVERT; i4++) VTR[i4] = VT[i4] === INF ? INF : VT[i4] * kScale;
+
+    // The frame. Everything radiates from the start, but the start is rarely in the
+    // middle of anything, so fit the drawn ground rather than a circle around it.
+    // The box is the union of both ends of the slider, so it does not move while
+    // the slider does.
+    var xs = [], ys = [], rs = [], ts = [];
+    for (var i5 = 0; i5 < NVERT; i5 += 7) {
+      if (!EDRAW[VEDGE[i5]]) continue;
+      var rr = VR[i5], tr = VTR[i5];
+      if (tr === INF) tr = rr;
+      rs.push(rr); ts.push(tr);
+      xs.push(originX + rr * VUX[i5]); xs.push(originX + tr * VUX[i5]);
+      ys.push(originY + rr * VUY[i5]); ys.push(originY + tr * VUY[i5]);
+    }
+    var num = function (p, q) { return p - q; };
+    xs.sort(num); ys.sort(num); rs.sort(num); ts.sort(num);
+    function pct(a, f) { return a.length ? a[Math.min(a.length - 1, Math.floor(a.length * f))] : 0; }
+    BOX = { x0: pct(xs, 0.008), x1: pct(xs, 0.992), y0: pct(ys, 0.008), y1: pct(ys, 0.992) };
+    // Each set of rings is spaced from its own spread, not from the drawn frame:
+    // the frame holds both ends of the slider and so suits neither on its own.
+    RKM = rs.length ? pct(rs, 0.96) : 5000;
+    RT = ts.length ? pct(ts, 0.96) : 5000;
+    R98 = Math.max(RKM, RT);
+    mesh = ground ? buildMesh(GRID_FINE) : null;
+    meshIsFine = true;
+  }
+  var meshIsFine = true;
+
+  var VEDGE = new Int32Array(NVERT);
+  for (var e3 = 0; e3 < m; e3++) for (var i6 = VOFF[e3]; i6 < VOFF[e3 + 1]; i6++) VEDGE[i6] = e3;
+  function edgeOfVertex(i) { return VEDGE[i]; }
+
+  function timeTo(node, dist) {
+    // A trip ends when you are within 150 m of where you were going: you park, or
+    // you walk the last bit. Without that, a pin dropped in a park is unreachable
+    // by car, which is true and useless.
+    var best = INF;
+    eachNear(NX[node], NY[node], 150, function (v) {
+      if (dist[v] < best) best = dist[v];
+    });
+    return best;
+  }
+
+  // ---- the photograph, and the mesh that pulls it about ---------------------
+  //
+  // The image is Sentinel-2, in the same projection and the same units as the graph, so
+  // a pixel maps to a metre without a reprojection. It is warped by the same rule as the
+  // streets: a regular mesh over the ground, each node moved out along its own line from
+  // the start, each cell drawn as one affine patch clipped to its true deformed quad.
+  // Clipping to the quad rather than to a rectangle is what stops the cells tearing
+  // apart from each other; the affine inside is an approximation and at this cell size
+  // it does not show.
+  //
+  // The travel time at a mesh node is an inverse-distance mean of the reachable
+  // junctions within SUPPORT_R. Where there are none, the node is unsupported: the
+  // photograph has nothing to say about how long it takes to get there, and the cell is
+  // left where it is and faded out rather than stretched. That is most of Burrard Inlet,
+  // and it is the point.
+  var IMG = { x0: 483000, y0: 5453100, x1: 501400, y1: 5471200, w: 1150, h: 1131 };
+  var SUPPORT_R = 260;                 // metres
+  var GRID_FINE = 92, GRID_FAST = 46;  // cells across; the coarse one is used while moving
+  var img = null, imgReady = false;
+  (function () {
+    if (typeof Image !== "function") return;
+    img = new Image();
+    img.onload = function () { imgReady = true; draw(); };
+    img.src = "basemap.jpg";
+  })();
+
+  var mesh = null;
+  function buildMesh(nx) {
+    var ny = Math.round(nx * (IMG.y1 - IMG.y0) / (IMG.x1 - IMG.x0));
+    var gw = nx + 1, gh = ny + 1;
+    var mx = new Float64Array(gw * gh), my = new Float64Array(gw * gh);
+    var ux = new Float64Array(gw * gh), uy = new Float64Array(gw * gh);
+    var rr = new Float64Array(gw * gh), tt = new Float64Array(gw * gh);
+    for (var j = 0; j < gh; j++) {
+      for (var i = 0; i < gw; i++) {
+        var k = j * gw + i;
+        var x = IMG.x0 + (IMG.x1 - IMG.x0) * i / nx;
+        var y = IMG.y1 - (IMG.y1 - IMG.y0) * j / ny;
+        mx[k] = x; my[k] = y;
+        var dx = x - originX, dy = y - originY, r = Math.hypot(dx, dy);
+        rr[k] = r; ux[k] = r > 0 ? dx / r : 0; uy[k] = r > 0 ? dy / r : 0;
+        var wsum = 0, tsum = 0;
+        eachNear(x, y, SUPPORT_R, function (v, d2) {
+          var t = tOut[v];
+          if (t === INF) return;
+          var wgt = 1 / (Math.sqrt(d2) + 30);
+          wsum += wgt; tsum += wgt * t;
+        });
+        tt[k] = wsum > 0 ? tsum / wsum : INF;
+      }
+    }
+    return { nx: nx, ny: ny, gw: gw, gh: gh, mx: mx, my: my, ux: ux, uy: uy, rr: rr, tt: tt };
+  }
+
+  // How many mesh cells the network cannot speak for. This is the inlet, mostly.
+  function meshHeld() {
+    if (!mesh) return 0;
+    var n = 0, cell = (IMG.x1 - IMG.x0) / mesh.nx;
+    for (var j = 0; j < mesh.ny; j++) for (var i = 0; i < mesh.nx; i++) {
+      var a = j * mesh.gw + i, b = a + 1, c = a + mesh.gw + 1, d = a + mesh.gw;
+      var lo = Math.min(mesh.tt[a], mesh.tt[b], mesh.tt[c], mesh.tt[d]);
+      var hi = Math.max(mesh.tt[a], mesh.tt[b], mesh.tt[c], mesh.tt[d]);
+      if (hi === INF || (hi - lo) * kScale > 6 * cell) n++;
+    }
+    return n;
+  }
+
+  var OUTSET = 0.6;
+  function out4(x, y, cx, cy, lineTo) {
+    var dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy) || 1;
+    var qx = x + dx / d * OUTSET, qy = y + dy / d * OUTSET;
+    if (lineTo) ctx.lineTo(qx, qy); else ctx.moveTo(qx, qy);
+  }
+
+  function drawGround(s) {
+    if (!ground || !imgReady) return;
+    var m = mesh;
+    if (!m) return;
+    var sw = IMG.w / m.nx, sh = IMG.h / m.ny;
+    var cellMetres = (IMG.x1 - IMG.x0) / m.nx;
+    var px = new Float64Array(m.gw * m.gh), py = new Float64Array(m.gw * m.gh);
+    for (var k = 0; k < px.length; k++) {
+      var t = m.tt[k];
+      var r = (t === INF) ? m.rr[k] : (1 - s) * m.rr[k] + s * t * kScale;
+      px[k] = sx(originX + r * m.ux[k]);
+      py[k] = sy(originY + r * m.uy[k]);
+    }
+    var fade = Math.max(0, 1 - 2 * s);
+    for (var j = 0; j < m.ny; j++) {
+      for (var i = 0; i < m.nx; i++) {
+        var a = j * m.gw + i, b = a + 1, c = a + m.gw + 1, d = a + m.gw;
+        var held = (m.tt[a] === INF) || (m.tt[b] === INF) || (m.tt[c] === INF) || (m.tt[d] === INF);
+        if (!held) {
+          // A cell whose four corners have wildly different travel times is lying across
+          // a tear: one corner is a minute from the start and the next is half an hour,
+          // because the way between them goes the long way round. A quadrilateral cannot
+          // draw that, and if you let it try you get long spikes reaching across the map,
+          // which read as a broken renderer rather than as a fact about the city. So the
+          // cell is held too. Six times its own width is the line.
+          var lo = Math.min(m.tt[a], m.tt[b], m.tt[c], m.tt[d]);
+          var hi = Math.max(m.tt[a], m.tt[b], m.tt[c], m.tt[d]);
+          if ((hi - lo) * kScale > 6 * cellMetres) held = true;
+        }
+        if (held && fade <= 0.01) continue;
+        // off screen?
+        if (Math.min(px[a], px[b], px[c], px[d]) > CW || Math.max(px[a], px[b], px[c], px[d]) < 0 ||
+            Math.min(py[a], py[b], py[c], py[d]) > CH || Math.max(py[a], py[b], py[c], py[d]) < 0) continue;
+        var s0x = i * sw, s0y = j * sh;
+        // affine from the top-left corner and the two edges leaving it
+        var ax = (px[b] - px[a]) / sw, ay = (py[b] - py[a]) / sw;
+        var bx = (px[d] - px[a]) / sh, by = (py[d] - py[a]) / sh;
+        if (!isFinite(ax) || !isFinite(by)) continue;
+        // Push each corner half a pixel out from the cell's own centre before clipping.
+        // Two clipped quads sharing an edge are each antialiased against it, so the two
+        // half-covered edges do not add back up to one and a pale seam runs down the
+        // join. The mesh was visible as a grid across the whole photograph until this.
+        var mxc = (px[a] + px[b] + px[c] + px[d]) / 4;
+        var myc = (py[a] + py[b] + py[c] + py[d]) / 4;
+        ctx.save();
+        ctx.beginPath();
+        out4(px[a], py[a], mxc, myc); out4(px[b], py[b], mxc, myc, 1);
+        out4(px[c], py[c], mxc, myc, 1); out4(px[d], py[d], mxc, myc, 1);
+        ctx.closePath(); ctx.clip();
+        if (held) ctx.globalAlpha = fade;
+        ctx.transform(ax, ay, bx, by, px[a] - s0x * ax - s0y * bx, py[a] - s0x * ay - s0y * by);
+        ctx.drawImage(img, 0, 0);
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- drawing --------------------------------------------------------------
+  var box = document.getElementById("mapbox");
+  var cv = document.getElementById("map"), ctx = cv.getContext("2d");
+  var svg = document.getElementById("over");
+  var CW = 0, CH = 0, scale = 1;
+
+  function resize() {
+    var r = box.getBoundingClientRect();
+    CW = Math.max(1, Math.round(r.width)); CH = Math.max(1, Math.round(r.height));
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(CW * dpr); cv.height = Math.round(CH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    svg.setAttribute("viewBox", "0 0 " + CW + " " + CH);
+  }
+
+  function fitView() {
+    var w = Math.max(1, BOX.x1 - BOX.x0), h = Math.max(1, BOX.y1 - BOX.y0);
+    scale = 0.94 * Math.min(CW / w, CH / h);
+    viewX = (BOX.x0 + BOX.x1) / 2; viewY = (BOX.y0 + BOX.y1) / 2;
+  }
+  function sx(x) { return CW / 2 + (x - viewX) * scale; }
+  function sy(y) { return CH / 2 - (y - viewY) * scale; }
+
+  // Major, minor, path. The paths are deliberately the quietest thing on the map: there
+  // are 32,250 segments and most of them are somebody's back lane. Thinner rather than
+  // paler, because paler is what breaks the 3:1 a drawn line needs, and because a thin
+  // dark line recedes perfectly well.
+  var LINEW = [1.5, 0.85, 0.40];
+  var COLOUR = ["--road-major", "--road-minor", "--road-path"];
+
+  function draw() {
+    var s = sVal / 100;
+    fitView();
+    ctx.clearRect(0, 0, CW, CH);
+    drawGround(s);
+    var css = getComputedStyle(document.documentElement);
+    var uiScale = present ? 1.6 : 1;
+    for (var c = 2; c >= 0; c--) {
+      var list = BYCLASS[c];
+      ctx.beginPath();
+      for (var q = 0; q < list.length; q++) {
+        var e = list[q];
+        if (!EDRAW[e]) continue;
+        var o = VOFF[e], last = VOFF[e + 1] - 1;
+        for (var i = o; i <= last; i++) {
+          var r = (1 - s) * VR[i] + s * VTR[i];
+          var px = CW / 2 + (originX + r * VUX[i] - viewX) * scale;
+          var py = CH / 2 - (originY + r * VUY[i] - viewY) * scale;
+          if (i === o) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+      }
+      ctx.strokeStyle = css.getPropertyValue(COLOUR[c]).trim() || "#888";
+      ctx.lineWidth = LINEW[c] * uiScale;
+      ctx.lineJoin = "round"; ctx.lineCap = "round";
+      ctx.stroke();
+    }
+    drawOverlay(s);
+  }
+
+  function niceStep(target, options) {
+    for (var i = 0; i < options.length; i++) if (options[i] >= target) return options[i];
+    return options[options.length - 1];
+  }
+
+  function fmt(sec) {
+    if (sec === INF) return "—";
+    var mins = sec / 60;
+    if (mins < 1) return "under a minute";
+    if (mins < 90) return Math.round(mins) + " min";
+    var h = Math.floor(mins / 60), mm = Math.round(mins - h * 60);
+    if (mm === 60) { h++; mm = 0; }
+    return h + " h " + (mm < 10 ? "0" : "") + mm;
+  }
+
+  function placeName(node) {
+    var best = "", bd = INF;
+    for (var i = 0; i < PLACES.length; i++) {
+      var d = Math.hypot(PLACES[i].x - NX[node], PLACES[i].y - NY[node]);
+      if (d < bd) { bd = d; best = PLACES[i].name; }
+    }
+    if (bd < 350) return best;
+    return "a point " + (bd < 1000 ? Math.round(bd / 50) * 50 + " m" : (bd / 1000).toFixed(1) + " km")
+           + " from " + best;
+  }
+
+  function drawnPos(node, s) {
+    // A marked place is drawn at the radius of the time the readout reports for it,
+    // which is the time to get within 150 m — not the time to that one junction. If
+    // the two disagreed, a reader measuring a pin against the rings would get a
+    // different answer from the one printed beside the map.
+    var dx = NX[node] - originX, dy = NY[node] - originY, r = Math.hypot(dx, dy);
+    var ux = r > 0 ? dx / r : 0, uy = r > 0 ? dy / r : 0;
+    var t = timeTo(node, tOut);
+    var rr = t === INF ? r : (1 - s) * r + s * (t * kScale);
+    return [sx(originX + rr * ux), sy(originY + rr * uy)];
+  }
+
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  // Labels are placed in priority order and anything that would collide is dropped.
+  // A map whose names sit on top of one another has stopped naming anything.
+  function boxesOverlap(a, b) {
+    return !(a[2] < b[0] || b[2] < a[0] || a[3] < b[1] || b[3] < a[1]);
+  }
+
+  function drawOverlay(s) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var css = getComputedStyle(document.documentElement);
+    var ringCol = css.getPropertyValue("--ring").trim() || "#5a6270";
+    var startCol = css.getPropertyValue("--start").trim() || "#111";
+    var uiScale = present ? 1.5 : 1;
+    var taken = [];
+    function reserve(cx, cy, w, h) {
+      var b = [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2];
+      for (var i = 0; i < taken.length; i++) if (boxesOverlap(b, taken[i])) return false;
+      taken.push(b); return true;
+    }
+    // Estimating a string's width from its character count is close enough for the
+    // marks, whose text is short, and not close enough for place names: two labels
+    // that the estimate said were clear sat on top of each other on a phone. Where the
+    // browser will measure the drawn text, use that instead — it is the ink rather
+    // than a guess about it.
+    function textWidth(t, px) { return t.length * px * 0.56 + 4; }
+    function inkBox(node) {
+      if (!node.getBBox) return null;
+      try {
+        var r = node.getBBox();
+        if (!r || !r.width) return null;
+        return [r.x - 2, r.y - 2, r.x + r.width + 2, r.y + r.height + 2];
+      } catch (e) { return null; }
+    }
+    function reserveInk(node, fallback) {
+      var b = inkBox(node) || fallback;
+      for (var i = 0; i < taken.length; i++) {
+        if (boxesOverlap(b, taken[i])) return false;
+      }
+      taken.push(b); return true;
+    }
+    // The start and the pins are drawn whatever happens, so their space is claimed
+    // rather than requested. Asking cost an hour: a pin caption sits just under its own
+    // marker, so reserveInk found the marker's box, returned false, and never recorded
+    // the caption — which left every place name free to be drawn straight through it.
+    function claimInk(node, fallback) {
+      var b = inkBox(node) || fallback;
+      if (b) taken.push(b);
+    }
+
+    // Rings. Each set always means what it says; they cross-fade as the map moves.
+    var kmStep = niceStep(RKM / 4, [250, 500, 1000, 2000, 5000, 10000]);
+    var minStep = niceStep(RT / kScale / 60 / 4, [1, 2, 5, 10, 15, 20, 30, 60, 120]);
+    var g = el("g", {});
+    var ringLabels = [];
+    function ring(radius, label, alpha) {
+      if (alpha < 0.04) return;
+      var rpx = radius * scale;
+      if (rpx < 18 || rpx > 3 * Math.max(CW, CH)) return;
+      g.appendChild(el("circle", {
+        cx: sx(originX), cy: sy(originY), r: rpx, fill: "none",
+        stroke: ringCol, "stroke-width": 1 * uiScale, "stroke-dasharray": "5 5",
+        opacity: alpha * 0.65
+      }));
+      var ly = sy(originY) - rpx - 4 * uiScale;
+      if (ly < 10 || ly > CH - 10) return;
+      var t = el("text", {
+        x: sx(originX), y: ly, "text-anchor": "middle", class: "ringlabel", opacity: alpha
+      });
+      t.textContent = label;
+      g.appendChild(t);
+      if (alpha > 0.5) ringLabels.push(t);
+    }
+    for (var r1 = kmStep; r1 <= RKM * 1.1; r1 += kmStep) {
+      ring(r1, r1 >= 1000 ? (r1 / 1000) + " km" : r1 + " m", 1 - s);
+    }
+    for (var t1 = minStep; t1 * 60 * kScale <= RT * 1.1; t1 += minStep) {
+      ring(t1 * 60 * kScale, t1 + " min", s);
+    }
+    svg.appendChild(g);
+    // A ring label is a number on the map like any other and has to hold its ground,
+    // or a place name lands on it. Claimed rather than requested: the rings are drawn
+    // whatever else happens.
+    ringLabels.forEach(function (t) { claimInk(t, null); });
+
+    // The start and the two pins own their space first: they are what the reader
+    // is looking at, and a place name is worth less than either.
+    // Both groups go into the tree straight away, so getBBox can measure text that is
+    // actually laid out. marks is moved back to the end before we finish, which puts
+    // the pins over the names again — appendChild on a child already in the tree moves
+    // it rather than copying it.
+    var labels = el("g", {});
+    var marks = el("g", {});
+    svg.appendChild(marks);
+    svg.appendChild(labels);
+    var op = [sx(originX), sy(originY)];
+    var lp = 13 * uiScale;
+    reserve(op[0], op[1], 30 * uiScale, 30 * uiScale);
+    marks.appendChild(el("circle", { cx: op[0], cy: op[1], r: 9 * uiScale, fill: "none",
+      stroke: startCol, "stroke-width": 3 * uiScale }));
+    marks.appendChild(el("circle", { cx: op[0], cy: op[1], r: 2.5 * uiScale, fill: startCol }));
+    var st = el("text", { x: op[0], y: op[1] - 14 * uiScale, "text-anchor": "middle",
+      class: "pinlabel", fill: startCol });
+    st.textContent = "start";
+    marks.appendChild(st);
+    claimInk(st, [op[0] - 20, op[1] - 14 * uiScale - lp, op[0] + 20, op[1] - 10 * uiScale]);
+
+    var pinNodes = { a: pinA, b: pinB };
+    ["a", "b"].forEach(function (which) {
+      var node = pinNodes[which];
+      var colour = css.getPropertyValue("--" + which).trim() || (which === "a" ? "#0b4f9e" : "#b2500a");
+      var p = drawnPos(node, s);
+      var name = placeName(node);
+      var out = timeTo(node, tOut) === INF;
+      var caption = out ? name + " — cannot get there" : name;
+      reserve(p[0], p[1], 26 * uiScale, 26 * uiScale);
+      var grp = el("g", { class: "grab", "data-pin": which });
+      grp.appendChild(el("circle", { cx: p[0], cy: p[1], r: 22, fill: "transparent" }));
+      // A pin nobody can reach is hollow and dashed. It still sits where the place
+      // is on the ground, because the time map has no position for it at all.
+      var shape;
+      if (which === "a") {
+        shape = el("circle", { cx: p[0], cy: p[1], r: 7 * uiScale });
+      } else {
+        shape = el("rect", { x: p[0] - 6.5 * uiScale, y: p[1] - 6.5 * uiScale,
+          width: 13 * uiScale, height: 13 * uiScale });
+      }
+      shape.setAttribute("fill", out ? "var(--land)" : colour);
+      shape.setAttribute("stroke", out ? colour : "#fff");
+      shape.setAttribute("stroke-width", (out ? 2.5 : 2) * uiScale);
+      if (out) shape.setAttribute("stroke-dasharray", 3 * uiScale + " " + 2.5 * uiScale);
+      grp.appendChild(shape);
+      var t = el("text", { x: p[0], y: p[1] + 20 * uiScale, "text-anchor": "middle",
+        class: "pinlabel", fill: colour });
+      t.textContent = caption;
+      grp.appendChild(t);
+      marks.appendChild(grp);
+      claimInk(t, [p[0] - textWidth(caption, lp) / 2, p[1] + 20 * uiScale - lp,
+                   p[0] + textWidth(caption, lp) / 2, p[1] + 20 * uiScale + lp * 0.4]);
+    });
+
+    // Place names, nearest the start first, and only where there is room.
+    var named = [placeName(startNode), placeName(pinA), placeName(pinB)];
+    var order = PLACES.map(function (p, i) { return i; }).filter(function (i) {
+      return named.indexOf(PLACES[i].name) < 0;
+    });
+    var fp = 11.5 * uiScale;
+    order.forEach(function (i) {
+      var node = PLACE_NODE[i];
+      if (tOut[node] === INF && s > 0.02) return;
+      var p = drawnPos(node, s);
+      var w = textWidth(PLACES[i].name, fp);
+      // The whole label has to fit, not just the point it hangs from. Names ran off
+      // the right edge on a phone until this measured the text rather than the anchor.
+      if (p[0] < 4 || p[0] + 4 + w > CW - 4 || p[1] < 10 + fp || p[1] > CH - 26) return;
+      var lab = el("text", { x: p[0] + 4, y: p[1] - 5, class: "placelabel" });
+      lab.textContent = PLACES[i].name;
+      labels.appendChild(lab);
+      if (!reserveInk(lab, [p[0] + 2, p[1] - 5 - fp * 1.2, p[0] + 6 + w, p[1] - 1])) {
+        labels.removeChild(lab);
+        return;
+      }
+      labels.appendChild(el("circle", { cx: p[0], cy: p[1], r: 2 * uiScale, fill: "#6a6355" }));
+    });
+
+    svg.appendChild(marks);          // back to the top of the stack
+  }
+
+  // ---- readout --------------------------------------------------------------
+  function updateReadout() {
+    var startName = placeName(startNode);
+    document.getElementById("fromline").textContent = "From " + startName;
+    var rows = [["A", pinA], ["B", pinB]];
+    var outs = {};
+    rows.forEach(function (row) {
+      var w = row[0], node = row[1];
+      var km = Math.hypot(NX[node] - originX, NY[node] - originY) / 1000;
+      var o = timeTo(node, tOut), b = timeTo(node, tBack);
+      outs[w] = { o: o, b: b, km: km };
+      document.getElementById("name" + w).textContent = placeName(node);
+      document.getElementById("km" + w).textContent = km.toFixed(2) + " km";
+      document.getElementById("out" + w).textContent = fmt(o);
+      document.getElementById("back" + w).textContent = fmt(b);
+    });
+
+    var vs = [], A = outs.A, B = outs.B;
+    if (A.o !== INF && B.o !== INF) {
+      var far = A.o > B.o ? A : B, nearer = A.o > B.o ? B : A;
+      var ratio = far.o / nearer.o;
+      if (Math.abs(A.km - B.km) / Math.max(A.km, B.km) < 0.2 && ratio > 1.25) {
+        vs.push("About the same distance away. " + (ratio >= 1.95 ? Math.round(ratio) + " times" :
+          ratio.toFixed(1) + " times") + " the trip.");
+      }
+    } else {
+      var stuck = [];
+      if (A.o === INF) stuck.push(placeName(pinA) + " is " + A.km.toFixed(2) + " km away");
+      if (B.o === INF) stuck.push(placeName(pinB) + " is " + B.km.toFixed(2) + " km away");
+      vs.push(stuck.join(", ") + ", and this traveller cannot get there at all.");
+    }
+    var gapA = (A.o !== INF && A.b !== INF) ? Math.abs(A.o - A.b) : 0;
+    var gapB = (B.o !== INF && B.b !== INF) ? Math.abs(B.o - B.b) : 0;
+    var gap = Math.max(gapA, gapB);
+    if (gap >= 60) {
+      vs.push("There and back are not the same trip: " + fmt(gap) + " apart.");
+    }
+    document.getElementById("verdict").innerHTML = vs.length ? vs.join(" ") : "&nbsp;";
+
+    var notes = [];
+    if (snapMsg) notes.push(snapMsg);
+    var missing = usableCount - reachCount;
+    if (missing > 0) {
+      notes.push(Math.round(100 * missing / usableCount) + "% of the streets this traveller " +
+        "could use cannot be reached from here, so they are not drawn.");
+    }
+    document.getElementById("cannot").innerHTML = notes.length ? notes.join(" ") : "&nbsp;";
+
+    var minStep = niceStep(RT / kScale / 60 / 4, [1, 2, 5, 10, 15, 20, 30, 60, 120]);
+    document.getElementById("mapnote").textContent =
+      (sTarget > 50 ? "Rings are " + minStep + " minutes apart, " + MODES[mode].label + "."
+                    : "Rings are distance in metres. Press Minutes to measure the trip instead.");
+    document.getElementById("modehelp").innerHTML = MODES[mode].help;
+
+    // The map is a picture and a screen reader gets nothing from it. The table beside
+    // it already carries the two places; this says what the drawing is doing to them.
+    document.getElementById("mapalt").textContent =
+      "A map of Vancouver and the North Shore, drawn from " + startName + ", " +
+      (sTarget > 50
+        ? "with every street moved out to the distance a trip takes " + MODES[mode].label +
+          ". Rings mark " + minStep + " minutes."
+        : "in ordinary distance. Rings mark " +
+          (kmStepFor(RKM) >= 1000 ? kmStepFor(RKM) / 1000 + " kilometres" : kmStepFor(RKM) + " metres") + ".") +
+      " " + (missing > 0
+        ? Math.round(100 * missing / usableCount) + " per cent of the streets this traveller could use are not drawn, because they cannot be reached from here."
+        : "Almost every street this traveller could use can be reached from here.");
+  }
+
+  function kmStepFor(r) { return niceStep(r / 4, [250, 500, 1000, 2000, 5000, 10000]); }
+
+  // ---- render ---------------------------------------------------------------
+  // Two maps, and the movement between them. Nothing reads the halfway state as a
+  // measurement: it exists so a reader can see which places move and which stay put.
+  var anim = 0, animGuard = 0;
+  function stopAnim() {
+    if (anim) { cancelAnimationFrame(anim); anim = 0; }
+    if (animGuard) { clearTimeout(animGuard); animGuard = 0; }
+  }
+  function goTo(target) {
+    // The state changes now. Only the picture takes its time getting there.
+    //
+    // Animation frames do not always arrive — a background tab gets none at all, and
+    // this page sat stuck half way between its two maps with a readout describing
+    // neither, because the settled state was written at the end of the animation
+    // rather than at the start of it. Whatever a reader reads is set before the first
+    // frame, and a timer snaps the drawing into place if the frames never come.
+    sTarget = target;
+    stopAnim();
+    updateReadout(); syncControls(); writeURL();
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { sVal = target; draw(); return; }
+    // Measured here, a whole frame is 10 to 14 ms with the fine mesh and 8 with the
+    // coarse one, so on this machine the switch buys almost nothing. It stays because
+    // the machine it has to survive is a student's phone, which cannot be measured from
+    // here, and because losing it would mean a slow device dropping frames in the one
+    // second the widget is actually saying something. widget-pattern.md's order applies:
+    // the cheap redraw follows the movement, the expensive one waits for it to stop.
+    if (ground) { mesh = buildMesh(GRID_FAST); meshIsFine = false; }
+    var from = sVal, to = target, started = -1;
+    function step(now) {
+      if (started < 0) started = now;
+      var u = Math.min(1, (now - started) / 900);
+      var eased = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+      sVal = from + (to - from) * eased;
+      draw();
+      if (u < 1) anim = requestAnimationFrame(step);
+      else { stopAnim(); sVal = to; refine(); }
+    }
+    anim = requestAnimationFrame(step);
+    animGuard = setTimeout(function () { stopAnim(); sVal = to; refine(); }, 1200);
+  }
+
+  function refine() {
+    if (ground && !meshIsFine) { mesh = buildMesh(GRID_FINE); meshIsFine = true; }
+    draw();
+  }
+
+  var pending = 0;
+  function render() {
+    draw();
+    updateReadout();
+    syncControls();
+    writeURL();
+  }
+  function schedule() {
+    if (pending) return;
+    pending = requestAnimationFrame(function () { pending = 0; draw(); syncControls(); writeURLSoon(); });
+  }
+  function flush() {
+    if (pending) { cancelAnimationFrame(pending); pending = 0; }
+    render();
+  }
+
+  var urlTimer = 0;
+  function writeURLSoon() {
+    clearTimeout(urlTimer);
+    urlTimer = setTimeout(writeURL, 350);
+  }
+  function nodeStr(i) {
+    return Math.round((NX[i] - D.x0) / 10) + "," + Math.round((NY[i] - D.y0) / 10);
+  }
+  function writeURL() {
+    var p = new URLSearchParams();
+    if (mode !== DEF.mode) p.set("m", String(mode));
+    if (sTarget !== DEF.s) p.set("s", String(sTarget));
+    if (startNode !== DEF.start) p.set("o", nodeStr(startNode));
+    if (pinA !== DEF.a) p.set("a", nodeStr(pinA));
+    if (pinB !== DEF.b) p.set("b", nodeStr(pinB));
+    if (!ground) p.set("g", "0");
+    if (present) p.set("present", "1");
+    var q = p.toString();
+    history.replaceState(null, "", location.pathname + (q ? "?" + q : ""));
+  }
+
+  function syncControls() {
+    document.querySelectorAll("[data-mode]").forEach(function (b) {
+      b.setAttribute("aria-pressed", Number(b.dataset.mode) === mode ? "true" : "false");
+    });
+    document.querySelectorAll("[data-ground]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      ground = Number(b.dataset.ground);
+      document.body.dataset.basemap = ground ? "1" : "0";
+      mesh = ground ? buildMesh(GRID_FINE) : null;
+      meshIsFine = true;
+      flush();
+      say(ground ? "Photograph under the streets." : "Plain ground under the streets.");
+    });
+  });
+  document.querySelectorAll("[data-s]").forEach(function (b) {
+      b.setAttribute("aria-pressed", Number(b.dataset.s) === sTarget ? "true" : "false");
+    });
+    document.querySelectorAll("[data-ground]").forEach(function (b) {
+      b.setAttribute("aria-pressed", Number(b.dataset.ground) === ground ? "true" : "false");
+    });
+    document.body.dataset.basemap = ground ? "1" : "0";
+    document.querySelectorAll("[data-start]").forEach(function (b) {
+      b.setAttribute("aria-pressed", PLACE_NODE[Number(b.dataset.start)] === startNode ? "true" : "false");
+    });
+  }
+
+  // ---- controls -------------------------------------------------------------
+  (function () {
+    var row = document.getElementById("startrow");
+    START_PRESETS.forEach(function (i) {
+      var b = document.createElement("button");
+      b.className = "preset"; b.dataset.start = String(i);
+      b.textContent = PLACES[i].name;
+      b.addEventListener("click", function () {
+        startNode = PLACE_NODE[i]; recompute(); flush();
+        say("Now starting from " + PLACES[i].name + ".");
+      });
+      row.appendChild(b);
+    });
+  })();
+
+  function say(t) { document.getElementById("live").textContent = t; }
+
+  document.querySelectorAll("[data-mode]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      mode = Number(b.dataset.mode); recompute(); flush();
+      say("Now travelling " + MODES[mode].label + ".");
+    });
+  });
+  document.querySelectorAll("[data-ground]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      ground = Number(b.dataset.ground);
+      document.body.dataset.basemap = ground ? "1" : "0";
+      mesh = ground ? buildMesh(GRID_FINE) : null;
+      meshIsFine = true;
+      flush();
+      say(ground ? "Photograph under the streets." : "Plain ground under the streets.");
+    });
+  });
+  document.querySelectorAll("[data-s]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      goTo(Number(b.dataset.s));
+      say(sTarget === 0 ? "Measured in metres." : "Measured in minutes.");
+    });
+  });
+  document.getElementById("swap").addEventListener("click", function () {
+    var t = startNode; startNode = pinA; pinA = t; recompute(); flush();
+    say("Start and the blue pin have swapped.");
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    mode = DEF.mode; sVal = DEF.s; sTarget = DEF.s; ground = 1;
+    startNode = DEF.start; pinA = DEF.a; pinB = DEF.b;
+    document.body.dataset.basemap = "1";
+    recompute(); flush(); say("Back to the opening state.");
+  });
+
+  // ---- pointer: tap the map to move the start, drag a pin to move it --------
+  var dragging = null;
+  function mapPoint(ev) {
+    var r = cv.getBoundingClientRect();
+    return [ev.clientX - r.left, ev.clientY - r.top];
+  }
+  function nodeAtScreen(px, py) {
+    // Search the drawn positions, because at the minutes end the drawn map is
+    // where the reader is pointing.
+    var s = sVal / 100, best = -1, bd = INF;
+    for (var i = 0; i < n; i++) {
+      if (tOut[i] === INF && s > 0.02) continue;
+      var dx = NX[i] - originX, dy = NY[i] - originY, r = Math.hypot(dx, dy);
+      var tr = tOut[i] === INF ? r : tOut[i] * kScale;
+      var rr = (1 - s) * r + s * tr;
+      var qx = sx(originX + (r > 0 ? dx / r : 0) * rr);
+      var qy = sy(originY + (r > 0 ? dy / r : 0) * rr);
+      var d = (qx - px) * (qx - px) + (qy - py) * (qy - py);
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+  svg.addEventListener("pointerdown", function (ev) {
+    var g = ev.target.closest("[data-pin]");
+    if (!g) return;
+    dragging = g.dataset.pin;
+    svg.setPointerCapture(ev.pointerId);
+    ev.preventDefault();
+  });
+  svg.addEventListener("pointermove", function (ev) {
+    if (!dragging) return;
+    var p = mapPoint(ev), i = nodeAtScreen(p[0], p[1]);
+    if (i < 0) return;
+    if (dragging === "a") pinA = i; else pinB = i;
+    schedule(); updateReadout();
+  });
+  function endDrag(ev) {
+    if (!dragging) return;
+    dragging = null;
+    try { svg.releasePointerCapture(ev.pointerId); } catch (e) {}
+    flush();
+  }
+  svg.addEventListener("pointerup", endDrag);
+  svg.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("pointerdown", function (ev) {
+    var p = mapPoint(ev), i = nodeAtScreen(p[0], p[1]);
+    if (i < 0) return;
+    startNode = i; recompute(); flush();
+    say("Now starting from " + placeName(startNode) + ".");
+  });
+
+  // ---- presentation mode ----------------------------------------------------
+  var presentBtn = document.getElementById("present");
+  function setPresent(on) {
+    present = on;
+    document.body.dataset.present = on ? "1" : "0";
+    presentBtn.textContent = on ? "Normal size" : "Big screen";
+    presentBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    document.querySelectorAll(".info").forEach(function (b) {
+      if (on && b.getAttribute("aria-expanded") === "true") {
+        b.setAttribute("aria-expanded", "false");
+        document.getElementById(b.dataset.info).hidden = true;
+      }
+    });
+    resize(); flush();
+  }
+  presentBtn.addEventListener("click", function () { setPresent(!present); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "p" && !e.metaKey && !e.ctrlKey && !e.altKey &&
+        document.activeElement.tagName !== "INPUT") setPresent(!present);
+  });
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-info]");
+    if (!b) return;
+    var panel = document.getElementById(b.dataset.info);
+    if (!panel) return;
+    var open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", open ? "false" : "true");
+    panel.hidden = open;
+  });
+
+  // ---- go -------------------------------------------------------------------
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () { resize(); draw(); }).observe(box);
+  } else {
+    window.addEventListener("resize", function () { resize(); draw(); });
+  }
+  resize();
+  document.body.dataset.present = present ? "1" : "0";
+  presentBtn.textContent = present ? "Normal size" : "Big screen";
+  presentBtn.setAttribute("aria-pressed", present ? "true" : "false");
+  document.body.dataset.basemap = ground ? "1" : "0";
+  recompute();
+  render();
+
+  // for the test suite
+  window.__rd = {
+    state: function () {
+      return { mode: mode, s: sTarget, start: startNode, a: pinA, b: pinB,
+               reach: reachCount, usable: usableCount, k: kScale, R98: R98 };
+    },
+    timeTo: function (node, dir) { return timeTo(node, dir === "back" ? tBack : tOut); },
+    node: function (name) {
+      for (var i = 0; i < PLACES.length; i++) if (PLACES[i].name === name) return PLACE_NODE[i];
+      return -1;
+    },
+    relayout: function () { resize(); flush(); },
+    ground: function () { return { on: ground, ready: imgReady, cells: mesh ? mesh.nx * mesh.ny : 0,
+                                   held: meshHeld() }; },
+    drawnXY: function (node) { return drawnPos(node, sVal / 100); },
+    arcUsable: function (e, fwd) { return arcCost(e * 2 + (fwd ? 0 : 1), mode) !== INF; },
+    gradeMilli: function (e) { return EGM[e]; },
+    set: function (o) {
+      if (o.mode !== undefined) mode = o.mode;
+      if (o.s !== undefined) { stopAnim(); sTarget = o.s; sVal = o.s; }
+      if (o.start !== undefined) startNode = o.start;
+      if (o.a !== undefined) pinA = o.a;
+      if (o.b !== undefined) pinB = o.b;
+      recompute(); flush();
+    },
+    flush: flush
+  };
+})();
+</script>
+</body>
+</html>

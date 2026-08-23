@@ -85,7 +85,8 @@ function load(file, opts) {
 
   var frames = [];
   var timers = [];
-  var loc = { search: opts.search || "", pathname: "/least-cost/", href: "http://test/least-cost/" };
+  var slug = opts.slug || "least-cost";
+  var loc = { search: opts.search || "", pathname: "/" + slug + "/", href: "http://test/" + slug + "/" };
   Object.defineProperty(loc, "toString", { value: function () { return this.href; } });
 
   var win = {
@@ -96,6 +97,10 @@ function load(file, opts) {
       return { getPropertyValue: function (k) { return vars[k] || ""; }, borderStyle: "", content: "" };
     },
     requestAnimationFrame: function (fn) { frames.push(fn); return frames.length; },
+    // A browser has this and the stub did not, so a widget that cancels a running
+    // animation threw here and nowhere else. Frames are held in a list, so cancelling
+    // means blanking the slot rather than removing it and shifting every later id.
+    cancelAnimationFrame: function (id) { if (id >= 1 && id <= frames.length) frames[id - 1] = function () {}; },
     matchMedia: function () { return { matches: false, addEventListener: function () {}, addListener: function () {} }; },
     setTimeout: function (fn, ms) { timers.push(fn); return timers.length; },
     clearTimeout: function () {},
@@ -121,7 +126,12 @@ function load(file, opts) {
     console: console,
     Math: Math, JSON: JSON, Object: Object, Array: Array, Number: Number, String: String,
     Uint8Array: Uint8Array, Uint8ClampedArray: Uint8ClampedArray,
-    Int32Array: Int32Array, Float64Array: Float64Array,
+    Int16Array: Int16Array, Int32Array: Int32Array,
+    Float32Array: Float32Array, Float64Array: Float64Array,
+    performance: { now: function () { return 0; } },
+    // A widget that sizes a canvas to its container watches for resizes. Nothing
+    // resizes here, so observing is enough: the widget draws once on its own.
+    ResizeObserver: function (fn) { this.observe = function () { fn([]); }; this.disconnect = function () {}; },
     decodeURIComponent: decodeURIComponent, encodeURIComponent: encodeURIComponent,
     parseInt: parseInt, parseFloat: parseFloat, isNaN: isNaN, Infinity: Infinity
   };
@@ -133,11 +143,16 @@ function load(file, opts) {
 
   // Animation frames only run when a test asks for them, so a test can look at the state
   // between a click and its redraw if it wants to.
+  // Frame callbacks get a rising timestamp, as a browser gives them. Passing 0 every
+  // time made an eased transition sit at its first frame for ever, which looked like a
+  // hung widget and was a hung stub.
+  var clock = 0;
   function flushFrames(n) {
     for (var i = 0; i < (n || 8); i++) {
       var due = frames; frames = [];
       if (!due.length) break;
-      due.forEach(function (fn) { fn(0); });
+      clock += 16.7;
+      due.forEach(function (fn) { fn(clock); });
     }
   }
   function flushTimers() { var due = timers; timers = []; due.forEach(function (fn) { fn(); }); }

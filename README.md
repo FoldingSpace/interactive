@@ -26,6 +26,16 @@ install.
   A spatial error model is there to deal with the clustered errors, and the page is candid
   about what dealing with them does not fix.
 
+- [**Vancouver, measured in minutes**](https://foldingspace.github.io/interactive/relative-distance/)
+  — Lonsdale Quay is 3.47 km from Waterfront Station and Commercial Drive is 3.06 km. On foot
+  one is two and a quarter hours away and the other is thirty-eight minutes. Press Minutes and
+  the street network slides outward until distance from the start *is* travel time, so two
+  places the ground puts side by side end up nowhere near each other. A satellite photograph
+  is stretched by the same rule, but only where the streets can say how long it takes to get
+  there, so Burrard Inlet fades out rather than stretching. Four travellers, and the one who
+  avoids steep ground loses 62% of the city, including the whole North Shore. Getting there
+  and getting back are different trips, so swapping the two ends redraws everything.
+
 - [**Least cost, whose cost?**](https://foldingspace.github.io/interactive/least-cost/)
   — a power line has to reach a new plant, and the route it takes is decided by nine numbers
   that are somebody's values rather than anybody's measurements. Say what crossing farmland,

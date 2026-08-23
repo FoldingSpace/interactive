@@ -263,6 +263,78 @@ which of the project's habits are about to be tested.
 | Charts and non-map graphics | none, or d3 pieces | A whole charting library is rarely worth it for one figure that has to be legible from the back of a room. |
 | Time and animation | none | `prefers-reduced-motion`, and never letting motion carry a cue on its own. |
 
+## What the fourth widget taught
+
+**Still no dependency, and a street network did not change that.** Reading a 917 KB
+`data.js` of delta-coded integers, running Dijkstra over 24,410 junctions and 64,500
+directed arcs, and stroking 32,250 polylines onto a canvas is about 500 lines of plain
+JavaScript. A routing library would have been more code to integrate than to write, and a
+graph library would have brought its own representation to argue with.
+
+**A recompute is 17 to 63 ms, so no worker.** The trigger in `widget-pattern.md` is
+measurable rather than aesthetic: the expensive work here happens on a click, not during a
+drag, and a click can afford a frame. What runs every frame is the coordinate transform
+and the stroking, which is two multiplies and an add per vertex over about 79,000
+vertices. Algorithm first, and in this case the algorithm was enough.
+
+**A binary heap was fine.** `least-cost` needed Dial's buckets because its costs were a
+small set of integers over 800,000 cells. Here the costs are continuous and the graph is
+thirty times smaller, so the heap never showed up in a measurement.
+
+**`Float32Array` is not a free optimisation when a threshold is involved.** A grade stored
+as exactly 50 per mille reads back as 0.050000001 and fails `> 0.05`. Keep the integer the
+data actually holds and compare integers; use `Float64Array` wherever an independent check
+has to agree with you. See `docs/widgets/relative-distance.md`.
+
+**Antialiasing does not add up.** Two clipped shapes sharing an edge are each
+antialiased against it, and two half-covered edges do not make one covered edge, so a
+pale seam runs down every join. A mesh of them shows as a grid across the whole picture.
+Push each shape's corners a fraction of a pixel out from its own centre before clipping.
+
+**`requestAnimationFrame` is not a promise.** A page in a background tab gets no frames at
+all, so anything a reader reads must be written before the first one, not in the last one.
+
+### Warping a photograph: three libraries considered, none used
+
+The fourth widget stretches a satellite image by the same rule as its streets, which is a
+texture warp, and texture warps are what graphics libraries are for. All three candidates
+were measured or reasoned about before being dropped, and the reasons differ.
+
+**Canvas 2D, which is what it uses.** A clipped affine patch per mesh cell. Benchmarked
+before anything was built: 1,300 cells in about 13 ms, 6,600 in 55. In the finished widget
+a whole frame — photograph, streets, labels — is 10 to 14 ms, because more than half the
+mesh is held rather than drawn. Fast enough that nothing else had to be considered
+seriously.
+
+**WebGL** does textured triangles natively and would be far faster. It was not needed once
+canvas was measured, and it would have traded "runs on anything" for speed the widget does
+not want. Same conclusion as WebGPU in `least-cost`, reached the same way: measure the
+plain thing first.
+
+**Mapbox's earcut** turns a polygon with holes into triangles, and looked relevant because
+the warp has to stop at the edge of the traveller's space — a concave region with the inlet
+as a hole. It is the wrong tool twice over. Ear clipping adds no interior points, so it
+gives a few large skinny triangles where a texture warp needs many small ones; refining a
+mesh is constrained Delaunay's job, not earcut's. And canvas takes an arbitrary path as a
+clip region directly, so the crisp boundary needs no triangulation at all.
+
+**Mapbox's Delaunator** was the closer call. A mesh whose vertices are the street junctions
+themselves would follow the travel-time field better than a regular grid, because it puts
+detail where the data is. 24,410 points gives roughly 48,000 triangles, which is a quarter
+of a second a frame: fine for a settled state, too slow for the movement, and the movement
+is the thing the widget is for.
+
+## Tools used for extraction, not shipped
+
+**GDAL's Python bindings, again** — `gdal.Warp` to mosaic four 1 m LiDAR tiles down to 4 m,
+and `osr` for WGS84 to UTM zone 10N. Same as `least-cost`; nothing new learned except that
+`floor()` on a projected minimum is not a stable anchor, because the last bit of a
+projection is not stable between runs.
+
+**The Overpass API** — `way["highway"](bbox); out body geom;` over twenty tiles. A regex
+over highway values timed the server out every time and a plain tag query returned the
+same window in three seconds. Filter locally.
+
 ## Things to test early
 
 1. PMTiles served from GitHub Pages, with MapLibre, on a phone over campus wifi. This

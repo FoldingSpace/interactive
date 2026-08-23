@@ -97,6 +97,80 @@ The Lab 3 geodatabase also contains a `City` layer credited to DMTI Spatial. DMT
 licensed to institutions, not openly, so it is not shipped and not drawn. The city's
 outline in the widget is the outer edge of the dissemination areas.
 
+### OpenStreetMap street network, Vancouver and the North Shore
+- Source: OpenStreetMap, via the Overpass API — https://overpass-api.de/api/interpreter
+- Licence: Open Database Licence 1.0 — https://opendatacommons.org/licenses/odbl/1-0/
+- Attribution required on screen: "Streets from OpenStreetMap contributors, under the Open
+  Database Licence."
+- Used in: web/relative-distance
+- Added: 2026-08-22
+- Notes: extracted 2026-08-22 for 49.25–49.36 N, 123.22–123.00 W. Separately mapped
+  sidewalks and pedestrian crossings (`footway=sidewalk`, `footway=crossing` and their
+  kin) are dropped; service roads are not included; the rest is split at junctions,
+  simplified to 6 m, and reduced to its largest connected part. The shipped `data.js` is
+  a derived database and carries the ODbL with it. See
+  `tools/relative-distance-extract.py` for the exact filter.
+
+### High Resolution Digital Elevation Model, Lower Mainland 2016 (HRDEM)
+- Source: Natural Resources Canada —
+  https://ftp.maps.canada.ca/pub/elevation/dem_mne/highresolution_hauteresolution/dtm_mnt/1m/BC/Lower_Mainland_2016/
+- Licence: Open Government Licence – Canada 2.0 —
+  https://open.canada.ca/en/open-government-licence-canada
+- Attribution required on screen: "Slopes from Natural Resources Canada, High Resolution
+  Digital Elevation Model (Lower Mainland 2016)."
+- Used in: web/relative-distance
+- Added: 2026-08-22
+- Notes: four 1 m bare-earth tiles (`w_0_145`, `w_0_146`, `w_1_145`, `w_1_146`) averaged
+  to a 4 m mosaic. Slope is taken between the two ends of each street segment. Bridges and
+  tunnels are forced flat, because a bare-earth model holds the water under a bridge and
+  not the deck.
+
+### Canadian Digital Elevation Model, NTS 092G (CDEM)
+- Source: Natural Resources Canada —
+  https://ftp.maps.canada.ca/pub/nrcan_rncan/elevation/cdem_mnec/092/cdem_dem_092G_tif.zip
+- Licence: Open Government Licence – Canada 2.0
+- Attribution required on screen: named beside HRDEM in the same footer line.
+- Used in: web/relative-distance
+- Added: 2026-08-22
+- Notes: the fallback for 94 junctions at the northern edge of the window that fall
+  outside the LiDAR mosaic, out of 24,410. It was the only elevation source at first, and
+  measuring it against the LiDAR is what established that East Vancouver's five per cent
+  street grades are real rather than model noise — see `docs/widgets/relative-distance.md`.
+
+### Copernicus Sentinel-2 true-colour imagery, 12 August 2025
+- Source: tiles `S2C_10UDV_20250812_0_L2A` and `S2C_10UEV_20250812_0_L2A`, level-2A
+  true-colour product, via the AWS Open Data mirror `sentinel-cogs` —
+  https://registry.opendata.aws/sentinel-2-l2a-cogs/
+- Licence: Copernicus open and free data policy (Commission Delegated Regulation (EU)
+  No 1159/2013) — reuse and redistribution permitted with attribution.
+- Attribution required on screen: "Contains modified Copernicus Sentinel data 2025."
+- Used in: web/relative-distance
+- Added: 2026-08-22
+- Notes: two tiles from the same satellite on the same day, both at 0% cloud, so there is
+  no seam of date or sensor across the middle of the window. One tile alone does not cover
+  it: 10UDV's swath stops on a diagonal about a third of the way in from the east. Clipped
+  to 483000–501400 E, 5453100–5471200 N at 16 m, then stretched, desaturated and blended
+  toward the map's land colour so that street lines survive on top of it — the exact
+  numbers, and the contrast measurements that set them, are in
+  `tools/relative-distance-extract.py` and `docs/widgets/relative-distance.md`.
+
+### Deliberately not used: TransLink GTFS
+- Considered for: a transit traveller, which would be the strongest case the widget could
+  make, because the SeaBus turns the North Shore from the furthest part of the map into
+  one of the nearest.
+- **The first version of this entry said redistribution was not established. It is.** The
+  TransLink Open API Terms of Use grant "a limited, revocable and non-exclusive license to
+  use, reproduce, and redistribute the Data", and expressly contemplate modifications
+  while retaining ownership of them.
+- Not shipped because of the *shape* of that permission rather than its absence: revocable,
+  gated on a written application naming who will use the data and where it will be
+  distributed, capped at a thousand requests a day, terminable on ten days' notice, not
+  sublicensable, and carrying a required on-screen disclaimer. A data file built from it
+  could be published here and could not be reused by anyone else, which is what
+  `principles.md` section 10 exists to protect.
+- Unresolved: whether the static GTFS download falls under that instrument at all. The
+  Terms define "the Data" as "any Open API".
+
 ## Basemaps and tiles
 
 _(none yet)_
@@ -194,6 +268,100 @@ it, derives its first two moments and argues asymptotic normality. What Cliff an
 was the general weights matrix for irregular lattices.
 
 An adversarial checker that will not correct itself is only half a check.
+
+### Added 2026-08-22 for `web/relative-distance`
+
+Checked 2026-08-22 by an agent briefed to falsify, testing each entry three ways: does the
+work exist, are the details exact, does it support the claim attached to it.
+
+| Work | Cited for | Status |
+|---|---|---|
+| O'Sullivan, D. (2024) *Computing Geographically: Bridging Giscience and Geography*. New York: Guilford Press. | Chapter 2 on relative space; the sentence "It might take longer to travel from A to B than from B to A."; Figure 6.14 as a map of this kind for Santa Barbara. | Verified, with one correction taken — see below. |
+| L'Hostis, A. & Abdou, F. (2021) "What Is the Shape of Geographical Time-Space? A Three-Dimensional Model Made of Curves and Cones." *ISPRS International Journal of Geo-Information* 10(5): 340. | That representing travel-time geometries as conventional maps is a hard problem. | Verified on all three tests. O'Sullivan cites this work for the same claim, in the same passage. |
+| Tobler, W.R. (1993) "Three Presentations on Geographical Analysis and Modeling." NCGIA Technical Report 93-1. | Walking speed: W = 6 exp(−3.5 |S + 0.05|) km/h, with S the rise over the run. | Verified exactly, formula and constants, from the report itself. Two refinements taken — see below. |
+| Wilson, D.G. & Schmidt, T., with contributions by J. Papadopoulos (2020) *Bicycling Science*, 4th edn. Cambridge, MA: MIT Press. | The cycling power equation: power spent on rolling resistance, air drag and climbing. | Verified, chapter 4. Authorship line corrected — see below. |
+| US Access Board, *2010 ADA Standards for Accessible Design*, §403.3; CSA B651, *Accessible design for the built environment*. | That 5 in 100 is where a walking surface on an accessible route has to become a ramp. | Verified. **The claim attached to it was wrong and has been rewritten** — see below. |
+
+### What the check caught, 2026-08-22
+
+**The slope claim was wrong in the way that matters.** The page said 5 in 100 was "the
+slope an accessible route is built to". It is not a design target; it is a ceiling, and
+specifically the point at which a walking surface stops counting as one and has to be
+built as a ramp with handrails and landings. Three authorities agree on 1:20 — ADA §403.3
+("The running slope of walking surfaces shall not be steeper than 1:20"), CSA B651, and
+the BC Building Code Article 3.8.3.2 — and all three allow a *ramp* to reach 1:12, which
+the old wording implied was forbidden. Rewritten on the page and in the widget's file.
+
+**Figure 6.14's caption is not what the companion website calls it.** The book's caption
+reads "Santa Barbara street network and a redrawing of it based on relative travel times
+over the network, from a central location." "Relative time map of the Santa Barbara street
+network" is the website's label. Nothing here quotes either as a caption, but the
+distinction is recorded so that nobody quotes the wrong one later.
+
+**Tobler's function is scoped, and the page now says so.** He fitted it for walking on
+paths in hilly terrain, estimated from Imhof (1950), and gives 3/5 as the multiplier for
+off-path travel. Applying it to city pavement is a stretch; the panel now says what the
+function is really lending the map is the shape of the curve. Tobler's own figure for
+level ground is "5 km/hr"; 5.04 is what the formula computes and is not his number, so the
+page says 5.
+
+**Bicycling Science credits three people.** MIT Press's own title page reads "David Gordon
+Wilson and Theodor Schmidt, with contributions by Jim Papadopoulos"; Wilson died in 2019,
+after submitting the final draft. The citation now carries all three. The book's equation
+also keeps a cos(α) on the rolling term and adds bump, acceleration and drivetrain
+efficiency terms; what the widget uses is a small-angle, still-air, steady-state
+simplification of it, and the widget's file says so.
+
+**What could not be checked.** The checker could not reach a publisher-authorised digital
+copy of *Computing Geographically*, so page numbers rest on mirrors whose internal
+consistency was good but which are not authoritative. Nothing here cites a page number
+from that book. Current editions of CSA B651 (2018 and 2023) are behind a paywall; the
+provision was confirmed from the 2004 edition and from the BC Building Code, and the page
+cites the standard without an edition-specific clause number.
+
+### What the second round caught, 2026-08-22
+
+The checker was sent after the fixes as well as after the citations, which is
+`principles.md` section 5's rule, and it earned its keep three times.
+
+**A framing asserted as a finding.** The widget's file and the extractor both said that
+treating `oneway` as binding on foot would lose Vancouver its bridges for walkers. Run as
+a counterfactual on the shipped graph, nothing becomes unreachable in either direction and
+the largest cost is twelve minutes southbound. The rule is still right and the reason
+given for it was invented. Corrected in both places, with the measurement.
+
+**A licence claim that was never checked.** "I could not establish whether a derived
+extract may be redistributed" was wrong about TransLink; the Terms address it directly and
+permit it. See the entry above.
+
+**A negative claim stated too broadly.** "No openly licensed record of Vancouver traffic
+by time of day" is false as written: Statistics Canada tables 98-10-0504-01 and
+98-10-0457-01 give commuting duration by time of departure and arrival for the Vancouver
+CMA under the Statistics Canada Open Licence. Narrowed to speeds street by street and hour
+by hour, which is what is actually missing.
+
+**And one on the fix itself.** The corrected accessibility wording said a ramp needs
+"handrails and landings". Landings are unconditional; handrails are required once the rise
+exceeds 150 mm (2010 ADA §405.8, CSA B651 4.1.6.1(d)). Corrected on the page.
+
+### What no checker caught, 2026-08-22
+
+Neither adversarial round found this, and neither could have.
+
+OpenStreetMap maps the Lions Gate crossing and its Stanley Park Causeway approach as a
+pair of one-way cycleways. Believing that sent a northbound cyclist the long way round,
+and `web/relative-distance` reported Park Royal at 57.7 minutes out against 20.0 back,
+with the widget's own file explaining the gap as the causeway climb. It was a detour.
+Corrected, it is 22.2 out and 20.0 back, and the asymmetry that remains really is hills.
+
+`tools/relative-distance-verify.py` had reproduced the wrong figure to six decimal places,
+because it reads the same data file. **An independent implementation tests the arithmetic
+and cannot see a wrong input.** Luke, who cycles the bridge, said it takes bikes both ways.
+
+Worth keeping beside `principles.md` section 11, which is about citations: the same failure
+mode applies to data. A source can be real, correctly attributed, openly licensed, and
+wrong about the thing you are using it for, and no amount of checking your own work will
+show it.
 
 ### Verified, then dropped
 
