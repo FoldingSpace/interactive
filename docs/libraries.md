@@ -4,7 +4,7 @@ What we use, what worked, what did not, and what is worth trying. Update this ev
 a library earns or loses a place. Licences below are recorded from prior knowledge and
 must be checked against the project's own repository before anything ships publicly.
 
-Started 2026-08-19. Four widgets built so far and none needed a library, so the
+Started 2026-08-19. Five widgets built so far and none needed a library, so the
 "in use" table is still empty and everything below it remains a candidate.
 
 Worth being exact about what that claim now covers, because the third widget uses more of
@@ -31,14 +31,15 @@ that happens rather than contorting the widget to keep them true. See section 13
 |---|---|---|---|
 | _(none)_ | | | Spatial autocorrelation needed no dependency at all. Worth trying that first each time. |
 
-Four widgets in, the streak is holding. The third looked most likely to break it, and the
+Five widgets in, the streak is holding. The third looked most likely to break it, and the
 fourth — a street network, a routing problem and a warped photograph — looked worse.
 `web/least-cost` runs Dijkstra over 41,800 cells and repaints a raster on every animation
 frame, which sounds like a job for a graph library and a canvas library and is neither. A
 binary heap on two typed arrays is about forty lines. Painting the land is one
 `ImageData` and one `putImageData`; the browser's own nearest-neighbour upscaling does the
 rest, from `image-rendering: pixelated`. Two Dijkstras, a full repaint and a DOM rebuild
-settle at about 15 ms.
+settle at about 15 ms. The fifth, `web/pairwise`, needed a principal eigenvector. At three
+criteria that is power iteration in about twenty lines.
 
 What it did need was a build-time dependency, which is a different thing and does not go in
 the table above: `tools/lab4-extract.py` uses GDAL's Python bindings to fetch and rasterise

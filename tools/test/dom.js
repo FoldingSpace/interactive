@@ -259,7 +259,14 @@ function makeDocument(vars) {
           closePath: function () {},
           arc: function () {},
           rect: function () {},
-          fillRect: function () {},
+          // The saved picture of one widget is drawn with fillRect, and a bar drawn
+          // wrong is exactly the defect that reading the numbers back cannot catch.
+          // Recording them lets a test measure the picture.
+          rects: [],
+          fillRect: function (x, y, w, h) { ctx.rects.push({ x: x, y: y, w: w, h: h, style: ctx.fillStyle }); },
+          texts: [],
+          fillText: function (t, x, y) { ctx.texts.push({ text: String(t), x: x, y: y, font: ctx.font }); },
+          measureText: function (t) { return { width: String(t).length * 8 }; },
           save: function () {}, restore: function () {},
           createImageData: function (w, h) { return { width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }; },
           putImageData: function (img) { n.painted = img; },

@@ -1,0 +1,1116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three criteria, three weights</title>
+<!--
+  Built from template/ under batch 370-AHP-2, 19 September 2026.
+  The specification is docs/widgets/PROPOSAL-ahp.md at revision 2; the record of
+  this build, its verified numbers and its review is docs/widgets/pairwise.md.
+
+  No citation ships here. The proposal's sources are marked unchecked and
+  CLAUDE.md non-negotiable 9 wants a separate adversarial check before any source
+  goes in front of a student, so no (i) panel ends in "For more, see:". Every
+  claim on the page stands without one.
+
+  Sources, unchecked, kept here so the later check has one place to start:
+    Saaty, T.L. (1980) The Analytic Hierarchy Process. New York: McGraw-Hill.
+    Saaty, T.L. (1990) "How to make a decision: the analytic hierarchy process."
+      European Journal of Operational Research 48(1): 9-26.
+      DOI 10.1016/0377-2217(90)90057-I
+    Crawford, G. and Williams, C. (1985) "A note on the analysis of subjective
+      judgment matrices." Journal of Mathematical Psychology 29(4): 387-405.
+      DOI 10.1016/0022-2496(85)90002-1
+    Donegan, H.A. and Dodd, F.J. (1991) "A note on Saaty's random indexes."
+      Mathematical and Computer Modelling 15(10): 135-137.
+      DOI 10.1016/0895-7177(91)90098-R
+    Alonso, J.A. and Lamata, M.T. (2006) "Consistency in the analytic hierarchy
+      process: a new approach." International Journal of Uncertainty, Fuzziness
+      and Knowledge-Based Systems 14(4): 445-459. DOI 10.1142/S0218488506004114
+  None of these has been through the adversarial check. Do not move one onto the
+  page until it has.
+
+  Test suite tail, node tools/test/run.js on 19 September 2026: recorded at the
+  foot of docs/widgets/pairwise.md.
+-->
+<style>
+:root {
+  /* Presentation mode multiplies this. Every size below goes through calc(). */
+  --ui: 1;
+  --ink: #16181d;
+  --ink-soft: #545a63;
+  --page: #ffffff;
+  --panel: #f2f3f5;
+  --edge: #848b95;
+  --focus: #0b57d0;
+  /* One hue for the three weight bars. They are three values of one quantity,
+     not three categories, so length and the printed number carry the reading and
+     the colour carries nothing. Measured against --panel in both themes; the
+     figures are in docs/widgets/pairwise.md. */
+  --mark: #1a5fb4;
+  /* The track is the 100 per cent the bar is drawn against, so it has to be
+     visible or the bar looks scaled to nothing. Measured: 1.65:1 against the
+     panel it sits on, and the bar against it at 3.44:1. A paler track read at
+     1.27:1 and was nearly not there. */
+  --track: #bcc0c6;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
+    --panel: #1e2128; --edge: #6e7682; --focus: #7cacff;
+    --mark: #7cacff; --track: #4a515c;
+  }
+}
+/* The browser's rule behind the hidden attribute is a UA rule, so any author
+   rule that sets display outranks it. Declared once, globally. */
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: calc(1rem * var(--ui));
+  line-height: 1.45;
+}
+body[data-present="1"] { --ui: 1.28; }
+
+.wrap {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: calc(1rem * var(--ui)) calc(0.9rem * var(--ui)) calc(2rem * var(--ui));
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.8rem * var(--ui));
+}
+h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
+/* What the page is for. It stays at every size, including on a projector:
+   principles.md sections 3 and 13. Presentation mode drops controls, never the
+   argument. */
+.framing { margin: 0; max-width: 42em; }
+
+/* Every (i) panel hides on a projector except the classroom one, whose reader is
+   the person at the front in the moment before the room is asked to do
+   something. principles.md section 16. */
+body[data-present="1"] .help-panel:not(.classroom) { display: none; }
+body[data-present="1"] .info:not(.classroom-btn) { display: none; }
+body[data-present="1"] .hide-present { display: none; }
+body[data-present="1"] footer { display: none; }
+
+/* ---- layout ------------------------------------------------------------
+   Narrow: one column. The result sits above the controls, because the thumb
+   reaches for the controls and the eye returns to the result.
+   Wide: the comparisons on the left, the result and the rest of the controls on
+   the right. Width decides the column count; pointer type decides target size. */
+.main {
+  display: grid; gap: calc(0.8rem * var(--ui));
+  /* minmax(0, 1fr) rather than the default auto track. An auto track takes its width
+     from the widest min-content inside it, so one table in one (i) panel made the whole
+     page 14 px wider than a 320 px phone. Measured, not guessed. The min-width: 0 on each
+     area is the same guard one level down, for the flex columns. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "result" "cmps" "tools";
+}
+.result { grid-area: result; min-width: 0; display: flex; flex-direction: column; gap: calc(0.7rem * var(--ui)); }
+.cmps   { grid-area: cmps; min-width: 0; }
+.tools  { grid-area: tools; min-width: 0; display: flex; flex-direction: column; gap: calc(0.7rem * var(--ui)); }
+.result > *, .tools > * { min-width: 0; }
+@media (min-width: 56rem) {
+  .main {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-areas: "cmps result" "cmps tools";
+    align-items: start;
+  }
+  /* A projector is 1280 by 720, not 1280 by 900. In two columns at --ui 1.28 the page
+     ran 1,084 px tall, so the presets and Reset sat 364 px below the fold and a room
+     could not reach them. Three columns puts every control and every result on one
+     screen. This rule is more specific than the one above, so source order is not
+     doing the work, but it is written after it anyway. */
+  body[data-present="1"] .main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "cmps result tools";
+  }
+}
+/* Bought back for the same 720 px: the weight rows, the ratio card and the gaps
+   between blocks. Measured at 1280 by 720, the ratio card's bottom edge was nine
+   pixels past the fold before these. */
+body[data-present="1"] .weights { gap: calc(0.4rem * var(--ui)); }
+body[data-present="1"] .wrow {
+  padding: calc(0.3rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.45rem * var(--ui));
+}
+body[data-present="1"] .cmp { padding: calc(0.35rem * var(--ui)) 0; }
+body[data-present="1"] .result { gap: calc(0.45rem * var(--ui)); }
+body[data-present="1"] .stat {
+  padding: calc(0.35rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.5rem * var(--ui));
+}
+body[data-present="1"] .face-line, body[data-present="1"] .cycle-line {
+  margin-top: calc(0.25rem * var(--ui));
+}
+
+/* ---- the three weights ---- */
+.weights { display: flex; flex-direction: column; gap: calc(0.55rem * var(--ui)); }
+.wrow {
+  background: var(--panel); border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.45rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.6rem * var(--ui));
+}
+.wname { color: var(--ink-soft); font-size: calc(0.95rem * var(--ui)); }
+.wnums { display: flex; align-items: baseline; gap: calc(0.5rem * var(--ui)); flex-wrap: wrap; }
+.wpct {
+  font-size: calc(2rem * var(--ui)); font-weight: 650; line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+/* The fraction is the form the fallback tool prints. Four characters, numeric,
+   and a student comparing the two needs to see they are the same number. */
+.wfrac { color: var(--ink-soft); font-size: calc(0.9rem * var(--ui)); font-variant-numeric: tabular-nums; }
+.track {
+  height: calc(0.7rem * var(--ui)); margin-top: calc(0.35rem * var(--ui));
+  background: var(--track); border-radius: calc(0.35rem * var(--ui)); overflow: hidden;
+}
+/* Drawn against 100 per cent, never against the largest weight: a bar scaled to
+   the largest value is full width whatever that value is. */
+.fill { display: block; height: 100%; background: var(--mark); width: 0; transition: width 0.18s linear; }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+
+/* ---- the ratio ---- */
+.stat {
+  background: var(--panel); border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.5rem * var(--ui)) calc(0.8rem * var(--ui)) calc(0.7rem * var(--ui));
+}
+.label { color: var(--ink-soft); font-size: calc(0.95rem * var(--ui)); }
+.big {
+  font-size: calc(1.8rem * var(--ui)); font-weight: 650; line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+/* The verdict is a word, not a measurement, and at the number's own size it reads
+   as a mark out of ten. Measured on a projector at 1280: number 36.9 px, verdict
+   36.9 px, the line that corrects them 20.5 px. Rule 12, M1. */
+.verdict { font-weight: 650; font-size: calc(1.15rem * var(--ui)); }
+/* On the face, not behind an (i). It is the sentence the fallback tool omits. */
+.face-line { margin: calc(0.35rem * var(--ui)) 0 0; max-width: 34em; }
+.cycle-line { margin: calc(0.35rem * var(--ui)) 0 0; max-width: 34em; font-weight: 600; }
+
+/* ---- the three comparisons ---- */
+fieldset {
+  border: 1px solid var(--edge); border-radius: calc(0.5rem * var(--ui));
+  margin: 0; padding: calc(0.4rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.7rem * var(--ui));
+}
+legend { padding: 0 calc(0.3rem * var(--ui)); color: var(--ink-soft); font-size: calc(0.95rem * var(--ui)); }
+.cmp { padding: calc(0.5rem * var(--ui)) 0; }
+.cmp + .cmp { border-top: 1px solid var(--edge); }
+.ends {
+  display: flex; justify-content: space-between; gap: calc(0.5rem * var(--ui));
+  color: var(--ink-soft); font-size: calc(0.95rem * var(--ui));
+}
+.stepper {
+  display: flex; align-items: stretch; gap: calc(0.4rem * var(--ui));
+  margin-top: calc(0.25rem * var(--ui));
+}
+.read { flex: 1 1 auto; min-width: 0; text-align: center; }
+/* Big enough that a student at the back can see which control moved and what it
+   now holds. principles.md section 3. */
+.read-num { display: block; font-size: calc(1.45rem * var(--ui)); font-weight: 650; line-height: 1.15; }
+.read-word { display: block; color: var(--ink-soft); font-size: calc(0.95rem * var(--ui)); }
+.step {
+  font: inherit; font-size: calc(1.35rem * var(--ui)); line-height: 1;
+  width: max(44px, calc(2.8rem * var(--ui)));
+  min-width: 44px; min-height: max(44px, calc(2.8rem * var(--ui)));
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: calc(0.4rem * var(--ui));
+  background: var(--page); color: var(--ink); cursor: pointer;
+}
+.step[disabled] { opacity: 0.4; cursor: default; }
+/* Seventeen ticks. A position cue on touch; also clickable with a mouse, where
+   the stepper stays the primary route and the strip reaches nothing it cannot. */
+.strip {
+  display: flex; gap: 2px; margin-top: calc(0.3rem * var(--ui));
+  height: calc(0.55rem * var(--ui)); align-items: flex-end;
+}
+/* One emphasised tick, and it is the one you are on. An earlier version drew the
+   middle of the axis heavier as well, at 80 per cent height in the soft ink colour
+   against 55 per cent in the edge colour, and Luke read the two marks as two
+   selections. The middle is now drawn exactly like the other sixteen. Lightness and
+   height both separate the marked tick from the rest, so the cue survives greyscale
+   and a projector. The unmarked ticks sit at 3.44:1 against the page; an earlier
+   version had them at 1.40:1, which is not a scale anybody can see. */
+.strip i { flex: 1 1 0; height: 55%; background: var(--edge); border-radius: 1px; }
+.strip i.on { background: var(--ink); height: 100%; }
+@media (hover: hover) and (pointer: fine) {
+  .strip { cursor: pointer; height: calc(0.75rem * var(--ui)); }
+}
+
+/* ---- buttons ---- */
+.row { display: flex; flex-wrap: wrap; gap: calc(0.4rem * var(--ui)); }
+.act, .preset {
+  font: inherit; font-size: calc(0.95rem * var(--ui));
+  /* 44 px on every pointer, not only under pointer: coarse. Measured at 1280:
+     the template's 2.6rem comes out at 41.6 px on a laptop, and sizing for touch
+     everywhere costs a mouse user nothing. */
+  min-height: max(44px, calc(2.6rem * var(--ui)));
+  padding: calc(0.35rem * var(--ui)) calc(0.7rem * var(--ui));
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: calc(0.4rem * var(--ui));
+  background: var(--page); color: var(--ink); cursor: pointer;
+}
+.preset[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.act:focus-visible, .preset:focus-visible, .step:focus-visible,
+.info:focus-visible, input:focus-visible, .strip:focus-visible {
+  outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px;
+}
+
+/* ---- the (i) explanation ---- */
+.info {
+  font: inherit; font-size: calc(0.8rem * var(--ui)); font-style: italic; font-weight: 700;
+  line-height: 1;
+  width: calc(1.55rem * var(--ui)); height: calc(1.55rem * var(--ui));
+  min-width: 24px; min-height: 24px;
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: 50%;
+  background: transparent; color: var(--ink-soft); cursor: pointer;
+}
+.info[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.help-panel {
+  background: var(--panel); border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.9rem * var(--ui)) calc(0.7rem * var(--ui));
+  font-size: calc(0.95rem * var(--ui));
+  margin-top: calc(0.5rem * var(--ui));
+}
+.help-panel p { margin: calc(0.6rem * var(--ui)) 0 0; }
+.note { color: var(--ink-soft); }
+
+/* The working, shown rather than described. */
+.matrix-wrap { overflow-x: auto; max-width: 100%; min-width: 0; }
+.matrix { border-collapse: collapse; margin: calc(0.6rem * var(--ui)) 0 0; font-variant-numeric: tabular-nums; }
+.matrix th, .matrix td {
+  border: 1px solid var(--edge); padding: calc(0.2rem * var(--ui)) calc(0.45rem * var(--ui));
+  text-align: right; font-size: calc(0.9rem * var(--ui));
+}
+.matrix th { color: var(--ink-soft); font-weight: 500; text-align: left; }
+
+/* ---- names, saving ---- */
+.names { display: flex; flex-direction: column; gap: calc(0.4rem * var(--ui)); }
+.names label { display: flex; gap: calc(0.5rem * var(--ui)); align-items: center; font-size: calc(0.95rem * var(--ui)); }
+.names input {
+  font: inherit; font-size: calc(0.95rem * var(--ui)); flex: 1 1 auto; min-width: 0;
+  min-height: 44px; padding: calc(0.3rem * var(--ui)) calc(0.5rem * var(--ui));
+  border: 1px solid var(--edge); border-radius: calc(0.4rem * var(--ui));
+  background: var(--page); color: var(--ink);
+}
+#saved img { max-width: 100%; border: 1px solid var(--edge); border-radius: calc(0.4rem * var(--ui)); }
+#shot { display: none; }
+
+footer { color: var(--ink-soft); font-size: calc(0.85rem * var(--ui)); border-top: 1px solid var(--edge); padding-top: calc(0.6rem * var(--ui)); }
+footer a { color: inherit; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="framing">Three numbers below decide what a survey looks for. Somebody made
+     them by reading an expert&rsquo;s sentences and deciding how strong each word was.</p>
+
+  <h1>Three criteria, three weights</h1>
+
+  <div class="main">
+
+    <div class="result">
+      <div class="weights" id="weights">
+        <div class="wrow" data-i="0">
+          <div class="wname" id="wname0">Elevation</div>
+          <div class="wnums">
+            <span class="wpct" id="wpct0">33.34%</span>
+            <span class="wfrac hide-present" id="wfrac0">0.3333</span>
+          </div>
+          <div class="track" aria-hidden="true"><i class="fill" id="wfill0"></i></div>
+        </div>
+        <div class="wrow" data-i="1">
+          <div class="wname" id="wname1">Slope</div>
+          <div class="wnums">
+            <span class="wpct" id="wpct1">33.33%</span>
+            <span class="wfrac hide-present" id="wfrac1">0.3333</span>
+          </div>
+          <div class="track" aria-hidden="true"><i class="fill" id="wfill1"></i></div>
+        </div>
+        <div class="wrow" data-i="2">
+          <div class="wname" id="wname2">Aspect</div>
+          <div class="wnums">
+            <span class="wpct" id="wpct2">33.33%</span>
+            <span class="wfrac hide-present" id="wfrac2">0.3333</span>
+          </div>
+          <div class="track" aria-hidden="true"><i class="fill" id="wfill2"></i></div>
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="label">Consistency ratio
+          <button class="info" data-info="info-ratio" aria-expanded="false"
+                  aria-controls="info-ratio" title="About the consistency ratio">i</button>
+        </div>
+        <div class="big"><span id="cr">0.0000</span> <span class="verdict" id="verdict">agree</span></div>
+        <p class="face-line" id="ratio-line">Nothing has been said yet. All three comparisons are equal.</p>
+        <p class="cycle-line" id="cycle-line" hidden></p>
+        <div class="help-panel" id="info-ratio" hidden>
+          <p>The ratio divides by 0.58. That number comes from a table of comparisons
+             made at random. Some tools divide by a different number.</p>
+          <p>Below 0.10 this page prints <b>agree</b>. At 0.10 and above it prints
+             <b>disagree</b>. The 0.10 is a convention. Nothing in the arithmetic picks
+             it.</p>
+        </div>
+      </div>
+    </div>
+
+    <fieldset class="cmps">
+      <legend>How the three compare
+        <button class="info" data-info="info-scale" aria-expanded="false"
+                aria-controls="info-scale" title="About the scale">i</button>
+      </legend>
+
+      <div class="cmp" data-k="12" role="group" aria-labelledby="ends12">
+        <div class="ends" id="ends12"><span id="end12a">Elevation</span><span id="end12b">Slope</span></div>
+        <div class="stepper">
+          <button class="step" data-k="12" data-d="-1" id="dn12">&minus;</button>
+          <div class="read" id="read12">
+            <span class="read-num" id="num12">Equal</span>
+            <span class="read-word" id="word12">both matter the same</span>
+          </div>
+          <button class="step" data-k="12" data-d="1" id="up12">+</button>
+        </div>
+        <div class="strip hide-present" id="strip12" data-k="12" aria-hidden="true"></div>
+      </div>
+
+      <div class="cmp" data-k="13" role="group" aria-labelledby="ends13">
+        <div class="ends" id="ends13"><span id="end13a">Elevation</span><span id="end13b">Aspect</span></div>
+        <div class="stepper">
+          <button class="step" data-k="13" data-d="-1" id="dn13">&minus;</button>
+          <div class="read" id="read13">
+            <span class="read-num" id="num13">Equal</span>
+            <span class="read-word" id="word13">both matter the same</span>
+          </div>
+          <button class="step" data-k="13" data-d="1" id="up13">+</button>
+        </div>
+        <div class="strip hide-present" id="strip13" data-k="13" aria-hidden="true"></div>
+      </div>
+
+      <div class="cmp" data-k="23" role="group" aria-labelledby="ends23">
+        <div class="ends" id="ends23"><span id="end23a">Slope</span><span id="end23b">Aspect</span></div>
+        <div class="stepper">
+          <button class="step" data-k="23" data-d="-1" id="dn23">&minus;</button>
+          <div class="read" id="read23">
+            <span class="read-num" id="num23">Equal</span>
+            <span class="read-word" id="word23">both matter the same</span>
+          </div>
+          <button class="step" data-k="23" data-d="1" id="up23">+</button>
+        </div>
+        <div class="strip hide-present" id="strip23" data-k="23" aria-hidden="true"></div>
+      </div>
+
+      <div class="help-panel" id="info-scale" hidden>
+        <p>A comparison says how much more important one of the two is than the other.
+           The scale runs from 1, which is the same, up to 9.</p>
+        <p>The minus button moves towards the name on the left. The plus button moves
+           towards the name on the right. Arrow keys do the same.</p>
+        <p>On a computer you can also click the row of ticks to jump straight to a
+           position.</p>
+      </div>
+    </fieldset>
+
+    <div class="tools">
+
+      <fieldset>
+        <legend>Set all three at once
+          <button class="info" data-info="info-presets" aria-expanded="false"
+                  aria-controls="info-presets" title="About these buttons">i</button>
+        </legend>
+        <div class="row" role="group" aria-label="Preset comparisons">
+          <button class="preset" data-p="1,1,1" aria-pressed="true">All equal</button>
+          <button class="preset" data-p="9,9,1" aria-pressed="false">One far ahead</button>
+          <button class="preset" data-p="1,2,2" aria-pressed="false">Two tied</button>
+          <button class="preset" data-p="3,-3,3" aria-pressed="false">Each beats the next</button>
+        </div>
+        <div class="help-panel" id="info-presets" hidden>
+          <p>Each button sets all three comparisons at once. The link in the address bar
+             then holds the numbers it set, so a setting can be sent to somebody else.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>For the classroom
+          <button class="info classroom-btn" data-info="info-classroom" aria-expanded="false"
+                  aria-controls="info-classroom" title="Five minutes, in pairs">i</button>
+        </legend>
+        <!-- Three student steps and nothing else. What the room will produce, and what to
+             run at the front, are notes to whoever is teaching rather than to a student,
+             and telling a class the outcome before it does the task is the thing Luke's
+             rule of 19 September is against. Both paragraphs live verbatim in
+             docs/widgets/pairwise.md under the pair activity, with the candidate status. -->
+        <div class="help-panel classroom" id="info-classroom" hidden>
+          <p><b>On your own, one minute, on paper.</b> Somebody is choosing where to put a
+             bench in a park. Three things matter: shade, view and quiet. They say shade
+             matters clearly more than quiet. Shade matters a little more than view. View
+             and quiet matter about the same. Write down the three percentages you
+             think those sentences come to, largest first. Do this before you open the
+             page.</p>
+          <p><b>In pairs, two minutes, one phone between two.</b> Rename the three criteria
+             to shade, view and quiet. Set each comparison to the numbers each of you
+             wrote, one of you after the other.</p>
+          <p><b>Back to the room, two minutes.</b> Whose sentences were these? Who else
+             could have been asked?</p>
+        </div>
+      </fieldset>
+
+      <div class="row">
+        <button class="act hide-present" id="lesson" data-info="info-lesson"
+                aria-expanded="false" aria-controls="info-lesson">How this works</button>
+        <button class="act hide-present" id="rename" aria-expanded="false"
+                aria-controls="names">Rename</button>
+        <button class="act hide-present" id="save">Save as image</button>
+        <button class="act" id="reset">Reset</button>
+        <button class="act" id="present" aria-pressed="false">Big screen</button>
+      </div>
+
+      <div class="help-panel hide-present" id="info-lesson" hidden>
+        <p>A comparison says how much more important one criterion is than another. A
+           criterion is one of the three things being compared.</p>
+        <p>The three weights come from the three comparisons. They are shares of one
+           whole, so they add up to 100 per cent.</p>
+        <p>The consistency ratio measures the three comparisons against each other. It is
+           0 when the three fit together exactly. The further they are from fitting, the
+           larger it gets.</p>
+        <p>The working, for the comparisons you have set:</p>
+        <!-- A table will not shrink below its own min-content width, and a grid column
+             takes its width from the widest min-content inside it, so at 320 px this one
+             pushed the whole page 8 px wider than the viewport. Measured, not guessed.
+             Wide content scrolls inside its own box; the page body never scrolls. -->
+        <div class="matrix-wrap">
+          <table class="matrix" id="matrix">
+            <caption class="visually-hidden">Each row divided by each column</caption>
+          </table>
+        </div>
+        <p id="extras">&nbsp;</p>
+      </div>
+
+      <div class="names hide-present" id="names" hidden>
+        <label>1 <input type="text" id="n0" maxlength="24" value="Elevation"></label>
+        <label>2 <input type="text" id="n1" maxlength="24" value="Slope"></label>
+        <label>3 <input type="text" id="n2" maxlength="24" value="Aspect"></label>
+        <p class="note">Nothing here can tell you a criterion is missing. The page uses
+           three. A fourth name in the link is ignored.</p>
+      </div>
+
+      <div class="hide-present" id="saved" hidden>
+        <p id="saved-note">Press and hold the picture to save it.</p>
+        <img id="saved-img" alt="The weights, the comparisons behind them and the consistency ratio">
+      </div>
+
+      <canvas id="shot" width="1100" height="720"></canvas>
+
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Made by Luke Bergmann with Claude.
+       <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
+  </footer>
+
+  <!-- Screen readers get told what changed; the visual change alone is not enough. -->
+  <p class="visually-hidden" id="live" aria-live="polite"></p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // --- the axis -------------------------------------------------------------
+  // Seventeen positions, left to right. Position 8 is equal. The signed value is
+  // what goes in the URL: +k means the first of the pair is k times as important,
+  // -k means the second is, and 1 means equal.
+  var AXIS = [];
+  for (var ai = 0; ai <= 16; ai++) AXIS.push(ai < 8 ? 9 - ai : ai === 8 ? 1 : -(ai - 7));
+  function posOf(s) {
+    if (s === 1 || s === -1) return 8;
+    return s > 1 ? 9 - s : -s + 7;
+  }
+  function entry(s) {           // matrix entry from a signed comparison
+    if (s === 1 || s === -1) return 1;
+    return s > 0 ? s : -1 / s;
+  }
+  var WORDS = ["", "", "slightly more important", "slightly more important",
+               "more important", "more important", "much more important",
+               "much more important", "far more important", "far more important"];
+
+  var KEYS = ["12", "13", "23"];
+  var PAIR = { "12": [0, 1], "13": [0, 2], "23": [1, 2] };
+  var DEFAULT_NAMES = ["Elevation", "Slope", "Aspect"];
+  var RI3 = 0.58;               // the random index this page divides by
+  var BAR = 0.10;               // agree below it, disagree at it and above
+
+  // --- state from the URL, so a link carries a configuration -----------------
+  var params = new URLSearchParams(location.search);
+  var c = { "12": readC("c12"), "13": readC("c13"), "23": readC("c23") };
+  var names = readNames();
+  var present = params.get("present") === "1";
+
+  function readC(key) {
+    var v = parseInt(params.get(key), 10);
+    if (!(v >= -9 && v <= 9) || v === 0) return 1;
+    return v === -1 ? 1 : v;
+  }
+  function readNames() {
+    var raw = params.get("n");
+    var out = DEFAULT_NAMES.slice();
+    if (!raw) return out;
+    // Only the first three entries are used. A fourth name is ignored rather
+    // than honoured, so no URL turns this into a four-criteria page.
+    var got = raw.split(",");
+    for (var i = 0; i < 3; i++) {
+      var s = (got[i] || "").trim().slice(0, 24);
+      if (s) out[i] = s;
+    }
+    return out;
+  }
+
+  // --- the arithmetic -------------------------------------------------------
+  function buildMatrix() {
+    var a12 = entry(c["12"]), a13 = entry(c["13"]), a23 = entry(c["23"]);
+    return [[1, a12, a13], [1 / a12, 1, a23], [1 / a13, 1 / a23, 1]];
+  }
+  // Principal eigenvector by power iteration, to a maximum absolute change of
+  // 1e-12. At three criteria this agrees with the row geometric mean to about
+  // 1e-12 over the whole reachable range, so the page never has to explain a
+  // choice of method it cannot make matter.
+  function eigen(A) {
+    var n = 3, w = [1 / 3, 1 / 3, 1 / 3], i, j, k, s, nw, diff;
+    for (k = 0; k < 100000; k++) {
+      nw = [];
+      for (i = 0; i < n; i++) {
+        s = 0;
+        for (j = 0; j < n; j++) s += A[i][j] * w[j];
+        nw.push(s);
+      }
+      s = nw[0] + nw[1] + nw[2];
+      for (i = 0; i < n; i++) nw[i] = nw[i] / s;
+      diff = 0;
+      for (i = 0; i < n; i++) diff = Math.max(diff, Math.abs(nw[i] - w[i]));
+      w = nw;
+      if (diff < 1e-12) return { w: w, iterations: k + 1 };
+    }
+    return { w: w, iterations: 100000 };
+  }
+  function geomean(A) {
+    var g = [], s = 0, i, j, p;
+    for (i = 0; i < 3; i++) {
+      p = 1;
+      for (j = 0; j < 3; j++) p *= A[i][j];
+      g.push(Math.pow(p, 1 / 3));
+      s += g[i];
+    }
+    for (i = 0; i < 3; i++) g[i] = g[i] / s;
+    return g;
+  }
+  function lambdaMax(A, w) {
+    var total = 0, i, j, s;
+    for (i = 0; i < 3; i++) {
+      s = 0;
+      for (j = 0; j < 3; j++) s += A[i][j] * w[j];
+      total += s / w[i];
+    }
+    return total / 3;
+  }
+  // Two decimals do not always add to 100: of the eleven readings recorded in the
+  // proposal, four miss it. Cell 86 of the lab tells students the three must add
+  // up to 100 before they go into the model, so the page rounds every share down
+  // and hands the spare hundredths to the largest residuals, lowest index first
+  // on a tie. The three displayed values then sum to exactly 100.00 always.
+  function displayPercents(w) {
+    var units = [w[0] * 10000, w[1] * 10000, w[2] * 10000];
+    var floors = [Math.floor(units[0]), Math.floor(units[1]), Math.floor(units[2])];
+    var spare = 10000 - (floors[0] + floors[1] + floors[2]);
+    var order = [0, 1, 2].sort(function (i, j) {
+      var d = (units[j] - floors[j]) - (units[i] - floors[i]);
+      return d !== 0 ? d : i - j;
+    });
+    for (var k = 0; k < spare; k++) floors[order[k % 3]] += 1;
+    return [floors[0] / 100, floors[1] / 100, floors[2] / 100];
+  }
+  // Three comparisons run in a circle when the first beats the second, the second
+  // beats the third and the third beats the first. 1,024 of the 4,913 reachable
+  // settings are one of these.
+  function isCycle() {
+    var a = entry(c["12"]), b = entry(c["13"]), d = entry(c["23"]);
+    return (a > 1 && d > 1 && b < 1) || (a < 1 && d < 1 && b > 1);
+  }
+
+  function solve() {
+    var A = buildMatrix();
+    var e = eigen(A);
+    var lm = lambdaMax(A, e.w);
+    var ci = (lm - 3) / 2;
+    return { A: A, w: e.w, g: geomean(A), iterations: e.iterations,
+             lambdaMax: lm, CI: ci, CR: ci / RI3, pct: displayPercents(e.w) };
+  }
+
+  // --- words ----------------------------------------------------------------
+  function readNum(k) {
+    var s = c[k], p = PAIR[k];
+    if (s === 1) return "Equal";
+    return s > 1 ? names[p[0]] + " " + s + " times " + names[p[1]]
+                 : names[p[1]] + " " + (-s) + " times " + names[p[0]];
+  }
+  function readWord(k) {
+    var s = c[k];
+    return s === 1 ? "both matter the same" : WORDS[Math.abs(s)];
+  }
+  function readPlain(k) { return readNum(k) + ", " + readWord(k); }
+
+  // --- elements -------------------------------------------------------------
+  var liveEl = document.getElementById("live");
+  var crEl = document.getElementById("cr");
+  var verdictEl = document.getElementById("verdict");
+  var ratioLine = document.getElementById("ratio-line");
+  var cycleLine = document.getElementById("cycle-line");
+  var presentBtn = document.getElementById("present");
+  var namesBox = document.getElementById("names");
+  var renameBtn = document.getElementById("rename");
+  var matrixEl = document.getElementById("matrix");
+  var extrasEl = document.getElementById("extras");
+  var savedBox = document.getElementById("saved");
+
+  // The ticks are built once. Rebuilding them on every render would be three
+  // dozen nodes a keypress for a picture that changes one class.
+  KEYS.forEach(function (k) {
+    var strip = document.getElementById("strip" + k);
+    for (var i = 0; i <= 16; i++) {
+      strip.appendChild(document.createElement("i"));
+    }
+  });
+
+  // --- render: one function, called after every change ----------------------
+  var urlTimer = null;
+  function writeURL() {
+    var p = new URLSearchParams();
+    KEYS.forEach(function (k) { if (c[k] !== 1) p.set("c" + k, String(c[k])); });
+    if (names.join(",") !== DEFAULT_NAMES.join(",")) p.set("n", names.join(","));
+    if (present) p.set("present", "1");
+    var q = p.toString();
+    history.replaceState(null, "", location.pathname + (q ? "?" + q : ""));
+  }
+  function queueURL() {
+    // Debounced, because replaceState on every keypress is throttled in Safari.
+    if (urlTimer) clearTimeout(urlTimer);
+    urlTimer = setTimeout(function () { urlTimer = null; writeURL(); }, 330);
+  }
+
+  var last = null;
+  function render() {
+    var r = solve();
+    last = r;
+    var i, k;
+    // A saved picture is a snapshot of one setting. Leaving it on screen after a
+    // control moves puts two different answers on the page at once, and the stale
+    // one looks as current as the live one. Measured in the browser: press Save,
+    // then press a stepper, and both were on screen together.
+    savedBox.hidden = true;
+
+    for (i = 0; i < 3; i++) {
+      document.getElementById("wname" + i).textContent = names[i];
+      document.getElementById("wpct" + i).textContent = r.pct[i].toFixed(2) + "%";
+      document.getElementById("wfrac" + i).textContent = r.w[i].toFixed(4);
+      document.getElementById("wfill" + i).style.width = r.pct[i].toFixed(2) + "%";
+    }
+
+    crEl.textContent = r.CR.toFixed(4);
+    verdictEl.textContent = r.CR < BAR ? "agree" : "disagree";
+
+    var equal = c["12"] === 1 && c["13"] === 1 && c["23"] === 1;
+    ratioLine.textContent = equal
+      ? "Nothing has been said yet. All three comparisons are equal."
+      : "This measures whether your three comparisons agree with each other. "
+        + "It says nothing about whether they are right.";
+
+    // Where the method declines, say so on screen at the moment it happens.
+    // principles.md section 6.
+    if (isCycle()) {
+      var flat = Math.abs(r.w[0] - r.w[1]) < 1e-9 && Math.abs(r.w[1] - r.w[2]) < 1e-9;
+      cycleLine.textContent = "These three comparisons run in a circle, so they cannot "
+        + "all be true." + (flat ? " The equal shares here are the method refusing to answer." : "");
+      cycleLine.hidden = false;
+    } else {
+      cycleLine.textContent = "";
+      cycleLine.hidden = true;
+    }
+
+    KEYS.forEach(function (key) {
+      var p = PAIR[key];
+      document.getElementById("end" + key + "a").textContent = names[p[0]];
+      document.getElementById("end" + key + "b").textContent = names[p[1]];
+      document.getElementById("num" + key).textContent = readNum(key);
+      document.getElementById("word" + key).textContent = readWord(key);
+      var pos = posOf(c[key]);
+      var ticks = document.getElementById("strip" + key).children;
+      for (var t = 0; t < ticks.length; t++) ticks[t].className = t === pos ? "on" : "";
+      document.getElementById("dn" + key).setAttribute("aria-label",
+        "More weight to " + names[p[0]] + ", in the " + names[p[0]] + " against "
+        + names[p[1]] + " comparison");
+      document.getElementById("up" + key).setAttribute("aria-label",
+        "More weight to " + names[p[1]] + ", in the " + names[p[0]] + " against "
+        + names[p[1]] + " comparison");
+      document.getElementById("dn" + key).setAttribute("title", "More weight to " + names[p[0]]);
+      document.getElementById("up" + key).setAttribute("title", "More weight to " + names[p[1]]);
+      document.getElementById("dn" + key).disabled = pos === 0;
+      document.getElementById("up" + key).disabled = pos === 16;
+      document.getElementById("ends" + key).setAttribute("aria-label",
+        names[p[0]] + " compared with " + names[p[1]]);
+    });
+
+    for (i = 0; i < 3; i++) {
+      var inp = document.getElementById("n" + i);
+      if (inp.value !== names[i]) inp.value = names[i];
+    }
+
+    document.querySelectorAll(".preset").forEach(function (b) {
+      var want = b.dataset.p.split(",").map(Number);
+      b.setAttribute("aria-pressed",
+        (want[0] === c["12"] && want[1] === c["13"] && want[2] === c["23"]) ? "true" : "false");
+    });
+
+    drawMatrix(r);
+    queueURL();
+  }
+
+  function drawMatrix(r) {
+    var html = "<caption class=\"visually-hidden\">Each row divided by each column</caption>"
+             + "<tr><th></th><th>" + esc(names[0]) + "</th><th>" + esc(names[1])
+             + "</th><th>" + esc(names[2]) + "</th></tr>";
+    for (var i = 0; i < 3; i++) {
+      html += "<tr><th>" + esc(names[i]) + "</th>";
+      for (var j = 0; j < 3; j++) html += "<td>" + r.A[i][j].toFixed(4) + "</td>";
+      html += "</tr>";
+    }
+    matrixEl.innerHTML = html;
+    extrasEl.textContent = "Largest eigenvalue " + r.lambdaMax.toFixed(4)
+      + ". Consistency index " + r.CI.toFixed(4) + ". Divided by 0.58 that is "
+      + r.CR.toFixed(4) + ".";
+  }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function announce(changed) {
+    var r = last;
+    var parts = [];
+    if (changed) parts.push(readPlain(changed) + ".");
+    parts.push(names[0] + " " + r.pct[0].toFixed(2) + " per cent, "
+             + names[1] + " " + r.pct[1].toFixed(2) + " per cent, "
+             + names[2] + " " + r.pct[2].toFixed(2) + " per cent.");
+    parts.push("Consistency ratio " + r.CR.toFixed(4) + ", "
+             + (r.CR < BAR ? "agree" : "disagree") + ".");
+    liveEl.textContent = parts.join(" ");
+  }
+
+  function setPos(key, pos, announceIt) {
+    if (pos < 0) pos = 0;
+    if (pos > 16) pos = 16;
+    c[key] = AXIS[pos];
+    render();
+    if (announceIt) announce(key);
+  }
+
+  // --- events ---------------------------------------------------------------
+  document.querySelectorAll(".step").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var key = b.dataset.k;
+      setPos(key, posOf(c[key]) + Number(b.dataset.d), true);
+    });
+  });
+
+  document.querySelectorAll(".cmp").forEach(function (g) {
+    g.addEventListener("keydown", function (e) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      var key = g.dataset.k, pos = posOf(c[key]), next = null;
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown") next = pos - 1;
+      else if (e.key === "ArrowRight" || e.key === "ArrowUp") next = pos + 1;
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = 16;
+      if (next === null) return;
+      e.preventDefault();
+      setPos(key, next, true);
+    });
+  });
+
+  // A mouse can jump straight to a position. On touch the strip is a position cue
+  // and the stepper is the route, so every state stays reachable by thumb and by
+  // keyboard without it.
+  document.querySelectorAll(".strip").forEach(function (s) {
+    s.addEventListener("click", function (e) {
+      if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) return;
+      var box = s.getBoundingClientRect();
+      if (!box.width) return;
+      var f = (e.clientX - box.left) / box.width;
+      setPos(s.dataset.k, Math.max(0, Math.min(16, Math.floor(f * 17))), true);
+    });
+  });
+
+  document.querySelectorAll(".preset").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var v = b.dataset.p.split(",").map(Number);
+      c["12"] = v[0]; c["13"] = v[1]; c["23"] = v[2];
+      render();
+      announce(null);
+    });
+  });
+
+  [0, 1, 2].forEach(function (i) {
+    document.getElementById("n" + i).addEventListener("input", function (e) {
+      var v = String(e.target.value).slice(0, 24).trim();
+      names[i] = v || DEFAULT_NAMES[i];
+      render();
+    });
+  });
+
+  renameBtn.addEventListener("click", function () {
+    var open = renameBtn.getAttribute("aria-expanded") === "true";
+    renameBtn.setAttribute("aria-expanded", open ? "false" : "true");
+    namesBox.hidden = open;
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    c = { "12": 1, "13": 1, "23": 1 };
+    names = DEFAULT_NAMES.slice();
+    render();
+    announce(null);
+  });
+
+  // --- the saved picture ----------------------------------------------------
+  // Written so a student and a marker can read it cold, months later, with no
+  // memory of the page. Every comparison is a sentence somebody would say, the
+  // weights carry their names and both forms of the number, and the ratio comes
+  // with the line saying what it does not measure. Luke, 19 September: the first
+  // version was too terse for a student to know what it meant.
+  function stamp() {
+    var d = new Date();
+    function two(n) { return (n < 10 ? "0" : "") + n; }
+    return d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate());
+  }
+  function sentenceFor(k) {
+    var v = c[k], p = PAIR[k];
+    if (v === 1) return names[p[0]] + " and " + names[p[1]] + " matter the same.";
+    return v > 1
+      ? names[p[0]] + " matters " + v + " times as much as " + names[p[1]] + "."
+      : names[p[1]] + " matters " + (-v) + " times as much as " + names[p[0]] + ".";
+  }
+  function imageText() {
+    var r = last;
+    var under = r.CR < BAR;
+    var out = {
+      title: "Three weights and the comparisons behind them",
+      comparisonsHeading: "What was compared",
+      comparisons: KEYS.map(sentenceFor),
+      weightsHeading: "The weights these give",
+      weightsNote: "Each one twice: a share of 100 per cent, then the same number as a fraction.",
+      weights: [0, 1, 2].map(function (i) {
+        return { name: names[i], pct: r.pct[i].toFixed(2) + "%", frac: r.w[i].toFixed(4) };
+      }),
+      percents: r.pct.slice(),
+      ratioHeading: "How well the comparisons agree",
+      ratio: "Consistency ratio " + r.CR.toFixed(4) + ". That is "
+           + (under ? "below 0.10" : "0.10 or above")
+           + ", so this page says " + (under ? "agree" : "disagree") + ".",
+      ratioNote: "This measures whether the three comparisons agree with each other. "
+           + "It says nothing about whether they are right.",
+      source: "Made on this page: " + location.href,
+      date: "Saved on " + stamp()
+    };
+    if (isCycle()) {
+      out.circle = "These three comparisons run in a circle, so they cannot all be true.";
+    }
+    return out;
+  }
+  // 780 px wide rather than wider, so the type is large enough to read when the
+  // picture is shown on a phone. Measured at 375: the picture displays at 346 px,
+  // which puts the sentences at about 13.3 CSS pixels and the address at 10.7. The
+  // height is measured from the wrapped text rather than fixed, because a criterion
+  // can be renamed to anything.
+  function drawImage() {
+    var cv = document.getElementById("shot");
+    var ctx = cv.getContext && cv.getContext("2d");
+    if (!ctx || !ctx.fillText || !ctx.measureText) return null;
+    var t = imageText(), r = last;
+    var W = 780, M = 44, CW = W - M * 2;
+    var INK = "#16181d", SOFT = "#545a63", MARK = "#1a5fb4", TRACK = "#bcc0c6";
+
+    function font(px, bold) { return (bold ? "600 " : "") + px + "px system-ui, sans-serif"; }
+    function wrap(str, px, bold) {
+      ctx.font = font(px, bold);
+      var out = [], line = "";
+      String(str).split(" ").forEach(function (word) {
+        var probe = line ? line + " " + word : word;
+        if (line && ctx.measureText(probe).width > CW) { out.push(line); line = word; }
+        else line = probe;
+        // A single token wider than the line is a URL. Break it by character.
+        while (ctx.measureText(line).width > CW && line.length > 1) {
+          var n = line.length;
+          while (n > 1 && ctx.measureText(line.slice(0, n)).width > CW) n--;
+          out.push(line.slice(0, n));
+          line = line.slice(n);
+        }
+      });
+      if (line) out.push(line);
+      return out;
+    }
+    // Laid out twice: once to find the height, once to draw it.
+    function run(draw) {
+      var y = 60;
+      function block(str, px, bold, colour, after) {
+        wrap(str, px, bold).forEach(function (ln) {
+          if (draw) { ctx.font = font(px, bold); ctx.fillStyle = colour; ctx.fillText(ln, M, y); }
+          y += Math.round(px * 1.34);
+        });
+        y += (after || 0);
+      }
+      block(t.title, 36, true, INK, 20);
+      block(t.comparisonsHeading, 24, false, SOFT, 6);
+      t.comparisons.forEach(function (line) { block(line, 30, false, INK, 4); });
+      y += 20;
+      block(t.weightsHeading, 24, false, SOFT, 2);
+      block(t.weightsNote, 22, false, SOFT, 12);
+      t.weights.forEach(function (wt, i) {
+        if (draw) {
+          ctx.font = font(26, false); ctx.fillStyle = SOFT;
+          ctx.fillText(wt.name, M, y + 24);
+          ctx.font = font(44, true); ctx.fillStyle = INK;
+          ctx.fillText(wt.pct, M, y + 78);
+          var wpct = ctx.measureText(wt.pct).width;
+          ctx.font = font(24, false); ctx.fillStyle = SOFT;
+          ctx.fillText(wt.frac, M + wpct + 16, y + 78);
+          ctx.fillStyle = TRACK; ctx.fillRect(M, y + 94, CW, 22);
+          ctx.fillStyle = MARK; ctx.fillRect(M, y + 94, CW * r.pct[i] / 100, 22);
+        }
+        y += 140;
+      });
+      y += 6;
+      block(t.ratioHeading, 24, false, SOFT, 6);
+      block(t.ratio, 32, true, INK, 8);
+      if (t.circle) block(t.circle, 26, false, INK, 8);
+      block(t.ratioNote, 26, false, INK, 26);
+      block(t.source, 24, false, SOFT, 2);
+      block(t.date, 24, false, SOFT, 0);
+      return Math.round(y + 40);
+    }
+
+    cv.width = W;
+    cv.height = run(false);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    run(true);
+    return cv;
+  }
+  function fileName() { return "weights-" + stamp() + ".png"; }
+  document.getElementById("save").addEventListener("click", function () {
+    var cv = drawImage();
+    if (!cv) return;
+    if (cv.toBlob) {
+      cv.toBlob(function (blob) {
+        if (!blob) { showFallback(cv); return; }
+        if (typeof navigator !== "undefined" && navigator.canShare && window.File) {
+          var f = new window.File([blob], fileName(), { type: "image/png" });
+          if (navigator.canShare({ files: [f] })) {
+            navigator.share({ files: [f] }).catch(function () { download(blob); });
+            return;
+          }
+        }
+        download(blob);
+      }, "image/png");
+    } else {
+      showFallback(cv);
+    }
+  });
+  function download(blob) {
+    try {
+      var url = window.URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = fileName();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      showFallback(document.getElementById("shot"));
+    }
+  }
+  // Older iOS Safari will not take a download from a blob. The same picture goes
+  // on the page instead, with one line saying how to keep it.
+  function showFallback(cv) {
+    if (!cv.toDataURL) return;
+    document.getElementById("saved-img").src = cv.toDataURL("image/png");
+    savedBox.hidden = false;
+  }
+
+  // --- presentation mode ----------------------------------------------------
+  function setPresent(on) {
+    present = on;
+    document.body.dataset.present = on ? "1" : "0";
+    presentBtn.textContent = on ? "Normal size" : "Big screen";
+    presentBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    render();
+  }
+  presentBtn.addEventListener("click", function () { setPresent(!present); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "p" && !e.metaKey && !e.ctrlKey && !e.altKey &&
+        document.activeElement.tagName !== "INPUT") setPresent(!present);
+  });
+
+  // --- one handler for every (i) panel on the page --------------------------
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-info]");
+    if (!b) return;
+    var panel = document.getElementById(b.dataset.info);
+    if (!panel) return;
+    var open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", open ? "false" : "true");
+    panel.hidden = open;
+  });
+
+  // --- go: the page opens showing something ---------------------------------
+  setPresent(present);
+  render();
+
+  // Everything a test needs, through one accessor, so a probe and the drawing
+  // never read two different answers.
+  window.PAIRWISE_TEST = {
+    axis: AXIS,
+    state: function () { return { c: { "12": c["12"], "13": c["13"], "23": c["23"] }, names: names.slice() }; },
+    solve: solve,
+    displayPercents: displayPercents,
+    posOf: posOf,
+    entry: entry,
+    isCycle: isCycle,
+    readNum: readNum,
+    readWord: readWord,
+    imageText: imageText,
+    drawImage: drawImage,
+    set: function (a, b, d) { c["12"] = a; c["13"] = b; c["23"] = d; render(); },
+    // The page's own arithmetic at a setting, without redrawing. The suite walks
+    // all 4,913 settings through this and reads the drawing back for a handful,
+    // which keeps an exhaustive check affordable without letting the two answers
+    // come from different code.
+    solveAt: function (a, b, d) {
+      var keep = { "12": c["12"], "13": c["13"], "23": c["23"] };
+      c["12"] = a; c["13"] = b; c["23"] = d;
+      var out = solve();
+      out.cycle = isCycle();
+      c["12"] = keep["12"]; c["13"] = keep["13"]; c["23"] = keep["23"];
+      return out;
+    }
+  };
+})();
+</script>
+</body>
+</html>

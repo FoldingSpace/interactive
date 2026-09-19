@@ -76,10 +76,12 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 
 ## Where things stand
 
-Four widgets, deployed and live:
+Five widgets, deployed and live:
 [spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/);
 [drawing the lines](https://foldingspace.github.io/interactive/maup/), on the modifiable
 areal unit problem, from GEOG 370's Lab 3;
+[three criteria, three weights](https://foldingspace.github.io/interactive/pairwise/), on
+turning comparisons in words into weights, from Lab 2;
 [least cost, whose cost?](https://foldingspace.github.io/interactive/least-cost/), on
 least-cost paths, from Lab 4; and
 [Vancouver, measured in minutes](https://foldingspace.github.io/interactive/relative-distance/),
@@ -88,7 +90,7 @@ has a file in `docs/widgets/` carrying its verified
 numbers, review record, open threads and a "picking this up again" section. **Read that
 before changing one** — the recorded values are the regression suite.
 
-None of the four carries a **For the classroom** panel yet — the requirement post-dates
+None of the first four carries a **For the classroom** panel yet — the requirement post-dates
 them. Each one needs its own grilling session with Luke before it is written; see
 `principles.md` section 16, and the note at the end of each widget's file.
 

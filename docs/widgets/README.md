@@ -10,6 +10,7 @@ choice is gone and only the choice is left.
 | [Drawing the lines: MAUP in Vancouver](https://foldingspace.github.io/interactive/maup/) | [maup.md](maup.md) | Live |
 | [Least cost, whose cost?](https://foldingspace.github.io/interactive/least-cost/) | [least-cost.md](least-cost.md) | Live |
 | [Vancouver, measured in minutes](https://foldingspace.github.io/interactive/relative-distance/) | [relative-distance.md](relative-distance.md) | Live |
+| [Three criteria, three weights](https://foldingspace.github.io/interactive/pairwise/) | [pairwise.md](pairwise.md) | Live |
 
 Anything that would be true of the next widget too goes in the shared documents, not here:
 how to draw a quantity in `../visual-forms.md`, how a widget is put together in
