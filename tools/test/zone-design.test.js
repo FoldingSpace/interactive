@@ -118,10 +118,11 @@ module.exports = function (t) {
     a.equal(T(w).zone().join(","), quiet, "hovering without pressing paints nothing");
   });
 
-  t("both maps paint, and they are one zoning drawn twice", function (a) {
+  t("all three maps paint, and they are one zoning drawn three times", function (a) {
     var w = open();
+    var zoneMap = w.doc.getElementById("m-zone");
     var incMap = w.doc.getElementById("m-inc"), ndMap = w.doc.getElementById("m-nd");
-    [incMap, ndMap].forEach(function (m) {
+    [zoneMap, incMap, ndMap].forEach(function (m) {
       a.ok((m.getAttribute("class") || "").indexOf("paintmap") >= 0,
         m.getAttribute("id") + " is a map you can paint on");
       a.equal(m.getAttribute("role"), "application", m.getAttribute("id") + " says so to a screen reader");
@@ -132,6 +133,19 @@ module.exports = function (t) {
       map.dispatchEvent(w.win.PointerEvent(type, { target: el, pointerId: 3, clientX: 0, clientY: 0, bubbles: true }));
       w.settle();
     }
+    // A drag on the zones panel, the leftmost one, moves the same areas as a drag
+    // anywhere else would.
+    var zonePaths = zoneMap.querySelectorAll("path[data-i]");
+    var z0 = T(w).zone();
+    var zwant = (z0[700] + 2) % 8;
+    w.doc.querySelectorAll("#paintbtns .opt")[zwant].click();
+    var zrun = [700, 701, 702, 703];
+    pe(zoneMap, "pointerdown", zonePaths[zrun[0]]);
+    zrun.slice(1).forEach(function (ix) { pe(zoneMap, "pointermove", zonePaths[ix]); });
+    pe(zoneMap, "pointerup", zonePaths[zrun[zrun.length - 1]]);
+    a.equal(zrun.filter(function (ix) { return T(w).zone()[ix] === zwant; }).length, zrun.length,
+      "a drag on the zones panel repaints every area it crossed");
+
     var ndPaths = ndMap.querySelectorAll("path[data-i]");
     var before = T(w).zone();
     var want = (before[300] + 5) % 8;
@@ -143,26 +157,67 @@ module.exports = function (t) {
     a.equal(run.filter(function (ix) { return T(w).zone()[ix] === want; }).length, run.length,
       "a drag on the greenness map repaints every area it crossed");
     // ...and the income map redraws with it, because there is one zoning.
-    var incPaths = incMap.querySelectorAll("path[data-i]");
-    var fills = {};
-    run.forEach(function (ix) { fills[incPaths[ix].getAttribute("fill")] = 1; });
-    a.equal(Object.keys(fills).length, 1, "and the income map draws them all as one zone now");
+    [incMap, zoneMap].forEach(function (m) {
+      var paths = m.querySelectorAll("path[data-i]");
+      var fills = {};
+      run.forEach(function (ix) { fills[paths[ix].getAttribute("fill")] = 1; });
+      a.equal(Object.keys(fills).length, 1,
+        m.getAttribute("id") + " draws them all as one zone now");
+    });
   });
 
-  t("the zone lines and numbers are the same on both maps", function (a) {
+  t("the zones panel shows membership and nothing else", function (a) {
     var w = open();
-    var inc = w.doc.getElementById("m-inc"), nd = w.doc.getElementById("m-nd");
-    a.equal(nd.querySelector(".zline").getAttribute("d"), inc.querySelector(".zline").getAttribute("d"),
-      "the zone boundaries are drawn identically on both");
-    a.equal(nd.querySelector(".rim").getAttribute("d"), inc.querySelector(".rim").getAttribute("d"),
-      "and so is the study-area edge");
+    var zone = w.doc.getElementById("m-zone").querySelectorAll("path[data-i]");
+    var inc = w.doc.getElementById("m-inc").querySelectorAll("path[data-i]");
+    // Every area in a zone is one colour on the zones map, whatever is in it, and there are
+    // exactly as many colours as there are zones.
+    var byZone = {}, seen = {}, i;
+    for (i = 0; i < T(w).n; i++) {
+      var z = T(w).zone()[i], f = zone[i].getAttribute("fill");
+      if (byZone[z] === undefined) byZone[z] = f;
+      else a.equal(f, byZone[z], "one colour per zone on the zones map");
+      seen[f] = 1;
+    }
+    a.equal(Object.keys(seen).length, T(w).k(), "as many colours as zones");
+    // ...and it is not the income choropleth wearing a different hat.
+    var same = 0;
+    for (i = 0; i < T(w).n; i++) if (zone[i].getAttribute("fill") === inc[i].getAttribute("fill")) same++;
+    a.equal(same, 0, "and it is not the same picture as the income map");
+    // The palette sits in the same panel as the map it paints.
+    var pal = w.doc.getElementById("paintbtns");
+    a.ok(pal.closest(".pane"), "the palette is inside a panel");
+    a.equal(pal.closest(".pane").querySelector("svg").getAttribute("id"), "m-zone",
+      "and it is the zones panel");
+  });
+
+  t("the panels run zones, income, greenness, regression", function (a) {
+    var w = open();
+    var panes = w.doc.querySelector(".panels").querySelectorAll(".pane");
+    a.equal(panes.length, 4, "four panels");
+    var ids = panes.map(function (p) {
+      var svg = p.querySelector("svg");
+      return svg ? svg.getAttribute("id") : "none";
+    });
+    a.equal(ids.join(","), "m-zone,m-inc,m-nd,plot", "in that order, left to right");
+  });
+
+  t("the zone lines and numbers are the same on all three maps", function (a) {
+    var w = open();
+    var maps = ["m-zone", "m-inc", "m-nd"].map(function (id) { return w.doc.getElementById(id); });
     function nums(svg) {
       return svg.querySelectorAll("text").map(function (t) {
         return t.textContent + "@" + t.getAttribute("x") + "," + t.getAttribute("y");
       }).join(" ");
     }
-    a.ok(nums(inc).length > 0, "the zones are numbered");
-    a.equal(nums(nd), nums(inc), "identically on both maps, in the same places");
+    a.ok(nums(maps[0]).length > 0, "the zones are numbered");
+    maps.slice(1).forEach(function (m) {
+      a.equal(m.querySelector(".zline").getAttribute("d"), maps[0].querySelector(".zline").getAttribute("d"),
+        m.getAttribute("id") + " draws the same zone boundaries");
+      a.equal(m.querySelector(".rim").getAttribute("d"), maps[0].querySelector(".rim").getAttribute("d"),
+        m.getAttribute("id") + " draws the same study-area edge");
+      a.equal(nums(m), nums(maps[0]), m.getAttribute("id") + " numbers them in the same places");
+    });
   });
 
   t("a map you paint on refuses the browser's own touch gestures, and leaves room to scroll", function (a) {

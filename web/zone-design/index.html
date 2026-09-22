@@ -65,8 +65,12 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 
 .panels { display: grid; gap: calc(0.7rem * var(--ui)); grid-template-columns: 1fr; }
 @media (min-width: 60rem) {
-  .panels { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+  .panels { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; }
 }
+/* The palette sits under the map it paints, so choosing a colour and using it are one
+   movement rather than two halves of the page. */
+.palette { margin-top: calc(0.2rem * var(--ui)); }
+.palette .sharelab { margin-top: 0; }
 .pane { display: flex; flex-direction: column; gap: calc(0.3rem * var(--ui)); min-width: 0; }
 .ptitle { font-size: calc(0.92rem * var(--ui)); font-weight: 650; line-height: 1.2; }
 /* The fitted line, written out, at the size of a panel title. Only the slope and r are
@@ -224,6 +228,18 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     <div class="panels">
 
       <div class="pane">
+        <div class="ptitle" id="t-zone">Your zones</div>
+        <svg class="map paintmap" id="m-zone" viewBox="0 0 100 100" role="application" tabindex="0"
+             aria-labelledby="t-zone" aria-describedby="maphelp mapkeys"></svg>
+        <div class="palette">
+          <span class="sharelab" id="palettelab">Paint into zone</span>
+          <div class="row" id="paintbtns" role="group" aria-labelledby="palettelab"></div>
+        </div>
+        <p class="phint">Colour only: which areas are in which zone, and nothing about what
+           is in them.</p>
+      </div>
+
+      <div class="pane">
         <div class="ptitle" id="t-inc">Income, by your zones</div>
         <svg class="map paintmap" id="m-inc" viewBox="0 0 100 100" role="application" tabindex="0"
              aria-labelledby="t-inc" aria-describedby="maphelp mapkeys"></svg>
@@ -343,11 +359,10 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
       </fieldset>
 
       <fieldset id="fs-paint">
-        <legend>Paint into zone
+        <legend>Your zoning
           <button class="info" data-info="info-paint" aria-expanded="false"
                   aria-controls="info-paint" title="How does painting work?">i</button>
         </legend>
-        <div class="row" id="paintbtns" role="group" aria-label="Which zone to paint into"></div>
         <p class="note" id="paintnote">—</p>
         <label class="sharelab" for="entryname">Call this one</label>
         <input type="text" id="entryname" maxlength="24" autocomplete="off"
@@ -870,6 +885,7 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
   readFragment(location.hash);
 
   // ------------------------------------------------------------------- drawing
+  var zoneMap = document.getElementById("m-zone");
   var incMap = document.getElementById("m-inc");
   var ndMap = document.getElementById("m-nd");
   var plot = document.getElementById("plot");
@@ -926,8 +942,13 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     svg.appendChild(frag);
     return { paths: paths, lines: lines, labels: labels };
   }
+  var ZONEV = buildMap(zoneMap, "zone");
   var INCV = buildMap(incMap, "inc");
   var NDV = buildMap(ndMap, "nd");
+  // Three maps of one zoning. Everything that is a property of the zoning rather than of
+  // what is in it — the boundaries, the numbers, the study-area edge, the keyboard cursor —
+  // is drawn identically on all three, so any one of them reads as the zoning on its own.
+  var VIEWS = [ZONEV, INCV, NDV];
 
   function zoneOutline(zone) {
     var d = "", e, i;
@@ -978,20 +999,24 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     }
     for (i = 0; i < N; i++) {
       z = ZONE[i];
+      // The zones map says which zone, and nothing else. It is the only one of the three
+      // that is never a choropleth, so a reader can see the zoning without a variable in
+      // the way. Its fill is the palette colour, paired with the number printed on it.
+      ZONEV.paths[i].setAttribute("fill", canPaint() ? ZHUE[z % 8] : "var(--panel)");
+      ZONEV.paths[i].setAttribute("fill-opacity", canPaint() ? "0.55" : "1");
       INCV.paths[i].setAttribute("fill", have[z] ? INC_RAMP[classOf(incOf[z], INC_BR)] : "var(--nodata)");
       NDV.paths[i].setAttribute("fill", have[z] ? ND_RAMP[classOf(ndOf[z], ND_BR)] : "var(--nodata)");
     }
     var d = zoneOutline(ZONE);
-    INCV.lines.setAttribute("d", d);
-    NDV.lines.setAttribute("d", d);
+    VIEWS.forEach(function (v) { v.lines.setAttribute("d", d); });
 
     // Zone numbers, only where there are few enough zones for a number to be readable.
-    INCV.labels.textContent = ""; NDV.labels.textContent = "";
+    VIEWS.forEach(function (v) { v.labels.textContent = ""; });
     if (K <= 30) {
       var cs = zoneCentres(ZONE, K);
       for (z = 0; z < K; z++) {
         if (!cs[z]) continue;
-        [INCV.labels, NDV.labels].forEach(function (host) {
+        VIEWS.map(function (v) { return v.labels; }).forEach(function (host) {
           var t = document.createElementNS(SVGNS, "text");
           t.setAttribute("x", String(Math.round(cs[z][0])));
           t.setAttribute("y", String(Math.round(H - cs[z][1])));
@@ -1007,8 +1032,9 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
       }
     }
     var curD = cursor >= 0 ? PATHD[cursor] : "";
-    document.getElementById("inc-cursor").setAttribute("d", curD);
-    document.getElementById("nd-cursor").setAttribute("d", curD);
+    ["zone", "inc", "nd"].forEach(function (k) {
+      document.getElementById(k + "-cursor").setAttribute("d", curD);
+    });
 
     // ---- the scatter ------------------------------------------------------
     drawPlot(st);
@@ -1230,7 +1256,7 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
   }
   // Both maps, one handler set. They are one zoning drawn twice, so a stroke on either
   // moves the same areas and both redraw together.
-  var PAINTABLE = [incMap, ndMap];
+  var PAINTABLE = [zoneMap, incMap, ndMap];
   PAINTABLE.forEach(function (map) {
     map.addEventListener("pointerdown", function (e) {
       if (!canPaint()) return;

@@ -9,13 +9,13 @@ boundaries, and there is no boundary in the data.
 
 ## What it is
 
-1,241 dissemination areas in and just beyond the City of Vancouver, each with the median
-household income published for it and the mean summer greenness measured over it. Three
-panels: a map of income by the current zones, the same zones by greenness, and a scatter of
-one dot per zone with the fitted line, its slope and R<sup>2</sup> printed live at the head
-of it. Eight
-zones, painted by hand, against four zonings drawn by stated rules and against the published
-dissemination areas and census tracts.
+1,342 dissemination areas in and just beyond the City of Vancouver, each with the median
+household income published for it and the mean summer greenness measured over it. Four
+panels, left to right: the zoning on its own, a map of income by those zones, the same zones
+by greenness, and a scatter of one dot per zone with the fitted line, its slope and
+R<sup>2</sup> printed live at the head of it. They stack in that order on a narrow screen.
+Eight zones, painted by hand, against four zonings drawn by stated rules and against the
+published dissemination areas and census tracts.
 
 It is **a separate widget from `maup`**, decided by Luke on 21 September 2026. `maup` is
 about police-reported incidents and redraws its zones at random; this one has no crime data
@@ -360,11 +360,17 @@ in so many words is open.
 `least-cost`. This page draws Vancouver, cuts it up and prices it, and says nothing on screen
 about territory. Luke's call, not made.
 
-**Both choropleths are painted on.** They are one zoning drawn twice, so a stroke on either
-moves the same areas and both redraw with the regression. The zone boundaries, the zone
-numbers, the study-area edge and the keyboard cursor are drawn identically on both, so either
-panel reads as the zoning on its own. A reader reaching for the greenness map is not making a
-mistake, and before this change nothing happened when they did.
+**Three maps, one zoning, all three painted on.** A stroke on any of them moves the same
+areas and all four panels redraw. The zone boundaries, the zone numbers, the study-area edge
+and the keyboard cursor are drawn identically on all three, so any one of them reads as the
+zoning on its own.
+
+**The leftmost panel is the zoning and nothing else**: each area filled with its zone's
+palette colour, no variable in the way. The two choropleths answer "what is in these zones";
+this one answers "what are the zones", which is the question somebody painting is actually
+holding. The palette sits under it, so choosing a colour and using it are one movement rather
+than two halves of the page. The fill is paired with the zone number printed on it, and drawn
+at 0.55 opacity so the area hairlines and the water stay visible through it.
 
 **Painting is one code path for mouse, pen and finger.** `pointerdown` captures the pointer,
 `pointermove` finds the area by hit-testing the page rather than by reading the event target
