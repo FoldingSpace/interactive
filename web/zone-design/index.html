@@ -1,0 +1,1502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zone design: you help draw the boundaries</title>
+<style>
+:root {
+  --ui: 1;
+  --ink: #16181d;
+  --ink-soft: #545a63;
+  --page: #ffffff;
+  --panel: #f2f3f5;
+  --edge: #848b95;
+  --focus: #0b57d0;
+  /* The hairlines between dissemination areas, and the heavier lines around zones.
+     Measured against the palest fill in either ramp, not against the page. */
+  /* Measured at 2.67:1 against the palest fill in the income ramp, which is below the 3:1
+     a graphical object needs, and it is this line that shows where a low-valued area ends.
+     Darkened to clear it. */
+  --da-line: #767d87;
+  --zone-line: #16181d;
+  --land: #eceef1;
+  --nodata: #d9dce0;
+  --water: #b7d2e6;
+  --cloud: #dfe3e8;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e9ecf1; --ink-soft: #a7aeb9; --page: #14161a;
+    --panel: #1e2128; --edge: #6e7682; --focus: #7cacff;
+    --da-line: #767d87; --zone-line: #f4f6f9;
+    --land: #23262c; --water: #1c3243; --cloud: #2b3038; --nodata: #3a3f47;
+  }
+}
+/* An author rule that sets display outranks the browser's rule behind [hidden], which has
+   caught three widgets in this repository. Declared once, globally. */
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: calc(1rem * var(--ui));
+  line-height: 1.45;
+}
+body[data-present="1"] { --ui: 1.15; }
+
+.wrap {
+  max-width: 82rem; margin: 0 auto;
+  padding: calc(1rem * var(--ui)) calc(0.9rem * var(--ui)) calc(2rem * var(--ui));
+  display: flex; flex-direction: column; gap: calc(0.85rem * var(--ui));
+}
+h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
+
+/* What is at stake stays in the reading flow at every size, presentation mode included.
+   principles.md section 13. */
+.stakes { margin: 0; max-width: 54em; }
+.stakes b { font-weight: 650; }
+
+.main { display: flex; flex-direction: column; gap: calc(0.85rem * var(--ui)); }
+
+.panels { display: grid; gap: calc(0.7rem * var(--ui)); grid-template-columns: 1fr; }
+@media (min-width: 60rem) {
+  .panels { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+}
+.pane { display: flex; flex-direction: column; gap: calc(0.3rem * var(--ui)); min-width: 0; }
+.ptitle { font-size: calc(0.92rem * var(--ui)); font-weight: 650; line-height: 1.2; }
+/* The fitted line, written out, at the size of a panel title. Only the slope and r are
+   bold: they are the two numbers a room is comparing. */
+.eqline { text-align: center; font-weight: 400; font-variant-numeric: tabular-nums; }
+.eqline b { font-weight: 700; }
+.phint { font-size: calc(0.85rem * var(--ui)); color: var(--ink-soft); margin: 0; }
+body[data-present="1"] .phint { display: none; }
+
+svg.map, svg.plot { width: 100%; height: auto; display: block; background: var(--page); }
+svg.map { touch-action: none; }
+svg.map:focus-visible, svg.plot:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
+/* Widths are in rendered pixels, not in map units: `non-scaling-stroke` takes them off the
+   viewBox entirely. The first draft asked for 6, which is a sixth of a millimetre on the
+   ground and six pixels on the screen, and 1,010 of those turned the city grey. */
+.da { stroke: var(--da-line); stroke-width: calc(0.4px * var(--ui)); vector-effect: non-scaling-stroke; }
+.zline { fill: none; stroke: var(--zone-line); stroke-width: calc(2px * var(--ui)); vector-effect: non-scaling-stroke;
+         stroke-linecap: round; }
+.rim { fill: none; stroke: var(--zone-line); stroke-width: calc(3px * var(--ui));
+       vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+/* Size and halo are set on the element, in map units, because a font-size in CSS pixels
+   inside a viewBox thousands of units wide renders about one pixel tall. */
+.znum { font-weight: 700; paint-order: stroke; }
+.cursor { fill: none; stroke: var(--focus); stroke-width: calc(3px * var(--ui)); vector-effect: non-scaling-stroke; }
+
+.legend { display: flex; align-items: center; gap: calc(0.25rem * var(--ui)); flex-wrap: wrap;
+          font-size: calc(0.78rem * var(--ui)); color: var(--ink-soft); }
+.legend .sw { width: calc(1.5rem * var(--ui)); height: calc(0.7rem * var(--ui)); border: 1px solid var(--edge); }
+
+.note { font-size: calc(0.82rem * var(--ui)); color: var(--ink-soft); margin: 0; }
+
+/* ---- readout ---- */
+.readout { display: grid; gap: calc(0.6rem * var(--ui)); grid-template-columns: 1fr; }
+@media (min-width: 46rem) { .readout { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.stat { background: var(--panel); border: 1px solid var(--edge);
+        border-radius: calc(0.5rem * var(--ui));
+        padding: calc(0.5rem * var(--ui)) calc(0.75rem * var(--ui)) calc(0.65rem * var(--ui)); }
+.stat.lead { border-width: calc(2px * var(--ui)); border-color: var(--ink); }
+.label { color: var(--ink-soft); font-size: calc(0.88rem * var(--ui)); }
+.big { font-size: calc(2.1rem * var(--ui)); font-weight: 650; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.stat.lead .big { font-size: calc(2.6rem * var(--ui)); }
+.sub { font-size: calc(0.85rem * var(--ui)); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+/* ---- controls ---- */
+.controls { display: flex; flex-direction: column; gap: calc(0.7rem * var(--ui)); }
+@media (min-width: 60rem) {
+  .controls { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+  .controls > fieldset { flex: 1 1 14rem; min-width: 0; }
+  .controls > .row { flex: 0 0 auto; align-self: center; }
+}
+fieldset { border: 1px solid var(--edge); border-radius: calc(0.5rem * var(--ui)); margin: 0;
+           padding: calc(0.45rem * var(--ui)) calc(0.7rem * var(--ui)) calc(0.7rem * var(--ui)); }
+legend { padding: 0 calc(0.3rem * var(--ui)); color: var(--ink-soft); font-size: calc(0.88rem * var(--ui)); }
+.row { display: flex; flex-wrap: wrap; gap: calc(0.35rem * var(--ui)); }
+.act, .opt {
+  font: inherit; font-size: calc(0.92rem * var(--ui));
+  min-height: calc(2.5rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.6rem * var(--ui));
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: calc(0.4rem * var(--ui));
+  background: var(--page); color: var(--ink); cursor: pointer; text-align: left;
+}
+.opt[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+/* Paint chips: a number, and a colour that matches the zone's outline on the map. The
+   number is the cue that survives greyscale and colour blindness; the colour is the
+   second one. */
+.chip { display: inline-flex; align-items: center; gap: calc(0.3rem * var(--ui)); }
+.chip .dot { width: calc(0.85rem * var(--ui)); height: calc(0.85rem * var(--ui));
+             border-radius: 50%; border: 1px solid var(--ink); flex: 0 0 auto; }
+/* A narrow desktop window is not a phone, so this asks about the pointer, and it comes
+   after the sizes above because an identical-specificity rule later in the file wins. */
+@media (pointer: coarse) { .act, .opt { min-height: 44px; } }
+.act:focus-visible, .opt:focus-visible, .info:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
+
+.info {
+  font: inherit; font-size: calc(0.8rem * var(--ui)); font-style: italic; font-weight: 700;
+  line-height: 1;
+  width: calc(1.55rem * var(--ui)); height: calc(1.55rem * var(--ui));
+  min-width: 24px; min-height: 24px;
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: 50%;
+  background: transparent; color: var(--ink-soft); cursor: pointer;
+}
+.info[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.help-panel {
+  background: var(--panel); border: 1px solid var(--edge);
+  border-radius: calc(0.5rem * var(--ui));
+  padding: calc(0.3rem * var(--ui)) calc(0.85rem * var(--ui)) calc(0.65rem * var(--ui));
+  font-size: calc(0.92rem * var(--ui)); margin-top: calc(0.45rem * var(--ui));
+}
+.help-panel p { margin: calc(0.55rem * var(--ui)) 0 0; }
+.refs b { color: var(--ink); font-weight: 600; }
+
+/* Every (i) hides on a projector except the classroom one, whose reader is the person at
+   the front in the moment before the room is asked to do something. section 16. */
+body[data-present="1"] .help-panel:not(.classroom) { display: none; }
+body[data-present="1"] .info:not(.classroom-btn) { display: none; }
+body[data-present="1"] .wrap { max-width: none; }
+body[data-present="1"] footer { display: none; }
+
+footer { color: var(--ink-soft); font-size: calc(0.85rem * var(--ui));
+         border-top: 1px solid var(--edge); padding-top: calc(0.6rem * var(--ui)); }
+footer a { color: inherit; }
+
+/* ---- the original data, one disclosure down ---- */
+.original { border-top: 1px solid var(--edge); padding-top: calc(0.7rem * var(--ui)); }
+.original > .act { font-weight: 600; }
+.original > .act[aria-expanded="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.origgrid { display: grid; gap: calc(0.8rem * var(--ui)); grid-template-columns: 1fr;
+            margin-top: calc(0.6rem * var(--ui)); }
+@media (min-width: 52rem) { .origgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rasterbox { position: relative; }
+.rasterbox img { width: 100%; height: auto; display: block; }
+.rasterbox .overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* Faint, because the picture is the point and the lines are the reference. */
+.overlay .da { fill: none; stroke: var(--ink); stroke-opacity: 0.35; }
+body[data-present="1"] .original { display: none; }
+
+.sharelab { display: block; font-size: calc(0.85rem * var(--ui)); color: var(--ink-soft);
+            margin-top: calc(0.4rem * var(--ui)); }
+input[type="text"] {
+  font: inherit; font-size: calc(0.95rem * var(--ui)); width: 100%;
+  min-height: calc(2.3rem * var(--ui));
+  padding: calc(0.25rem * var(--ui)) calc(0.45rem * var(--ui));
+  border: calc(2px * var(--ui)) solid var(--edge); border-radius: calc(0.4rem * var(--ui));
+  background: var(--page); color: var(--ink);
+}
+input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Zone design: you help draw the boundaries</h1>
+
+  <p class="stakes">These are the dissemination areas of the City of Vancouver and the
+     ground just beyond it, with what households here earn and how green that ground was on
+     one day last August. <b>We&rsquo;re looking at whether there&rsquo;s a relationship
+     between household income and greenery. But you help draw the boundaries we calculate
+     with.</b></p>
+
+  <div class="main">
+
+    <div class="panels">
+
+      <div class="pane">
+        <div class="ptitle" id="t-inc">Income, by your zones</div>
+        <svg class="map" id="m-inc" viewBox="0 0 100 100" role="application" tabindex="0"
+             aria-labelledby="t-inc" aria-describedby="maphelp mapkeys"></svg>
+        <div class="legend" id="leg-inc"></div>
+        <p class="phint" id="maphelp">Pick a zone colour in the palette, then click or drag
+           across areas to move them into it.</p>
+        <p class="visually-hidden" id="mapkeys">Keyboard: the arrow keys move between areas,
+           and the number keys 1 to 8 move the area under the cursor into that zone.</p>
+        <p class="note" id="rulenote">—</p>
+      </div>
+
+      <div class="pane">
+        <div class="ptitle" id="t-nd">Greenness, by the same zones</div>
+        <svg class="map" id="m-nd" viewBox="0 0 100 100" role="img" aria-labelledby="t-nd"></svg>
+        <div class="legend" id="leg-nd"></div>
+        <p class="phint">This map follows the zones you draw. It has nothing of its own to
+           press.</p>
+      </div>
+
+      <div class="pane">
+        <div class="ptitle eqline" id="t-sc">—</div>
+        <svg class="plot" id="plot" viewBox="0 0 320 300" role="img" aria-labelledby="t-sc"></svg>
+        <p class="note" id="fitline">—</p>
+        <p class="phint">The grey field behind is the areas themselves.</p>
+      </div>
+
+    </div>
+
+    <div class="readout">
+      <div class="stat" id="c-r">
+        <div class="label">Correlation across your zones
+          <button class="info" data-info="info-r" aria-expanded="false" aria-controls="info-r"
+                  title="What does this number do?">i</button>
+        </div>
+        <div class="big" id="r">—</div>
+        <div class="sub" id="rbase">—</div>
+        <div class="help-panel" id="info-r" hidden>
+          <p>r runs from &minus;1 to +1. It says how closely the dots sit to a straight
+             line, and which way that line leans. Nothing in it says one thing causes the
+             other.</p>
+          <p>Grouping areas together usually pushes r towards 1, because averaging removes
+             the differences inside each group and leaves the differences between groups.
+             Here it is 0.411 across the 1,310 areas and 0.430 across the 189 published
+             census tracts, which is the expected direction.</p>
+          <p>Usually is not always. The four eight-zone rules on offer give 0.79, 0.55,
+             0.02 and &minus;0.31. Two of them are <em>below</em> the areas themselves and
+             one turns the line over. Same ground, same records, same number of zones, and
+             the only thing that changed is where the lines go. <b>You can do better than
+             all four.</b></p>
+          <p>Openshaw and Taylor took the 99 counties of Iowa and searched for groupings
+             into 6 regions. They could drive the correlation between two variables
+             anywhere from &minus;0.99 to +0.99 by choosing where the lines went. They
+             called it applied gerrymandering.</p>
+          <p class="refs"><b>For more, see:</b> Openshaw, S. and Taylor, P. J. (1979) A
+             million or so correlation coefficients: three experiments on the modifiable
+             areal unit problem. In N. Wrigley (ed.) <i>Statistical Applications in the
+             Spatial Sciences</i>. London: Pion, 127&ndash;144. &middot; Fotheringham, A. S.
+             and Wong, D. W. S. (1991) The modifiable areal unit problem in multivariate
+             statistical analysis. <i>Environment and Planning A</i> 23(7),
+             1025&ndash;1044.</p>
+        </div>
+      </div>
+
+      <div class="stat" id="c-slope">
+        <div class="label">The line&rsquo;s slope
+          <button class="info" data-info="info-slope" aria-expanded="false" aria-controls="info-slope"
+                  title="What is the slope in?">i</button>
+        </div>
+        <div class="big" id="slope">—</div>
+        <div class="sub" id="slopebase">—</div>
+        <div class="help-panel" id="info-slope" hidden>
+          <p>How much greenness the line adds for every extra $10,000 of median household
+             income. It is a property of the zones you drew, not of any household.</p>
+          <p>Watch it and r separately. They are not the same thing and they do not move
+             together. Across the 1,310 areas themselves the slope is 0.018 per $10,000.
+             Two of the four rules give about 0.08, four and a half times that; one gives
+             0.003, near nothing; one gives &minus;0.009, the other way.</p>
+          <p><strong>Nothing here is about a person.</strong> Reading a line between areas
+             as a statement about the people in them is the ecological fallacy.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="controls">
+
+
+      <fieldset>
+        <legend>Start from
+          <button class="info" data-info="info-zoning" aria-expanded="false"
+                  aria-controls="info-zoning" title="Where do these come from?">i</button>
+        </legend>
+        <div class="row" id="zonebtns" role="group" aria-label="Which zoning to start from"></div>
+        <div class="help-panel" id="info-zoning" hidden>
+          <p>The four eight-zone starts are each drawn by a rule somebody could state before
+             knowing what it would do: same number of households in each, compact lumps,
+             whole census tracts grouped together, the city&rsquo;s own neighbourhoods
+             grouped together. Each is named for its rule and for nothing else, and its r
+             and its slope print beside the maps once you choose it.</p>
+          <p>They are not the extremes. Forty zonings were drawn from stated rules, ten for
+             each of four things a preset is here to show, and the one kept from each ten is
+             the best of its own ten rather than the best of the forty. There is room to beat
+             all four. What the four are for is the plain fact that they disagree.</p>
+          <p><strong>Dissemination areas</strong> and <strong>census tracts</strong> are
+             real, published by Statistics Canada, and cannot be painted over. Somebody drew
+             each of them, for a purpose, and none of the purposes was this question. A
+             dissemination area is built to hold 400 to 700 people and to be compact; a tract
+             is built from whole dissemination areas.</p>
+          <p>Painting changes eight zones, not a thousand. Eight is what two people can
+             redraw in five minutes, and holding the count still is what makes the
+             comparison about where the lines are.</p>
+        </div>
+      </fieldset>
+
+      <fieldset id="fs-paint">
+        <legend>Paint into zone
+          <button class="info" data-info="info-paint" aria-expanded="false"
+                  aria-controls="info-paint" title="How does painting work?">i</button>
+        </legend>
+        <div class="row" id="paintbtns" role="group" aria-label="Which zone to paint into"></div>
+        <p class="note" id="paintnote">—</p>
+        <label class="sharelab" for="entryname">Call this one</label>
+        <input type="text" id="entryname" maxlength="24" autocomplete="off"
+               placeholder="a name for your zoning">
+        <div class="row" style="margin-top: calc(0.35rem * var(--ui))">
+          <button class="act" id="copylink">Copy link</button>
+          <button class="act" id="showimport" aria-expanded="false" aria-controls="importbox">Paste a link</button>
+        </div>
+        <div id="importbox" hidden>
+          <label class="sharelab" for="importfield">Paste a link or the part after the #</label>
+          <input type="text" id="importfield" autocomplete="off">
+          <div class="row" style="margin-top: calc(0.35rem * var(--ui))">
+            <button class="act" id="doimport">Open it</button>
+          </div>
+        </div>
+        <p class="note" id="sharenote">The link carries your zoning, its name and the way
+           income is averaged. Anyone who opens it sees exactly this.</p>
+        <div class="help-panel" id="info-paint" hidden>
+          <p>Choose a zone colour, then click or drag across areas on the income map to move
+             them into it. Every number on the page updates as you go.</p>
+          <p>With a keyboard: put focus on the income map, move between areas with the arrow
+             keys, and press 1 to 8 to move the area under the cursor into that zone.</p>
+          <p>A zone can end up in two pieces. The widget lets it, and says so under the map,
+             because whether a zone has to be in one piece is a rule somebody chose rather
+             than something the data knows. Census units are built connected; electoral
+             districts are supposed to be; the searched zonings here were kept connected on
+             purpose so that they could not win by cheating in a way the real thing cannot.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Income for a zone is
+          <button class="info" data-info="info-rule" aria-expanded="false"
+                  aria-controls="info-rule" title="Why is there a choice here?">i</button>
+        </legend>
+        <div class="row" id="rulebtns" role="group" aria-label="How income is aggregated"></div>
+        <div class="help-panel" id="info-rule" hidden>
+          <p>Greenness has no choice to make. It is a value per square metre, so a zone's
+             greenness is the average over its pixels, and it comes out the same however the
+             pixels are grouped. Nothing is lost.</p>
+          <p>Income does have a choice, and there is no right answer to it. What Statistics
+             Canada publishes for an area is a <em>median</em>: the middle household. Medians
+             do not add up. The middle household of two areas put together is not the average
+             of the two middles, and it cannot be worked out from them at all.</p>
+          <p>So a zone's income here is one of three averages of the areas' medians: a plain
+             one, one weighted by households, or one weighted by people. They disagree, the
+             line moves when you switch, and none of the three is the figure Statistics Canada
+             would publish for the merged zone.</p>
+          <p>That is worth more than it looks. A number can move because you redrew the
+             boundaries and it can move because you changed how you added it up, and on this
+             page you can see both happen to the same map. On the <b>reversed</b> zoning it
+             is not a small move: weighted by households r is &minus;0.63, and on a plain
+             average of the same eight zones it is +0.80. The sign of the finding is decided
+             by a choice nobody usually writes down.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>For the classroom
+          <button class="info classroom-btn" data-info="info-classroom" aria-expanded="false"
+                  aria-controls="info-classroom" title="Five minutes, in pairs">i</button>
+        </legend>
+        <div class="help-panel classroom" id="info-classroom" hidden>
+          <p><b>On your own, one minute.</b> Across the 1,310 areas, the correlation
+             between income and greenness is <b>0.41</b>. You are about to group those areas
+             into eight zones. Write down one number: what will the correlation be then?
+             Write it before anybody presses anything.</p>
+          <p><b>In pairs, two minutes.</b> Compare your two numbers and say why they
+             differ. Then press each of the four starting rules and read the correlation off
+             each. Now paint: one of you draws for the strongest positive, the other for the
+             strongest negative. Type a name, press <b>Copy link</b>, and hand the link on
+             with your two numbers.</p>
+          <p><b>Back to the room, two minutes.</b> Ask for the highest and the lowest the
+             room reached, and open those two links at the front. Most people write a number
+             above 0.41, because grouping is supposed to strengthen a correlation, and two of
+             the four rules are below it. Some write a number close to 0.41, on the view that
+             a zone is a sample of the city. Almost nobody writes a negative number, and one
+             of the four rules is negative. Then ask what the prizes cannot settle: which of
+             these zonings would anybody put in a report, and how would a reader of that
+             report ever tell?</p>
+        </div>
+      </fieldset>
+
+      <div class="row">
+        <button class="act" id="reset">Reset</button>
+        <button class="act" id="present" aria-pressed="false">Big screen</button>
+      </div>
+    </div>
+
+  </div>
+
+  <section class="original">
+    <button class="act" id="origbtn" aria-expanded="false" aria-controls="origpanel">
+      The original data</button>
+    <div id="origpanel" hidden>
+      <p class="note">These are the areas on their own, before any of the grouping.
+         Nothing here can be painted.</p>
+      <div class="origgrid">
+        <div class="pane">
+          <div class="ptitle" id="t-oinc">Median household income, area by area</div>
+          <svg class="map" id="m-oinc" viewBox="0 0 100 100" role="img"
+               aria-labelledby="t-oinc"></svg>
+          <div class="legend" id="leg-oinc"></div>
+        </div>
+        <div class="pane">
+          <div class="ptitle" id="t-ond">Greenness, as the satellite recorded it</div>
+          <div class="rasterbox">
+            <img id="ndviimg" alt="The greenness of the City of Vancouver on 7 August 2026,
+                 drawn in the same colours as the greenness map. Water is pale blue.">
+            <svg class="overlay" id="m-ond" viewBox="0 0 100 100" aria-hidden="true"></svg>
+          </div>
+          <div class="legend" id="leg-ond"></div>
+          <p class="note">The areas are drawn over it, so you can see what each average was
+             taken from.</p>
+        </div>
+      </div>
+      <p class="note" id="origsrc">&mdash;</p>
+    </div>
+  </section>
+
+  <p class="note" id="selfnote">This page turns people into areas and areas into dots, which
+     is the thing it is asking you to be careful about. It never names an area, and it will
+     not tell you where anybody lives.</p>
+
+  <footer>
+    <p>Boundaries, households, population and median household income: adapted from
+       Statistics Canada, 2021 Census boundary files and Census Profile, 2021. This does not
+       constitute an endorsement by Statistics Canada of this product. Local area boundaries:
+       City of Vancouver, under the Open Government Licence &ndash; Vancouver. Greenness:
+       contains modified Copernicus Sentinel data 2026, scene <span id="scene">—</span>.</p>
+    <p>Median household income is published per area and is not published for any household.
+       Greenness is a measurement of ground, not of gardens or of who tends them.</p>
+    <p>Made by Luke Bergmann with Claude.
+       <a href="https://github.com/FoldingSpace/interactive">Source</a>.</p>
+  </footer>
+
+  <p class="visually-hidden" id="live" aria-live="polite"></p>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var D = ZONES;
+  var N = D.n;
+  var SVGNS = "http://www.w3.org/2000/svg";
+
+  // ------------------------------------------------------------------ geometry
+  // Zigzag varint deltas, base64, quantised to a 5 m grid before encoding so that
+  // touching areas share exact vertices and adjacency falls out of the geometry.
+  function decodeGeom() {
+    var bin = atob(D.geom), len = bin.length, bytes = new Uint8Array(len), i;
+    for (i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+    var p = 0;
+    function next() {
+      var shift = 0, result = 0, b;
+      do { b = bytes[p++]; result |= (b & 0x7F) << shift; shift += 7; } while (b & 0x80);
+      return (result >>> 1) ^ -(result & 1);
+    }
+    var x = 0, y = 0, feats = [], f, r, k, lens, rings, pts;
+    for (f = 0; f < N; f++) {
+      lens = D.rings[f]; rings = [];
+      for (r = 0; r < lens.length; r++) {
+        pts = new Int32Array(lens[r] * 2);
+        for (k = 0; k < lens[r]; k++) {
+          x += next(); y += next();
+          pts[k * 2] = x; pts[k * 2 + 1] = y;
+        }
+        rings.push(pts);
+      }
+      feats.push(rings);
+    }
+    return feats;
+  }
+  var GEOM = decodeGeom();
+  var W = D.size[0], H = D.size[1];
+
+  // The water, in the same frame. Census areas are published out over English Bay, False
+  // Creek, Burrard Inlet and both arms of the Fraser; they are cut back to land in the
+  // extraction, and this is what was cut away. Drawn behind them so the coast reads.
+  var WATERD = (function () {
+    var bin = atob(D.water), bytes = new Uint8Array(bin.length), i;
+    for (i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    var p = 0;
+    function next() {
+      var shift = 0, result = 0, b;
+      do { b = bytes[p++]; result |= (b & 0x7F) << shift; shift += 7; } while (b & 0x80);
+      return (result >>> 1) ^ -(result & 1);
+    }
+    var x = 0, y = 0, d = "", r, k;
+    for (r = 0; r < D.wrings.length; r++) {
+      for (k = 0; k < D.wrings[r]; k++) {
+        x += next(); y += next();
+        d += (k ? "L" : "M") + x + " " + (H - y);
+      }
+      d += "Z";
+    }
+    return d;
+  })();
+
+  function pathOf(rings) {
+    var d = "", r, k, pts;
+    for (r = 0; r < rings.length; r++) {
+      pts = rings[r];
+      for (k = 0; k < pts.length; k += 2) d += (k ? "L" : "M") + pts[k] + " " + (H - pts[k + 1]);
+      d += "Z";
+    }
+    return d;
+  }
+  var PATHD = GEOM.map(pathOf);
+
+  // Where the study area ends. Built from the edges no second area shares, which is the
+  // outside of the whole set by construction.
+  var RIMD = "";
+
+  // Every edge and its owners. An edge with two owners in different zones is a zone
+  // boundary; an edge with one owner is the edge of the city.
+  var EDGES = (function () {
+    var map = new Map(), f, r, k, pts, key, cur;
+    for (f = 0; f < N; f++) {
+      for (r = 0; r < GEOM[f].length; r++) {
+        pts = GEOM[f][r];
+        for (k = 0; k < pts.length; k += 2) {
+          var k2 = (k + 2) % pts.length;
+          var a = pts[k] * 1000000 + pts[k + 1];
+          var b = pts[k2] * 1000000 + pts[k2 + 1];
+          key = a < b ? a + ":" + b : b + ":" + a;
+          cur = map.get(key);
+          if (cur) { if (cur.o2 < 0 && cur.o1 !== f) cur.o2 = f; }
+          else map.set(key, { x1: pts[k], y1: pts[k + 1], x2: pts[k2], y2: pts[k2 + 1], o1: f, o2: -1 });
+        }
+      }
+    }
+    return Array.from(map.values());
+  })();
+  RIMD = EDGES.filter(function (e) { return e.o2 < 0; }).map(function (e) {
+    return "M" + e.x1 + " " + (H - e.y1) + "L" + e.x2 + " " + (H - e.y2);
+  }).join("");
+
+  // Area centres, from the largest ring by the usual polygon centroid formula. Used for
+  // the zone number labels and for arrow-key movement between areas.
+  var CENT = (function () {
+    var c = new Float64Array(N * 2), f, r, k, pts, area, cx, cy, x1, y1, x2, y2, cr, best;
+    for (f = 0; f < N; f++) {
+      best = null;
+      for (r = 0; r < GEOM[f].length; r++) {
+        pts = GEOM[f][r]; area = 0; cx = 0; cy = 0;
+        for (k = 0; k < pts.length; k += 2) {
+          x1 = pts[k]; y1 = pts[k + 1];
+          x2 = pts[(k + 2) % pts.length]; y2 = pts[(k + 3) % pts.length];
+          cr = x1 * y2 - x2 * y1;
+          area += cr; cx += (x1 + x2) * cr; cy += (y1 + y2) * cr;
+        }
+        area *= 0.5;
+        if (area !== 0 && (!best || Math.abs(area) > best[2]))
+          best = [cx / (6 * area), cy / (6 * area), Math.abs(area)];
+      }
+      if (best) { c[f * 2] = best[0]; c[f * 2 + 1] = best[1]; }
+    }
+    return c;
+  })();
+
+  // ---------------------------------------------------------------- attributes
+  var INC = D.inc, HH = D.hh, POP = D.pop, ND = D.ndvi, PX = D.ndvipx, NBR = D.nbr;
+  // An area counts only where both figures exist. Statistics Canada suppresses income
+  // where too few people live for it to be released, and a few areas are too small or too
+  // built over for the satellite to have measured any usable ground.
+  var OK = new Uint8Array(N);
+  for (var i0 = 0; i0 < N; i0++)
+    OK[i0] = (INC[i0] !== null && ND[i0] !== null && HH[i0] !== null && HH[i0] > 0) ? 1 : 0;
+  var NOK = 0; for (i0 = 0; i0 < N; i0++) NOK += OK[i0];
+
+  // ------------------------------------------------------------------- zonings
+  var KPAINT = 8;
+  var GROUND_PIECES = D.zonings.ground_pieces || 1;
+  function zonesFlat() { var z = new Int32Array(N), i; for (i = 0; i < N; i++) z[i] = i; return { zone: z, k: N }; }
+  function zonesFrom(list, k) { return { zone: Int32Array.from(list), k: k }; }
+  function preset(id) {
+    if (id === "da") return zonesFlat();
+    if (id === "ct") return zonesFrom(D.ct, D.nct);
+    if (id === "la") return zonesFrom(D.la, D.laname.length);   // kept for the record
+    var z = D.zonings[id];
+    return zonesFrom(z.zone, z.k);
+  }
+  // Four zonings of eight, each drawn by a rule somebody could state before knowing what
+  // it would do to the line, and named for the rule and nothing else. Then the two
+  // published zonings of the city, which cannot be painted over.
+  var RULED = Object.keys(D.zonings).filter(function (k) {
+    return D.zonings[k] && D.zonings[k].zone;
+  }).sort();
+  var ZONINGS = RULED.map(function (id) {
+    return { id: id, label: D.zonings[id].label, paint: true, ruled: true };
+  }).concat([
+    { id: "da", label: "Dissemination areas", paint: false },
+    { id: "ct", label: "Census tracts", paint: false }
+  ]);
+  // Not RULED[0]: that is the rule with the weakest correlation, and opening on it would
+  // assert that there is no relationship here before the reader has touched anything. A
+  // default is a claim (principles.md section 5), so the page opens on the middling one.
+  var OPENS_ON = (function () {
+    var by = RULED.slice().sort(function (a, b) { return D.zonings[a].r - D.zonings[b].r; });
+    return by[Math.floor(by.length / 2)];
+  })();
+
+  var RULES = [
+    { id: "hh", label: "weighted by households", w: function (i) { return HH[i] || 0; } },
+    { id: "pop", label: "weighted by people", w: function (i) { return POP[i] || 0; } },
+    { id: "plain", label: "a plain average", w: function () { return 1; } }
+  ];
+  function ruleOf(id) { for (var i = 0; i < RULES.length; i++) if (RULES[i].id === id) return RULES[i]; return RULES[0]; }
+
+  // ---------------------------------------------------------------- statistics
+  // Income for a zone is one of three averages of the areas' medians. Greenness is the
+  // mean over the zone's pixels, which is what an area-weighted mean of area means comes
+  // to, and it is the same number however the pixels are grouped.
+  function aggregate(zone, k, rule) {
+    var iw = new Float64Array(k), iv = new Float64Array(k),
+        gw = new Float64Array(k), gv = new Float64Array(k),
+        hh = new Float64Array(k), cnt = new Int32Array(k), i, z, w;
+    for (i = 0; i < N; i++) {
+      z = zone[i]; cnt[z]++;
+      if (!OK[i]) continue;
+      w = rule.w(i);
+      if (w > 0) { iw[z] += w; iv[z] += w * INC[i]; }
+      gw[z] += PX[i]; gv[z] += PX[i] * ND[i];
+      hh[z] += HH[i] || 0;
+    }
+    var xs = [], ys = [], ws = [], ids = [];
+    for (z = 0; z < k; z++) {
+      if (iw[z] > 0 && gw[z] > 0) {
+        xs.push(iv[z] / iw[z] / 1000);
+        ys.push(gv[z] / gw[z]);
+        ws.push(hh[z]);
+        ids.push(z);
+      }
+    }
+    return { x: xs, y: ys, hh: ws, id: ids, count: cnt };
+  }
+
+  function fit(xs, ys) {
+    var n = xs.length, i, mx = 0, my = 0, sxx = 0, syy = 0, sxy = 0;
+    if (n < 3) return { n: n, ok: false };
+    for (i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; }
+    mx /= n; my /= n;
+    for (i = 0; i < n; i++) {
+      sxx += (xs[i] - mx) * (xs[i] - mx);
+      syy += (ys[i] - my) * (ys[i] - my);
+      sxy += (xs[i] - mx) * (ys[i] - my);
+    }
+    if (sxx <= 0 || syy <= 0) return { n: n, ok: false };
+    var b = sxy / sxx;
+    return { n: n, ok: true, b: b, a: my - b * mx, r: sxy / Math.sqrt(sxx * syy), mx: mx, my: my };
+  }
+
+  // How many pieces the zones are actually in. A zone in two pieces is allowed, and the
+  // page says when there is one, because whether a zone must be connected is a rule
+  // somebody chose rather than something in the data.
+  function pieces(zone, k) {
+    var seen = new Uint8Array(N), out = 0, i, j, stack, c, kk;
+    for (i = 0; i < N; i++) {
+      if (seen[i]) continue;
+      out++; seen[i] = 1; stack = [i];
+      while (stack.length) {
+        c = stack.pop();
+        for (j = 0; j < NBR[c].length; j++) {
+          kk = NBR[c][j];
+          if (!seen[kk] && zone[kk] === zone[c]) { seen[kk] = 1; stack.push(kk); }
+        }
+      }
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------- colours
+  // ColorBrewer, both from the sets their authors mark safe for the commonest colour
+  // blindness. The class breaks are fixed across every zoning, so a re-zoning reads as a
+  // change in the data and never as a change in the palette.
+  var INC_RAMP = ["#f1eef6", "#d0d1e6", "#a6bddb", "#74a9cf", "#3690c0", "#0570b0", "#034e7b"];
+  var ND_RAMP = ["#ffffe5", "#f7fcb9", "#d9f0a3", "#addd8e", "#78c679", "#41ab5d", "#238443"];
+  // Eight hues for zone identity, from Okabe and Ito's set. Identity is carried by the
+  // number printed on the zone as well, so nothing here rests on hue alone.
+  // Okabe and Ito's set, with its two lightest members darkened: measured against the page
+  // they came out at 2.25:1 and 2.31:1, and the zone number is drawn in this colour.
+  var ZHUE = ["#A96F00", "#1E7FB8", "#009E73", "#CC79A7", "#0072B2", "#D55E00", "#6E757E", "#845EC2"];
+
+  function breaksOf(vals, n) {
+    var s = vals.slice().sort(function (a, b) { return a - b; }), out = [], i;
+    for (i = 1; i < n; i++) out.push(s[Math.floor(i * s.length / n)]);
+    return out;
+  }
+  function classOf(v, br) { var i = 0; while (i < br.length && v >= br[i]) i++; return i; }
+
+  var INC_VALS = [], ND_VALS = [];
+  for (i0 = 0; i0 < N; i0++) if (OK[i0]) { INC_VALS.push(INC[i0] / 1000); ND_VALS.push(ND[i0]); }
+  var INC_BR = breaksOf(INC_VALS, 7), ND_BR = breaksOf(ND_VALS, 7);
+
+  var XLO = Math.min.apply(null, INC_VALS), XHI = Math.max.apply(null, INC_VALS);
+  var YLO = Math.min.apply(null, ND_VALS), YHI = Math.max.apply(null, ND_VALS);
+  var XPAD = (XHI - XLO) * 0.05, YPAD = (YHI - YLO) * 0.05;
+  XLO -= XPAD; XHI += XPAD; YLO -= YPAD; YHI += YPAD;
+
+  var DA_FIT = (function () {
+    var xs = [], ys = [], i;
+    for (i = 0; i < N; i++) if (OK[i]) { xs.push(INC[i] / 1000); ys.push(ND[i]); }
+    return fit(xs, ys);
+  })();
+
+  // ---------------------------------------------------------------- page state
+  var params = new URLSearchParams(location.search);
+  var zoning = OPENS_ON;
+  var zp = params.get("z");
+  for (i0 = 0; i0 < ZONINGS.length; i0++) if (ZONINGS[i0].id === zp) zoning = zp;
+  var ruleId = "hh";
+  var rp = params.get("r");
+  for (i0 = 0; i0 < RULES.length; i0++) if (RULES[i0].id === rp) ruleId = rp;
+  var present = params.get("present") === "1";
+  var brush = 0;
+
+  var ZONE = null, K = 0, painted = false;
+  function setZoning(id) {
+    zoning = id;
+    var p = preset(id);
+    ZONE = Int32Array.from(p.zone);
+    K = p.k;
+    painted = false;
+  }
+  setZoning(zoning);
+
+  function canPaint() {
+    for (var i = 0; i < ZONINGS.length; i++) if (ZONINGS[i].id === zoning) return ZONINGS[i].paint;
+    return false;
+  }
+
+  // ---- the link a student shares -----------------------------------------
+  // A painted zoning is 1,010 numbers under eight, which is three bits each: 379 bytes and
+  // 506 characters of base64. That fits a link comfortably and is short enough to paste.
+  // It goes in the fragment rather than the query string, because a fragment is never sent
+  // to a server and this is somebody's own work.
+  var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  var label = "";
+
+  function packZones(zone) {
+    var bytes = new Uint8Array(Math.ceil(N * 3 / 8) + 1), i, bit = 0;
+    for (i = 0; i < N; i++) {
+      var v = zone[i] & 7, at = bit >> 3, off = bit & 7;
+      bytes[at] |= (v << off) & 0xFF;
+      if (off > 5) bytes[at + 1] |= v >> (8 - off);
+      bit += 3;
+    }
+    var out = "", k;
+    for (k = 0; k < bytes.length - 1; k += 3) {
+      var b0 = bytes[k], b1 = bytes[k + 1] || 0, b2 = bytes[k + 2] || 0;
+      out += B64[b0 >> 2] + B64[((b0 & 3) << 4) | (b1 >> 4)] +
+             B64[((b1 & 15) << 2) | (b2 >> 6)] + B64[b2 & 63];
+    }
+    return out;
+  }
+
+  function unpackZones(str) {
+    var bytes = new Uint8Array(Math.ceil(N * 3 / 8) + 1), k, n = 0, i;
+    for (k = 0; k < str.length; k += 4) {
+      var c = [0, 0, 0, 0];
+      for (i = 0; i < 4; i++) {
+        var ix = B64.indexOf(str.charAt(k + i));
+        if (ix < 0 && k + i < str.length) return null;
+        c[i] = ix < 0 ? 0 : ix;
+      }
+      var trio = [(c[0] << 2) | (c[1] >> 4), ((c[1] & 15) << 4) | (c[2] >> 2), ((c[2] & 3) << 6) | c[3]];
+      for (i = 0; i < 3 && n < bytes.length; i++) bytes[n++] = trio[i];
+    }
+    if (n * 8 < N * 3) return null;
+    var zone = new Int32Array(N), bit = 0;
+    for (i = 0; i < N; i++) {
+      var at = bit >> 3, off = bit & 7;
+      var v = (bytes[at] >> off) & 7;
+      if (off > 5) v |= (bytes[at + 1] << (8 - off)) & 7;
+      zone[i] = v & 7;
+      bit += 3;
+    }
+    return zone;
+  }
+
+  function fragment() {
+    var p = [];
+    if (painted) p.push("z=" + packZones(ZONE));
+    else p.push("p=" + zoning);
+    if (ruleId !== "hh") p.push("r=" + ruleId);
+    if (label) p.push("l=" + encodeURIComponent(label));
+    return p.join("&");
+  }
+
+  function readFragment(frag) {
+    frag = String(frag || "");
+    var hash = frag.indexOf("#");
+    if (hash >= 0) frag = frag.slice(hash + 1);
+    if (!frag) return false;
+    var got = false, q;
+    frag.split("&").forEach(function (part) {
+      var eq = part.indexOf("=");
+      if (eq < 0) return;
+      var k = part.slice(0, eq), v = part.slice(eq + 1);
+      if (k === "z") {
+        var z = unpackZones(v);
+        if (z) { ZONE = z; K = KPAINT; painted = true; zoning = OPENS_ON; got = true; }
+      } else if (k === "p") {
+        for (q = 0; q < ZONINGS.length; q++) if (ZONINGS[q].id === v) { setZoning(v); got = true; }
+      } else if (k === "r") {
+        for (q = 0; q < RULES.length; q++) if (RULES[q].id === v) { ruleId = v; got = true; }
+      } else if (k === "l") {
+        label = decodeURIComponent(v).slice(0, 24); got = true;
+      }
+    });
+    return got;
+  }
+
+  readFragment(location.hash);
+
+  // ------------------------------------------------------------------- drawing
+  var incMap = document.getElementById("m-inc");
+  var ndMap = document.getElementById("m-nd");
+  var plot = document.getElementById("plot");
+  var liveEl = document.getElementById("live");
+  var cursor = -1;
+
+  function buildMap(svg, cls) {
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var frag = document.createDocumentFragment(), i, p;
+    var bg = document.createElementNS(SVGNS, "rect");
+    bg.setAttribute("x", "0"); bg.setAttribute("y", "0");
+    bg.setAttribute("width", String(W)); bg.setAttribute("height", String(H));
+    bg.setAttribute("fill", "var(--page)");
+    frag.appendChild(bg);
+    var sea = document.createElementNS(SVGNS, "path");
+    sea.setAttribute("d", WATERD);
+    sea.setAttribute("fill", "var(--water)");
+    sea.setAttribute("stroke", "none");
+    frag.appendChild(sea);
+    var g = document.createElementNS(SVGNS, "g");
+    g.setAttribute("class", "areas");
+    // Kept in an array of our own rather than read back off the group. A live child list
+    // is one more thing that has to agree between a browser and the test harness, and this
+    // list is written once and indexed a thousand times per redraw.
+    var paths = [];
+    for (i = 0; i < N; i++) {
+      p = document.createElementNS(SVGNS, "path");
+      p.setAttribute("d", PATHD[i]);
+      p.setAttribute("class", "da");
+      p.setAttribute("data-i", String(i));
+      g.appendChild(p);
+      paths.push(p);
+    }
+    frag.appendChild(g);
+    // The edge of the study area: every boundary segment with only one owner. Drawn
+    // heavier than a zone line, because it is where the data stop rather than where one
+    // zone ends and another begins.
+    var rim = document.createElementNS(SVGNS, "path");
+    rim.setAttribute("class", "rim");
+    rim.setAttribute("d", RIMD);
+    frag.appendChild(rim);
+    var lines = document.createElementNS(SVGNS, "path");
+    lines.setAttribute("class", "zline");
+    lines.setAttribute("id", cls + "-lines");
+    frag.appendChild(lines);
+    var labels = document.createElementNS(SVGNS, "g");
+    labels.setAttribute("id", cls + "-labels");
+    frag.appendChild(labels);
+    if (cls === "inc") {
+      var cur = document.createElementNS(SVGNS, "path");
+      cur.setAttribute("class", "cursor");
+      cur.setAttribute("id", "cursor");
+      cur.setAttribute("d", "");
+      frag.appendChild(cur);
+    }
+    svg.appendChild(frag);
+    return { paths: paths, lines: lines, labels: labels };
+  }
+  var INCV = buildMap(incMap, "inc");
+  var NDV = buildMap(ndMap, "nd");
+
+  function zoneOutline(zone) {
+    var d = "", e, i;
+    for (i = 0; i < EDGES.length; i++) {
+      e = EDGES[i];
+      if (e.o2 >= 0 && zone[e.o1] === zone[e.o2]) continue;
+      d += "M" + e.x1 + " " + (H - e.y1) + "L" + e.x2 + " " + (H - e.y2);
+    }
+    return d;
+  }
+
+  function zoneCentres(zone, k) {
+    var sx = new Float64Array(k), sy = new Float64Array(k), c = new Float64Array(k), i, z;
+    for (i = 0; i < N; i++) {
+      z = zone[i];
+      sx[z] += CENT[i * 2]; sy[z] += CENT[i * 2 + 1]; c[z]++;
+    }
+    var out = [];
+    for (z = 0; z < k; z++) out.push(c[z] ? [sx[z] / c[z], sy[z] / c[z]] : null);
+    return out;
+  }
+
+  function fmt(v, d) {
+    // A real minus sign, not a hyphen: the page prints these at 2.1rem on a projector.
+    return (v === null || v === undefined || !isFinite(v)) ? "—" : v.toFixed(d).replace("-", "−");
+  }
+  function money(v) { return "$" + Math.round(v * 1000).toLocaleString("en-CA"); }
+
+  var state = null;
+
+  function compute() {
+    var rule = ruleOf(ruleId);
+    var ag = aggregate(ZONE, K, rule);
+    var f = fit(ag.x, ag.y);
+    return { rule: rule, ag: ag, fit: f,
+             pieces: canPaint() ? pieces(ZONE, K) : K, k: K };
+  }
+
+  function render() {
+    state = compute();
+    var st = state, i, z, v;
+
+    // ---- the two maps -----------------------------------------------------
+    var incOf = new Float64Array(K), ndOf = new Float64Array(K), have = new Uint8Array(K);
+    for (i = 0; i < st.ag.id.length; i++) {
+      z = st.ag.id[i];
+      incOf[z] = st.ag.x[i]; ndOf[z] = st.ag.y[i]; have[z] = 1;
+    }
+    for (i = 0; i < N; i++) {
+      z = ZONE[i];
+      INCV.paths[i].setAttribute("fill", have[z] ? INC_RAMP[classOf(incOf[z], INC_BR)] : "var(--nodata)");
+      NDV.paths[i].setAttribute("fill", have[z] ? ND_RAMP[classOf(ndOf[z], ND_BR)] : "var(--nodata)");
+    }
+    var d = zoneOutline(ZONE);
+    INCV.lines.setAttribute("d", d);
+    NDV.lines.setAttribute("d", d);
+
+    // Zone numbers, only where there are few enough zones for a number to be readable.
+    INCV.labels.textContent = ""; NDV.labels.textContent = "";
+    if (K <= 30) {
+      var cs = zoneCentres(ZONE, K);
+      for (z = 0; z < K; z++) {
+        if (!cs[z]) continue;
+        [INCV.labels, NDV.labels].forEach(function (host) {
+          var t = document.createElementNS(SVGNS, "text");
+          t.setAttribute("x", String(Math.round(cs[z][0])));
+          t.setAttribute("y", String(Math.round(H - cs[z][1])));
+          t.setAttribute("class", "znum");
+          t.setAttribute("text-anchor", "middle");
+          t.setAttribute("fill", canPaint() ? ZHUE[z % 8] : "var(--ink)");
+          t.setAttribute("stroke", "var(--page)");
+          t.setAttribute("font-size", String(Math.round(W / (K <= 8 ? 26 : 60))));
+          t.setAttribute("stroke-width", String(Math.round(W / (K <= 8 ? 190 : 420))));
+          t.textContent = String(z + 1);
+          host.appendChild(t);
+        });
+      }
+    }
+    var cur = document.getElementById("cursor");
+    cur.setAttribute("d", cursor >= 0 ? PATHD[cursor] : "");
+
+    // ---- the scatter ------------------------------------------------------
+    drawPlot(st);
+
+    // ---- the numbers ------------------------------------------------------
+    document.getElementById("r").textContent = st.fit.ok ? fmt(st.fit.r, 2) : "—";
+    document.getElementById("rbase").textContent =
+      "Across the " + NOK.toLocaleString("en-CA") + " areas themselves, r = " + fmt(DA_FIT.r, 2) + ".";
+    // Printed per $10,000 rather than per $1,000, so the figures a class compares are
+    // whole tenths rather than a string of zeros. The fit itself does not change.
+    document.getElementById("slope").textContent = st.fit.ok ? fmt(st.fit.b * 10, 3) : "—";
+    document.getElementById("slopebase").textContent =
+      "NDVI per $10,000 of median household income. Across the areas themselves, " +
+      fmt(DA_FIT.b * 10, 3) + ".";
+    var eq = document.getElementById("t-sc");
+    eq.textContent = "";
+    if (st.fit.ok) {
+      function bit(text, strong) {
+        var e = document.createElement(strong ? "b" : "span");
+        e.textContent = text;
+        eq.appendChild(e);
+      }
+      bit("greenness = " + fmt(st.fit.a, 3) + " " + (st.fit.b < 0 ? "− " : "+ "), false);
+      bit(fmt(Math.abs(st.fit.b * 10), 3), true);
+      bit(" × income in $10,000s   ·   r = ", false);
+      bit(fmt(st.fit.r, 3), true);
+    } else {
+      eq.textContent = "Too few zones with figures in them to fit a line.";
+    }
+    document.getElementById("fitline").textContent = st.fit.ok
+      ? ("n = " + st.fit.n + " zones. Income is " + st.rule.label + ".")
+      : "";
+
+    // The rules of the comparison sit beside the numbers, because two entries are only
+    // comparable if they are the same shape.
+    var rule = st.rule;
+    // The ground is in more than one piece: Richmond is across the Fraser. A zoning counts
+    // as being in one piece when it is in as few as the ground allows.
+    var broken = canPaint() ? Math.max(0, st.pieces - (K + GROUND_PIECES - 1)) : 0;
+    document.getElementById("rulenote").textContent =
+      "Income is " + rule.label + "; greenness is the average over the ground." +
+      (canPaint()
+        ? (broken > 0
+            ? " " + broken + (broken === 1 ? " zone is" : " zones are") +
+              " in more than one piece, so this one does not count."
+            : " Eight zones, each in one piece.")
+        : "");
+
+    document.getElementById("paintnote").textContent = canPaint()
+      ? "Painting changes the eight zones on the income map."
+      : "Choose one of the four eight-zone starts to draw your own.";
+    document.querySelectorAll("#paintbtns .opt").forEach(function (b) {
+      b.disabled = !canPaint();
+    });
+
+    // ---- control states ---------------------------------------------------
+    document.querySelectorAll("#zonebtns .opt").forEach(function (b) {
+      b.setAttribute("aria-pressed", (!painted && b.dataset.z === zoning) ? "true" : "false");
+    });
+    document.querySelectorAll("#rulebtns .opt").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.dataset.r === ruleId ? "true" : "false");
+    });
+    document.querySelectorAll("#paintbtns .opt").forEach(function (b) {
+      b.setAttribute("aria-pressed", Number(b.dataset.b) === brush ? "true" : "false");
+    });
+    document.getElementById("t-inc").textContent =
+      painted ? "Income, by your zones" : "Income, by " + labelOf(zoning).toLowerCase();
+    document.getElementById("t-nd").textContent =
+      painted ? "Greenness, by the same zones" : "Greenness, by the same zones";
+
+    queueURL();
+  }
+
+  function labelOf(id) {
+    for (var i = 0; i < ZONINGS.length; i++) if (ZONINGS[i].id === id) return ZONINGS[i].label;
+    return id;
+  }
+
+  // ---------------------------------------------------------------- the plot
+  // The scatter is read from the back of a room as often as from a desk, so nothing in it
+  // is drawn at a size that survives only at reading distance. The viewBox is 320 wide and
+  // the panel is about 320 CSS pixels at the default layout, so one unit is about one
+  // pixel there and about two and a half on a projector. Type is 11 units and up, which is
+  // the floor the course uses for anything read from the back.
+  var PL = { w: 320, h: 300, l: 52, r: 10, t: 12, b: 46 };
+  var CLOUD_ON = true;
+  function px(x) { return PL.l + (x - XLO) / (XHI - XLO) * (PL.w - PL.l - PL.r); }
+  function py(y) { return PL.h - PL.b - (y - YLO) / (YHI - YLO) * (PL.h - PL.t - PL.b); }
+
+  // The areas themselves as a light field rather than as dots. Drawn as squares on a coarse
+  // grid with one flat tone, so it reads as a region from fifteen metres where single
+  // points read as dirt on the lens. Built once: it never changes.
+  var CLOUD_D = (function () {
+    var cols = 46, rows = 42, seen = {}, d = "", i, gx, gy, key;
+    var cw = (PL.w - PL.l - PL.r) / cols, ch = (PL.h - PL.t - PL.b) / rows;
+    for (i = 0; i < N; i++) {
+      if (!OK[i]) continue;
+      gx = Math.floor((px(INC[i] / 1000) - PL.l) / cw);
+      gy = Math.floor((py(ND[i]) - PL.t) / ch);
+      key = gx + ":" + gy;
+      if (seen[key]) continue;
+      seen[key] = 1;
+      d += "M" + (PL.l + gx * cw).toFixed(1) + " " + (PL.t + gy * ch).toFixed(1) +
+           "h" + cw.toFixed(1) + "v" + ch.toFixed(1) + "h-" + cw.toFixed(1) + "Z";
+    }
+    return d;
+  })();
+
+  function drawPlot(st) {
+    plot.textContent = "";
+    var f = document.createDocumentFragment(), i, e;
+    function add(tag, attrs, text) {
+      var el = document.createElementNS(SVGNS, tag);
+      for (var k in attrs) el.setAttribute(k, String(attrs[k]));
+      if (text !== undefined) el.textContent = text;
+      f.appendChild(el);
+      return el;
+    }
+    add("rect", { x: 0, y: 0, width: PL.w, height: PL.h, fill: "var(--page)" });
+
+    if (CLOUD_ON) {
+      add("path", { d: CLOUD_D, fill: "var(--cloud)", stroke: "none" });
+    }
+
+    // Axes, fixed across every zoning and every rule, so the line moving is the line
+    // moving rather than the frame moving under it.
+    add("line", { x1: PL.l, y1: PL.t, x2: PL.l, y2: PL.h - PL.b, stroke: "var(--ink)", "stroke-width": 2 });
+    add("line", { x1: PL.l, y1: PL.h - PL.b, x2: PL.w - PL.r, y2: PL.h - PL.b, stroke: "var(--ink)", "stroke-width": 2 });
+    [50, 100, 150, 200].forEach(function (v) {
+      if (v < XLO || v > XHI) return;
+      add("line", { x1: px(v), y1: PL.h - PL.b, x2: px(v), y2: PL.h - PL.b + 5, stroke: "var(--ink)", "stroke-width": 2 });
+      add("text", { x: px(v), y: PL.h - PL.b + 20, "text-anchor": "middle", fill: "var(--ink)", "font-size": 13 }, "$" + v + "k");
+    });
+    [0.1, 0.3, 0.5, 0.7].forEach(function (v) {
+      if (v < YLO || v > YHI) return;
+      add("line", { x1: PL.l - 5, y1: py(v), x2: PL.l, y2: py(v), stroke: "var(--ink)", "stroke-width": 2 });
+      add("text", { x: PL.l - 8, y: py(v) + 5, "text-anchor": "end", fill: "var(--ink)", "font-size": 13 }, v.toFixed(1));
+    });
+    add("text", { x: (PL.l + PL.w - PL.r) / 2, y: PL.h - 6, "text-anchor": "middle",
+                  fill: "var(--ink)", "font-size": 13 }, "median household income");
+    add("text", { x: 14, y: (PL.t + PL.h - PL.b) / 2, "text-anchor": "middle",
+                  fill: "var(--ink)", "font-size": 13,
+                  transform: "rotate(-90 14 " + ((PL.t + PL.h - PL.b) / 2) + ")" }, "greenness (NDVI)");
+
+    if (!st.fit.ok) { plot.appendChild(f); return; }
+
+    var x0 = XLO, x1 = XHI, y0 = st.fit.a + st.fit.b * x0, y1 = st.fit.a + st.fit.b * x1;
+    add("line", { x1: px(x0), y1: py(y0), x2: px(x1), y2: py(y1),
+                  stroke: "var(--ink)", "stroke-width": 3.5, "stroke-linecap": "round" });
+
+    // One dot per zone, big enough to see from the back, in a strong fill with a white
+    // stroke so overlapping dots stay countable. Area goes with the households the zone
+    // holds; the smallest is still 6 units across the radius.
+    var maxhh = 1;
+    for (i = 0; i < st.ag.hh.length; i++) if (st.ag.hh[i] > maxhh) maxhh = st.ag.hh[i];
+    var few = st.ag.x.length <= 40;
+    for (i = 0; i < st.ag.x.length; i++) {
+      var rad = few ? 6 + 6 * Math.sqrt(st.ag.hh[i] / maxhh) : 3;
+      e = add("circle", { cx: px(st.ag.x[i]).toFixed(1), cy: py(st.ag.y[i]).toFixed(1), r: rad.toFixed(2),
+                          fill: INC_RAMP[Math.max(2, classOf(st.ag.x[i], INC_BR))],
+                          stroke: "var(--page)", "stroke-width": few ? 2 : 1 });
+      e.setAttribute("data-zone", String(st.ag.id[i]));
+    }
+    plot.appendChild(f);
+  }
+
+  // ------------------------------------------------------------------ legends
+  // Seven bands, with the value printed at three of the six boundaries between them, so a
+  // reader can put a number on the ramp without six labels fighting for the same line. The
+  // bands never move, so this is drawn once.
+  function legend(host, ramp, br, fmtv, lo, hi) {
+    host.textContent = "";
+    function span(cls, text, colour) {
+      var s = document.createElement("span");
+      if (cls) s.className = cls;
+      if (colour) s.style.background = colour;
+      if (text !== undefined) s.textContent = text;
+      host.appendChild(s);
+      return s;
+    }
+    span(null, lo + " ");
+    ramp.forEach(function (c, i) {
+      span("sw", undefined, c);
+      if (i === 1 || i === 3 || i === 5) span(null, " " + fmtv(br[i]) + " ");
+    });
+    span(null, " " + hi);
+  }
+  legend(document.getElementById("leg-inc"), INC_RAMP, INC_BR, money, "lower income", "higher");
+  legend(document.getElementById("leg-nd"), ND_RAMP, ND_BR,
+         function (v) { return v.toFixed(2); }, "bare ground", "green");
+
+  // ----------------------------------------------------------------- painting
+  function assign(i, z) {
+    if (!canPaint() || i < 0 || i >= N) return false;
+    if (ZONE[i] === z) return false;
+    ZONE[i] = z;
+    painted = true;
+    return true;
+  }
+
+  var painting = false;
+  function areaAt(e) {
+    var t = e.target;
+    if (!t || !t.getAttribute) return -1;
+    var v = t.getAttribute("data-i");
+    return v === null ? -1 : Number(v);
+  }
+  incMap.addEventListener("pointerdown", function (e) {
+    if (!canPaint()) return;
+    // Let pointermove retarget as the finger travels: with implicit capture on a touch
+    // screen every move would be reported against the element the touch started on, and
+    // a drag would paint one area.
+    if (incMap.hasPointerCapture && incMap.hasPointerCapture(e.pointerId))
+      incMap.releasePointerCapture(e.pointerId);
+    painting = true;
+    var i = areaAt(e);
+    if (i >= 0) { cursor = i; if (assign(i, brush)) { render(); announce(i); } }
+    e.preventDefault();
+  });
+  incMap.addEventListener("pointermove", function (e) {
+    if (!painting) return;
+    var i = areaAt(e);
+    if (i >= 0) { cursor = i; if (assign(i, brush)) render(); }
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(function (t) {
+    incMap.addEventListener(t, function () {
+      if (!painting) return;
+      painting = false;
+      announce(cursor);
+    });
+  });
+
+  function announce(i) {
+    if (!state || i < 0 || i >= N) return;
+    var msg = "Zone " + (ZONE[i] + 1) + ". " +
+      (state.fit.ok ? "r is now " + fmt(state.fit.r, 2) + ", slope " + fmt(state.fit.b, 4) : "no line") + + ".";
+    liveEl.textContent = msg;
+  }
+
+  // Arrow keys move between areas by whichever centre lies nearest in that direction, so
+  // there is a keyboard route to everything the pointer can reach. Areas are never named:
+  // the cursor reports a position in the list, not an identifier.
+  function step(dir) {
+    if (cursor < 0) { cursor = nearestTo(W / 2, H / 2); return; }
+    var cx = CENT[cursor * 2], cy = CENT[cursor * 2 + 1];
+    var best = -1, bd = Infinity, i, dx, dy, along, across;
+    for (i = 0; i < N; i++) {
+      if (i === cursor) continue;
+      dx = CENT[i * 2] - cx; dy = CENT[i * 2 + 1] - cy;
+      along = dir === "right" ? dx : dir === "left" ? -dx : dir === "up" ? dy : -dy;
+      across = (dir === "left" || dir === "right") ? Math.abs(dy) : Math.abs(dx);
+      if (along <= 0) continue;
+      var cost = along + across * 2.5;
+      if (cost < bd) { bd = cost; best = i; }
+    }
+    if (best >= 0) cursor = best;
+  }
+  function nearestTo(x, y) {
+    var best = 0, bd = Infinity, i, d;
+    for (i = 0; i < N; i++) {
+      d = (CENT[i * 2] - x) * (CENT[i * 2] - x) + (CENT[i * 2 + 1] - y) * (CENT[i * 2 + 1] - y);
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+  incMap.addEventListener("keydown", function (e) {
+    var dirs = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" };
+    if (dirs[e.key]) {
+      step(dirs[e.key]);
+      render();
+      liveEl.textContent = "Area " + (cursor + 1) + " of " + N + ", zone " + (ZONE[cursor] + 1) + ".";
+      e.preventDefault();
+      return;
+    }
+    if (/^[1-8]$/.test(e.key) && canPaint()) {
+      if (cursor < 0) cursor = nearestTo(W / 2, H / 2);
+      brush = Number(e.key) - 1;
+      if (assign(cursor, brush)) { render(); announce(cursor); }
+      e.preventDefault();
+    }
+  });
+  incMap.addEventListener("focus", function () { if (cursor < 0) { cursor = nearestTo(W / 2, H / 2); render(); } });
+
+  // ------------------------------------------------------------------ controls
+  function buttons(host, items, key, onclick, chip) {
+    items.forEach(function (it) {
+      var b = document.createElement("button");
+      b.className = "opt";
+      b.dataset[key] = it.id;
+      b.setAttribute("aria-pressed", "false");
+      if (chip) {
+        b.className = "opt chip";
+        var dot = document.createElement("span");
+        dot.className = "dot";
+        dot.style.background = it.colour;
+        b.appendChild(dot);
+        b.appendChild(document.createTextNode(it.label));
+      } else {
+        b.textContent = it.label;
+      }
+      b.addEventListener("click", function () { onclick(it.id); });
+      host.appendChild(b);
+    });
+  }
+  buttons(document.getElementById("zonebtns"), ZONINGS, "z", function (id) {
+    setZoning(id); cursor = -1; render();
+    liveEl.textContent = labelOf(id) + ": " + (state.fit.ok ? "r is " + fmt(state.fit.r, 2) : "no line") + ".";
+  });
+  buttons(document.getElementById("rulebtns"), RULES, "r", function (id) {
+    ruleId = id; render();
+    liveEl.textContent = "Income is now " + ruleOf(id).label + ". " +
+      (state.fit.ok ? "r is " + fmt(state.fit.r, 2) + "." : "");
+  });
+  var PAINTS = [];
+  for (i0 = 0; i0 < KPAINT; i0++) PAINTS.push({ id: String(i0), label: "Zone " + (i0 + 1), colour: ZHUE[i0] });
+  var pb = document.getElementById("paintbtns");
+  PAINTS.forEach(function (it, ix) {
+    var b = document.createElement("button");
+    b.className = "opt chip";
+    b.dataset.b = String(ix);
+    b.setAttribute("aria-pressed", "false");
+    var dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = it.colour;
+    b.appendChild(dot);
+    b.appendChild(document.createTextNode(String(ix + 1)));
+    b.setAttribute("aria-label", it.label);
+    b.addEventListener("click", function () { brush = ix; render(); });
+    pb.appendChild(b);
+  });
+
+  // ---- the share controls, and the original data --------------------------
+  var nameEl = document.getElementById("entryname");
+  nameEl.addEventListener("input", function () {
+    label = nameEl.value.slice(0, 24);
+    queueURL();
+  });
+  document.getElementById("copylink").addEventListener("click", function () {
+    writeURL();
+    var url = location.href;
+    var note = document.getElementById("sharenote");
+    function done(ok) {
+      note.textContent = ok
+        ? "Link copied. It carries the zoning, its name and the way income is averaged."
+        : "Could not reach the clipboard. The link is in the address bar; copy it from there.";
+      liveEl.textContent = note.textContent;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(false); });
+    } else {
+      done(false);
+    }
+  });
+  var importBtn = document.getElementById("showimport");
+  importBtn.addEventListener("click", function () {
+    var box = document.getElementById("importbox");
+    var open = importBtn.getAttribute("aria-expanded") === "true";
+    importBtn.setAttribute("aria-expanded", open ? "false" : "true");
+    box.hidden = open;
+  });
+  document.getElementById("doimport").addEventListener("click", function () {
+    var v = document.getElementById("importfield").value.trim();
+    var ok = readFragment(v);
+    if (ok) {
+      nameEl.value = label;
+      render();
+      liveEl.textContent = "Opened a shared zoning" + (label ? " called " + label : "") + ".";
+      document.getElementById("sharenote").textContent = "Opened.";
+    } else {
+      document.getElementById("sharenote").textContent =
+        "That is not a link from this page. Paste the whole address, or the part after the #.";
+    }
+  });
+
+  // The picture is only fetched when somebody opens the section, so nobody pays for it on
+  // the way past.
+  var origBtn = document.getElementById("origbtn");
+  var origBuilt = false;
+  origBtn.addEventListener("click", function () {
+    var panel = document.getElementById("origpanel");
+    var open = origBtn.getAttribute("aria-expanded") === "true";
+    origBtn.setAttribute("aria-expanded", open ? "false" : "true");
+    panel.hidden = open;
+    if (!open && !origBuilt) { buildOriginal(); origBuilt = true; }
+  });
+
+  function buildOriginal() {
+    var o = buildMap(document.getElementById("m-oinc"), "oinc");
+    var i;
+    for (i = 0; i < N; i++) {
+      o.paths[i].setAttribute("fill",
+        (INC[i] === null) ? "var(--nodata)" : INC_RAMP[classOf(INC[i] / 1000, INC_BR)]);
+    }
+    o.lines.setAttribute("d", "");
+    legend(document.getElementById("leg-oinc"), INC_RAMP, INC_BR, money, "lower income", "higher");
+    legend(document.getElementById("leg-ond"), ND_RAMP, ND_BR,
+           function (v) { return v.toFixed(2); }, "bare ground", "green");
+    var ov = document.getElementById("m-ond");
+    ov.setAttribute("viewBox", "0 0 " + W + " " + H);
+    for (i = 0; i < N; i++) {
+      var pth = document.createElementNS(SVGNS, "path");
+      pth.setAttribute("d", PATHD[i]);
+      pth.setAttribute("class", "da");
+      ov.appendChild(pth);
+    }
+    document.getElementById("ndviimg").src = "ndvi.png";
+    document.getElementById("origsrc").textContent =
+      "Income: median total income of household in 2020, from the 2021 Census of Population, " +
+      "one figure per area and none for any household. Households: the count of private " +
+      "households in the area in 2021, which is what the default weighting uses. Boundaries: " +
+      "2021 Census cartographic boundary files, cut back to land. Greenness: NDVI from " +
+      "Sentinel-2 scene " + D.scene + ", " + D.scenedate + ", at 10 m. " + NOK + " of the " +
+      N + " areas carry both figures. No area is identified anywhere on this page.";
+  }
+
+  document.getElementById("reset").addEventListener("click", function () {
+    ruleId = "hh"; brush = 0; cursor = -1; label = "";
+    document.getElementById("entryname").value = "";
+    label = "";
+    document.getElementById("entryname").value = "";
+    setZoning(OPENS_ON);
+    render();
+    liveEl.textContent = "Back to the eight zones of equal households.";
+  });
+
+  var presentBtn = document.getElementById("present");
+  function setPresent(on) {
+    present = on;
+    document.body.dataset.present = on ? "1" : "0";
+    presentBtn.textContent = on ? "Normal size" : "Big screen";
+    presentBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    render();
+  }
+  presentBtn.addEventListener("click", function () { setPresent(!present); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "p" && !e.metaKey && !e.ctrlKey && !e.altKey &&
+        document.activeElement !== incMap &&
+        document.activeElement.tagName !== "INPUT") setPresent(!present);
+  });
+
+  // One handler for every (i) panel on the page.
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("[data-info]") : null;
+    if (!b) return;
+    var panel = document.getElementById(b.dataset.info);
+    if (!panel) return;
+    var open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", open ? "false" : "true");
+    panel.hidden = open;
+  });
+
+  // The URL write is debounced. replaceState on every frame of a drag is wasteful, and in
+  // Safari it is throttled and then throws.
+  var urlTimer = null;
+  function queueURL() {
+    if (urlTimer) clearTimeout(urlTimer);
+    urlTimer = setTimeout(writeURL, 350);
+  }
+  function writeURL() {
+    urlTimer = null;
+    var p = new URLSearchParams();
+    if (present) p.set("present", "1");
+    var q = p.toString();
+    var frag = fragment();
+    history.replaceState(null, "", location.pathname + (q ? "?" + q : "") + (frag ? "#" + frag : ""));
+  }
+
+  document.getElementById("scene").textContent = D.scene + ", " + D.scenedate;
+
+  // ------------------------------------------------------------------------ go
+  setPresent(present);
+  render();
+
+  // A settled answer for the harness and for anything that needs to read rather than
+  // watch. Nothing here reports a dissemination area's identifier: the widget does not
+  // ship one.
+  window.ZONE_TEST = {
+    state: function () { return state; },
+    compute: compute,
+    fitAt: function (id, rule) {
+      var p = preset(id), r = ruleOf(rule || ruleId);
+      var ag = aggregate(p.zone, p.k, r);
+      var f = fit(ag.x, ag.y);
+      return f;
+    },
+    daFit: DA_FIT,
+    zoning: function (id) { return D.zonings[id]; },
+    zonings: ZONINGS,
+    groundPieces: function () { return GROUND_PIECES; },
+    setZoning: function (id) { setZoning(id); cursor = -1; render(); },
+    setRule: function (id) { ruleId = id; render(); },
+    paint: function (i, z) { if (assign(i, z)) render(); },
+    zone: function () { return Array.prototype.slice.call(ZONE); },
+    n: N, nok: NOK, k: function () { return K; },
+    pack: function () { return packZones(ZONE); },
+    fragment: fragment,
+    readFragment: function (f) { var ok = readFragment(f); render(); return ok; },
+    label: function () { return label; },
+    breaks: { inc: INC_BR, ndvi: ND_BR },
+    canPaint: canPaint
+  };
+})();
+</script>
+</body>
+</html>

@@ -328,6 +328,32 @@ projection is not stable between runs.
 over highway values timed the server out every time and a plain tag query returned the
 same window in three seconds. Filter locally.
 
+**GDAL over `/vsicurl`, against Cloud Optimized GeoTIFFs on AWS Open Data** — for
+`zone-design`. `gdal.Translate` with a `projWin` reads only the window it is asked for out
+of a 10,980 × 10,980 Sentinel-2 band sitting in a bucket: three bands of a 1,650 × 1,500
+window in under two seconds each, with no login and no whole-scene download. Worth
+remembering the next time a widget wants one corner of something enormous.
+
+Two gotchas, both cheap and both silent. `GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR` and
+`AWS_NO_SIGN_REQUEST=YES` have to be set or the open is slow or refused. And a
+`gdal.Open(...)` chained straight into a band read is collected the moment the expression
+ends, which invalidates the band it just handed back: `Band_XSize_get` throws a type error
+that says nothing about lifetimes. Hold every dataset in a name.
+
+### geoblaze: considered for the same job, and not needed here
+
+GEOS 472's D16 demo reads NDVI out of the same Sentinel-2 scene in a browser with
+**geoblaze 2.8.0**, and it works — it is the reason this widget's scene, collection, scale
+and offset are the ones they are, and its nine known-ground clicks are what the extraction
+was checked against. It was not used here for one reason: this widget precomputes a single
+number per dissemination area, so the raster work happens once, offline, where GDAL was
+already installed and already the tool the other extraction scripts use. Running geoblaze in
+Node would have added a dependency to a step that has none, and the shipped page would look
+identical.
+
+It stays a live candidate for a widget where the *reader* needs to ask a raster something
+the data file cannot answer in advance. That is a real case and this was not it.
+
 ## Things to test early
 
 1. PMTiles served from GitHub Pages, with MapLibre, on a phone over campus wifi. This

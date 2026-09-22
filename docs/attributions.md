@@ -68,6 +68,77 @@ here is necessarily copyrightable in the first place.
   the category the course lab asks students to model, and shipping it would publish the
   answers.
 
+### 2021 Census dissemination area and census tract boundaries, Vancouver
+- Source: Statistics Canada, 2021 Census cartographic boundary files — dissemination areas
+  <https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/files-fichiers/lda_000a21a_e.zip>
+  and census tracts
+  <https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/files-fichiers/lct_000a21a_e.zip>.
+  Downloaded by `tools/zone-design-extract.py`.
+- Licence: Statistics Canada Open Licence,
+  <https://www.statcan.gc.ca/en/reference/licence>
+- Attribution required on screen: a value-added product, so the licence's *adapted from*
+  wording: "Adapted from Statistics Canada, 2021 Census boundary files and Census Profile,
+  2021. This does not constitute an endorsement by Statistics Canada of this product."
+- Used in: `web/zone-design`
+- Added: 2026-09-22
+- Notes: reprojected from EPSG:3347 to EPSG:32610 (UTM zone 10N), which is the projection
+  the satellite scene already uses, then quantised to a 5 m grid and delta-encoded.
+  Clipped to the City of Vancouver by centroid against the City's own local-area
+  boundaries. Each area's census tract is the tract its centroid falls in; the
+  cartographic DA file carries no parent identifier, and tracts are built from whole
+  dissemination areas, so this is exact rather than approximate.
+
+### 2021 Census Profile at dissemination-area level: population, households, median income
+- Source: Statistics Canada, Census Profile, 2021 Census of Population, catalogue
+  98-401-X2021006 —
+  <https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=E>,
+  the CSV for "Canada, provinces, territories, census divisions (CDs), census subdivisions
+  (CSDs) and dissemination areas (DAs)".
+- Licence: Statistics Canada Open Licence, as above.
+- Attribution required on screen: covered by the same *adapted from* sentence.
+- Used in: `web/zone-design`
+- Added: 2026-09-22
+- Notes: three characteristics only, matched on their published names so a change of
+  numbering fails loudly — "Population, 2021", "Total - Private households by household
+  type", and "Median total income of household in 2020 ($)". Income is a **median** per
+  area and is published for no household. Medians do not add, so a zone's income in the
+  widget is one of three named averages of the areas' medians and is not the figure
+  Statistics Canada would publish for a merged zone. The widget says so at the control.
+
+### Local area boundaries, City of Vancouver
+- Source: City of Vancouver Open Data Portal, dataset `local-area-boundary` —
+  <https://opendata.vancouver.ca/explore/dataset/local-area-boundary/>
+- Licence: Open Government Licence – Vancouver,
+  <https://opendata.vancouver.ca/pages/licence/>
+- Attribution required on screen: the City named as the source and the licence named. The
+  footer does both.
+- Used in: `web/zone-design`
+- Added: 2026-09-22
+- Notes: two jobs. It defines the City — a dissemination area is in the widget if its
+  centroid falls inside the union of the 22 local areas — and it is the third published
+  zoning offered on the page, beside Statistics Canada's two. Not modified.
+
+### Copernicus Sentinel-2 level-2A, tile 10UDV, 7 August 2026
+- Source: scene `S2C_T10UDV_20260807T191738_L2A`, Earth Search catalogue collection
+  `sentinel-2-c1-l2a` (Collection 1), via the AWS Open Data mirror
+  `e84-earth-search-sentinel-data` —
+  <https://earth-search.aws.element84.com/v1>
+- Licence: Copernicus open and free data policy (Commission Delegated Regulation (EU)
+  No 1159/2013) — reuse and redistribution permitted with attribution.
+- Attribution required on screen: "Contains modified Copernicus Sentinel data 2026."
+- Used in: `web/zone-design`
+- Added: 2026-09-22
+- Notes: 0.0014% cloud, processing baseline 05.12. Bands B04 and B08 cut to a
+  482000–498500 E, 5448000–5463000 N window at 10 m and turned into reflectance by the
+  collection's own published numbers, `reflectance = DN * 0.0001 - 0.1`. **The offset is
+  load-bearing**: Collection 1's pixels sit 1,000 counts above the older `sentinel-cogs`
+  bucket's, so NDVI from raw digital numbers is wrong by a visible amount. That was
+  established independently for GEOS 472's geoblaze demo on the same scene, by comparing
+  19,174 pixels of the two files, and is recorded in
+  `472-2026/review-2026-09-06/batches/review-log-S5.md`. Pixels are kept where the scene
+  classification layer reads 4, 5 or 7; water, cloud, shadow, snow and saturated pixels are
+  dropped. Only a mean per dissemination area ships — no imagery.
+
 ### Metro Vancouver Land Use 2016
 - Source: "Landuse 2016 - Code Description", Metro Vancouver Open Data Portal,
   <https://open-data-portal-metrovancouver.hub.arcgis.com/>. Fetched from the ArcGIS

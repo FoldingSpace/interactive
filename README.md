@@ -26,6 +26,17 @@ install.
   A spatial error model is there to deal with the clustered errors, and the page is candid
   about what dealing with them does not fix.
 
+- **Zone design: you help draw the boundaries** (built, not yet deployed)
+  — 1,241 dissemination areas in and just beyond the City of Vancouver, what households in
+  them earn, and how green the ground was on one August morning. Paint eight zones over the
+  areas and the line between income and greenness moves. Four zonings are offered, each drawn
+  by a rule somebody could state in advance, and they disagree: r runs from &minus;0.39 to
+  +0.50 over the same 1,209 records with the same number of zones, and the published census
+  tracts sit *below* the areas themselves, which is the opposite of what the course's own
+  slide says aggregation does. Greenness aggregates exactly whatever you do to it; income
+  arrives as a median per area, medians do not add, and the three ways of averaging them
+  disagree, so the rule is a control rather than a footnote.
+
 - [**Vancouver, measured in minutes**](https://foldingspace.github.io/interactive/relative-distance/)
   — Lonsdale Quay is 3.47 km from Waterfront Station and Commercial Drive is 3.06 km. On foot
   one is two and a quarter hours away and the other is thirty-eight minutes. Press Minutes and

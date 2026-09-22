@@ -86,13 +86,23 @@ function load(file, opts) {
   var frames = [];
   var timers = [];
   var slug = opts.slug || "least-cost";
-  var loc = { search: opts.search || "", pathname: "/" + slug + "/", href: "http://test/" + slug + "/" };
+  // A widget may keep its shareable state in the fragment rather than the query string,
+  // which is what a link a student pastes carries. The stub had no hash at all, so such a
+  // widget read an empty one and the round trip could not be tested.
+  var loc = { search: opts.search || "", hash: opts.hash || "",
+              pathname: "/" + slug + "/",
+              href: "http://test/" + slug + "/" + (opts.search || "") + (opts.hash || "") };
   Object.defineProperty(loc, "toString", { value: function () { return this.href; } });
 
   var win = {
     document: doc,
     location: loc,
-    history: { replaceState: function (a, b, url) { loc.href = "http://test" + url; loc.search = url.indexOf("?") >= 0 ? url.slice(url.indexOf("?")) : ""; } },
+    history: { replaceState: function (a, b, url) {
+      loc.href = "http://test" + url;
+      var h = url.indexOf("#"), q = url.indexOf("?");
+      loc.hash = h >= 0 ? url.slice(h) : "";
+      loc.search = q >= 0 ? url.slice(q, h >= 0 ? h : undefined) : "";
+    } },
     getComputedStyle: function () {
       return { getPropertyValue: function (k) { return vars[k] || ""; }, borderStyle: "", content: "" };
     },
