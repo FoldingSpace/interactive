@@ -78,6 +78,79 @@ module.exports = function (t) {
     a.equal(/correlation/i.test(label), false, "and the card is not called a correlation: " + label);
   });
 
+  t("a drag paints every area it crosses, and a tap paints one", function (a) {
+    // The browser tool's own drag helper sends a press and a release with nothing between,
+    // so a stroke has to be built by hand here. One code path serves mouse, pen and finger:
+    // the pointer is captured on the way down and every move is delivered to the map.
+    var w = open();
+    var svg = w.doc.getElementById("m-inc");
+    var paths = svg.querySelectorAll("path[data-i]");
+    function pe(type, el, id) {
+      var ev = w.win.PointerEvent(type, { target: el, pointerId: id === undefined ? 1 : id,
+                                          clientX: 0, clientY: 0, bubbles: true });
+      el.dispatchEvent(ev);
+      w.settle();
+    }
+    // A tap: down and up on one area, no move between.
+    var one = 40;
+    T(w).setZoning(RULED[0]);
+    var before = T(w).zone();
+    var want = (before[one] + 3) % 8;
+    w.doc.querySelectorAll("#paintbtns .opt")[want].click();
+    pe("pointerdown", paths[one]);
+    pe("pointerup", paths[one]);
+    a.equal(T(w).zone()[one], want, "a tap moves the one area under it");
+
+    // A drag: down, then a move over each of a run of areas, then up.
+    var run = [];
+    for (var i = 200; i < 230; i++) run.push(i);
+    var zone2 = (want + 1) % 8;
+    w.doc.querySelectorAll("#paintbtns .opt")[zone2].click();
+    pe("pointerdown", paths[run[0]]);
+    run.slice(1).forEach(function (ix) { pe("pointermove", paths[ix]); });
+    pe("pointerup", paths[run[run.length - 1]]);
+    var moved = run.filter(function (ix) { return T(w).zone()[ix] === zone2; }).length;
+    a.equal(moved, run.length, "every area the drag crossed went into the chosen zone");
+
+    // And a move with no press before it changes nothing.
+    var quiet = T(w).zone().join(",");
+    pe("pointermove", paths[500]);
+    a.equal(T(w).zone().join(","), quiet, "hovering without pressing paints nothing");
+  });
+
+  t("the painting map refuses the browser's own touch gestures, and leaves room to scroll", function (a) {
+    var fs = require("fs");
+    var css = fs.readFileSync(FILE, "utf8");
+    css = css.slice(0, css.indexOf("</style>"));
+    a.ok(/#m-inc\s*\{[^}]*touch-action:\s*none/.test(css),
+      "the painting map takes touch-action: none, so a finger drag paints");
+    a.equal(/svg\.map\s*\{[^}]*touch-action:\s*none/.test(css), false,
+      "and the other maps do not, so they still scroll");
+    a.ok(/pointer:\s*coarse[^@]*\.pane:first-child\s+\.map/.test(css.replace(/\n/g, "")),
+      "a gutter beside the painting map gives a thumb somewhere to scroll from");
+  });
+
+  t("nothing on the page says r", function (a) {
+    // R squared only, everywhere a reader or a screen reader meets it. r survives in the
+    // widget's own file, where the verification record lives.
+    var fs = require("fs");
+    var html = fs.readFileSync(FILE, "utf8");
+    var body = html.slice(html.indexOf("<body>"), html.indexOf("<script src="));
+    var text = body.replace(/<[^>]+>/g, " ");
+    var bad = text.match(/(?:^|[^A-Za-z])r(?![A-Za-z\u00b2])\s*(?:=|is\b)|\bthe r\b|\br-value\b/);
+    a.equal(bad, null, "no r in the page's text, visible or hidden: " + (bad || ""));
+    var attrs = body.match(/(?:title|aria-label|alt|placeholder)="[^"]*"/g) || [];
+    var badAttr = attrs.filter(function (t) { return /(?:^|[^A-Za-z])r(?![A-Za-z\u00b2])\s*(?:=|is\b)/.test(t); });
+    a.equal(badAttr.length, 0, "nor in a label a screen reader reads: " + badAttr.join(" "));
+    var w = open();
+    T(w).paint(7, 4);
+    w.settle();
+    a.equal(/(?:^|[^A-Za-z])r(?![A-Za-z\u00b2])\s*(?:=|is\b)/.test(w.doc.getElementById("live").textContent), false,
+      "nor in what is announced: " + w.doc.getElementById("live").textContent);
+    a.equal(/NaN/.test(w.doc.getElementById("live").textContent), false,
+      "and the announcement is a sentence, not a stray arithmetic result");
+  });
+
   t("four rules, eight zones each, and they disagree", function (a) {
     // The whole argument. Four zonings anybody could defend, the same 1,001 areas under
     // each, the same number of zones, and no two of them say the same thing about the line.

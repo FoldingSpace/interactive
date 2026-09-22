@@ -342,12 +342,18 @@ in so many words is open.
 `least-cost`. This page draws Vancouver, cuts it up and prices it, and says nothing on screen
 about territory. Luke's call, not made.
 
-**Touch and scrolling.** The income map takes `touch-action: none` so a drag paints rather
-than scrolls. On a phone the map is most of the width, so scrolling past it means starting
-the drag off the map. Not yet tried on a real phone.
+**Painting is one code path for mouse, pen and finger.** `pointerdown` captures the pointer,
+`pointermove` finds the area by hit-testing the page rather than by reading the event target
+(capture has retargeted it to the map), and `pointerup` or `pointercancel` releases. A press
+paints before any move arrives, so a single click or tap paints one area. Only `#m-inc` takes
+`touch-action: none`, so a finger drag there paints while every other map still scrolls; a
+2 rem gutter each side of it under `pointer: coarse` gives a thumb somewhere to scroll from
+(46 px each side at 375 px wide, measured). Verified in the browser with a mouse drag across
+the map, 16 areas repainted, and under touch emulation with five touch points, 13 areas
+repainted. The suite builds the stroke by hand, because an automated drag helper sends a
+press and a release with nothing between.
 
-**Not yet checked:** the lecture machine, a compressed recording, a screen reader, and 200%
-zoom.
+**Not yet checked:** the lecture machine, a compressed recording, and a screen reader.
 
 ## For the classroom &mdash; drafted, not settled
 

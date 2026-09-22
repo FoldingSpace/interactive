@@ -77,7 +77,14 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 body[data-present="1"] .phint { display: none; }
 
 svg.map, svg.plot { width: 100%; height: auto; display: block; background: var(--page); }
-svg.map { touch-action: none; }
+/* Only the map you paint on refuses the browser's own touch gestures. A finger drag there
+   has to paint rather than scroll the page; every other map still scrolls normally. */
+#m-inc { touch-action: none; }
+/* ...which leaves a phone with a map most of the width and nothing beside it to scroll
+   from. A thumb-wide gutter on each side of the painting map is that something. */
+@media (pointer: coarse) {
+  .pane:first-child .map { width: calc(100% - 4rem); margin: 0 2rem; }
+}
 svg.map:focus-visible, svg.plot:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
 /* Widths are in rendered pixels, not in map units: `non-scaling-stroke` takes them off the
    viewBox entirely. The first draft asked for 6, which is a sixth of a millimetre on the
@@ -1203,36 +1210,51 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     return true;
   }
 
-  var painting = false;
+  // One code path for mouse, pen and finger. The pointer is captured on the way down, so
+  // every move is delivered here even when it leaves the element it started on; the area
+  // under it is then found by hit-testing the page rather than by reading the event target,
+  // which capture has retargeted to the map. A single click or tap paints one area, because
+  // the press itself paints before any move arrives.
+  var painting = false, pointer = -1;
   function areaAt(e) {
-    var t = e.target;
+    var t = null;
+    if (typeof document.elementFromPoint === "function") {
+      t = document.elementFromPoint(e.clientX, e.clientY);
+    }
+    if (!t || !t.getAttribute || t.getAttribute("data-i") === null) t = e.target;
     if (!t || !t.getAttribute) return -1;
     var v = t.getAttribute("data-i");
     return v === null ? -1 : Number(v);
   }
   incMap.addEventListener("pointerdown", function (e) {
     if (!canPaint()) return;
-    // Let pointermove retarget as the finger travels: with implicit capture on a touch
-    // screen every move would be reported against the element the touch started on, and
-    // a drag would paint one area.
-    if (incMap.hasPointerCapture && incMap.hasPointerCapture(e.pointerId))
-      incMap.releasePointerCapture(e.pointerId);
     painting = true;
+    pointer = e.pointerId;
+    if (incMap.setPointerCapture) {
+      try { incMap.setPointerCapture(e.pointerId); } catch (err) { /* no capture: moves still arrive */ }
+    }
     var i = areaAt(e);
-    if (i >= 0) { cursor = i; if (assign(i, brush)) { render(); announce(i); } }
-    e.preventDefault();
+    if (i >= 0) { cursor = i; if (assign(i, brush)) { render(); } else { render(); } }
+    if (e.preventDefault) e.preventDefault();
   });
   incMap.addEventListener("pointermove", function (e) {
-    if (!painting) return;
+    if (!painting || (pointer >= 0 && e.pointerId !== undefined && e.pointerId !== pointer)) return;
     var i = areaAt(e);
     if (i >= 0) { cursor = i; if (assign(i, brush)) render(); }
+    if (e.preventDefault) e.preventDefault();
   });
-  ["pointerup", "pointercancel", "pointerleave"].forEach(function (t) {
-    incMap.addEventListener(t, function () {
-      if (!painting) return;
-      painting = false;
-      announce(cursor);
-    });
+  function stopPainting(e) {
+    if (!painting) return;
+    painting = false;
+    if (e && incMap.releasePointerCapture && incMap.hasPointerCapture &&
+        incMap.hasPointerCapture(e.pointerId)) {
+      try { incMap.releasePointerCapture(e.pointerId); } catch (err) { /* already gone */ }
+    }
+    pointer = -1;
+    announce(cursor);
+  }
+  ["pointerup", "pointercancel"].forEach(function (t) {
+    incMap.addEventListener(t, stopPainting);
   });
 
   function announce(i) {
