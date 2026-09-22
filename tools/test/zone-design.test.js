@@ -118,16 +118,61 @@ module.exports = function (t) {
     a.equal(T(w).zone().join(","), quiet, "hovering without pressing paints nothing");
   });
 
-  t("the painting map refuses the browser's own touch gestures, and leaves room to scroll", function (a) {
+  t("both maps paint, and they are one zoning drawn twice", function (a) {
+    var w = open();
+    var incMap = w.doc.getElementById("m-inc"), ndMap = w.doc.getElementById("m-nd");
+    [incMap, ndMap].forEach(function (m) {
+      a.ok((m.getAttribute("class") || "").indexOf("paintmap") >= 0,
+        m.getAttribute("id") + " is a map you can paint on");
+      a.equal(m.getAttribute("role"), "application", m.getAttribute("id") + " says so to a screen reader");
+      a.equal(m.getAttribute("tabindex"), "0", "and can be reached by keyboard");
+    });
+    // A drag on the greenness map moves the same areas as a drag on the income map would.
+    function pe(map, type, el) {
+      map.dispatchEvent(w.win.PointerEvent(type, { target: el, pointerId: 3, clientX: 0, clientY: 0, bubbles: true }));
+      w.settle();
+    }
+    var ndPaths = ndMap.querySelectorAll("path[data-i]");
+    var before = T(w).zone();
+    var want = (before[300] + 5) % 8;
+    w.doc.querySelectorAll("#paintbtns .opt")[want].click();
+    var run = [300, 301, 302, 303, 304];
+    pe(ndMap, "pointerdown", ndPaths[run[0]]);
+    run.slice(1).forEach(function (ix) { pe(ndMap, "pointermove", ndPaths[ix]); });
+    pe(ndMap, "pointerup", ndPaths[run[run.length - 1]]);
+    a.equal(run.filter(function (ix) { return T(w).zone()[ix] === want; }).length, run.length,
+      "a drag on the greenness map repaints every area it crossed");
+    // ...and the income map redraws with it, because there is one zoning.
+    var incPaths = incMap.querySelectorAll("path[data-i]");
+    var fills = {};
+    run.forEach(function (ix) { fills[incPaths[ix].getAttribute("fill")] = 1; });
+    a.equal(Object.keys(fills).length, 1, "and the income map draws them all as one zone now");
+  });
+
+  t("the zone lines and numbers are the same on both maps", function (a) {
+    var w = open();
+    var inc = w.doc.getElementById("m-inc"), nd = w.doc.getElementById("m-nd");
+    a.equal(nd.querySelector(".zline").getAttribute("d"), inc.querySelector(".zline").getAttribute("d"),
+      "the zone boundaries are drawn identically on both");
+    a.equal(nd.querySelector(".rim").getAttribute("d"), inc.querySelector(".rim").getAttribute("d"),
+      "and so is the study-area edge");
+    function nums(svg) {
+      return svg.querySelectorAll("text").map(function (t) {
+        return t.textContent + "@" + t.getAttribute("x") + "," + t.getAttribute("y");
+      }).join(" ");
+    }
+    a.ok(nums(inc).length > 0, "the zones are numbered");
+    a.equal(nums(nd), nums(inc), "identically on both maps, in the same places");
+  });
+
+  t("a map you paint on refuses the browser's own touch gestures, and leaves room to scroll", function (a) {
     var fs = require("fs");
     var css = fs.readFileSync(FILE, "utf8");
-    css = css.slice(0, css.indexOf("</style>"));
-    a.ok(/#m-inc\s*\{[^}]*touch-action:\s*none/.test(css),
-      "the painting map takes touch-action: none, so a finger drag paints");
-    a.equal(/svg\.map\s*\{[^}]*touch-action:\s*none/.test(css), false,
-      "and the other maps do not, so they still scroll");
-    a.ok(/pointer:\s*coarse[^@]*\.pane:first-child\s+\.map/.test(css.replace(/\n/g, "")),
-      "a gutter beside the painting map gives a thumb somewhere to scroll from");
+    css = css.slice(0, css.indexOf("</style>")).replace(/\n/g, " ");
+    a.ok(/\.paintmap\s*\{[^}]*touch-action:\s*none/.test(css),
+      "a painting map takes touch-action: none, so a finger drag paints");
+    a.ok(/pointer:\s*coarse[^@]*\.paintmap\s*\{[^}]*margin/.test(css),
+      "a gutter beside it gives a thumb somewhere to scroll from");
   });
 
   t("nothing on the page says r", function (a) {

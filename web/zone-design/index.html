@@ -77,13 +77,14 @@ h1 { font-size: calc(1.15rem * var(--ui)); margin: 0; font-weight: 650; }
 body[data-present="1"] .phint { display: none; }
 
 svg.map, svg.plot { width: 100%; height: auto; display: block; background: var(--page); }
-/* Only the map you paint on refuses the browser's own touch gestures. A finger drag there
-   has to paint rather than scroll the page; every other map still scrolls normally. */
-#m-inc { touch-action: none; }
+/* Both choropleths are painted on, because they are one zoning drawn twice and a reader
+   reaching for the greenness map is not making a mistake. A map you paint on refuses the
+   browser's own touch gestures: a finger drag there has to paint rather than scroll. */
+.paintmap { touch-action: none; }
 /* ...which leaves a phone with a map most of the width and nothing beside it to scroll
-   from. A thumb-wide gutter on each side of the painting map is that something. */
+   from. A thumb-wide gutter on each side of a painting map is that something. */
 @media (pointer: coarse) {
-  .pane:first-child .map { width: calc(100% - 4rem); margin: 0 2rem; }
+  .paintmap { width: calc(100% - 4rem); margin: 0 2rem; }
 }
 svg.map:focus-visible, svg.plot:focus-visible { outline: calc(3px * var(--ui)) solid var(--focus); outline-offset: 2px; }
 /* Widths are in rendered pixels, not in map units: `non-scaling-stroke` takes them off the
@@ -224,11 +225,11 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
 
       <div class="pane">
         <div class="ptitle" id="t-inc">Income, by your zones</div>
-        <svg class="map" id="m-inc" viewBox="0 0 100 100" role="application" tabindex="0"
+        <svg class="map paintmap" id="m-inc" viewBox="0 0 100 100" role="application" tabindex="0"
              aria-labelledby="t-inc" aria-describedby="maphelp mapkeys"></svg>
         <div class="legend" id="leg-inc"></div>
         <p class="phint" id="maphelp">Pick a zone colour in the palette, then click or drag
-           across areas to move them into it.</p>
+           across areas on either map to move them into it.</p>
         <p class="visually-hidden" id="mapkeys">Keyboard: the arrow keys move between areas,
            and the number keys 1 to 8 move the area under the cursor into that zone.</p>
         <p class="note" id="rulenote">—</p>
@@ -236,10 +237,11 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
 
       <div class="pane">
         <div class="ptitle" id="t-nd">Greenness, by the same zones</div>
-        <svg class="map" id="m-nd" viewBox="0 0 100 100" role="img" aria-labelledby="t-nd"></svg>
+        <svg class="map paintmap" id="m-nd" viewBox="0 0 100 100" role="application" tabindex="0"
+             aria-labelledby="t-nd" aria-describedby="ndhelp mapkeys"></svg>
         <div class="legend" id="leg-nd"></div>
-        <p class="phint">This map follows the zones you draw. It has nothing of its own to
-           press.</p>
+        <p class="phint" id="ndhelp">The same zones, drawn by greenness instead. You can paint
+           here too: it is one zoning, so a stroke on either map moves the same areas.</p>
       </div>
 
       <div class="pane">
@@ -364,10 +366,11 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
         <p class="note" id="sharenote">The link carries your zoning, its name and the way
            income is averaged. Anyone who opens it sees exactly this.</p>
         <div class="help-panel" id="info-paint" hidden>
-          <p>Choose a zone colour, then click or drag across areas on the income map to move
-             them into it. Every number on the page updates as you go.</p>
-          <p>With a keyboard: put focus on the income map, move between areas with the arrow
-             keys, and press 1 to 8 to move the area under the cursor into that zone.</p>
+          <p>Choose a zone colour, then click or drag across areas on either map to move them
+             into it. The two maps are one zoning drawn twice, so a stroke on either moves the
+             same areas and every number on the page updates as you go.</p>
+          <p>With a keyboard: put focus on either map, move between areas with the arrow keys,
+             and press 1 to 8 to move the area under the cursor into that zone.</p>
           <p>A zone can end up in two pieces. The widget lets it, and says so under the map,
              because whether a zone has to be in one piece is a rule somebody chose rather
              than something the data knows. Census units are built connected; electoral
@@ -915,13 +918,11 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     var labels = document.createElementNS(SVGNS, "g");
     labels.setAttribute("id", cls + "-labels");
     frag.appendChild(labels);
-    if (cls === "inc") {
-      var cur = document.createElementNS(SVGNS, "path");
-      cur.setAttribute("class", "cursor");
-      cur.setAttribute("id", "cursor");
-      cur.setAttribute("d", "");
-      frag.appendChild(cur);
-    }
+    var cur = document.createElementNS(SVGNS, "path");
+    cur.setAttribute("class", "cursor");
+    cur.setAttribute("id", cls + "-cursor");
+    cur.setAttribute("d", "");
+    frag.appendChild(cur);
     svg.appendChild(frag);
     return { paths: paths, lines: lines, labels: labels };
   }
@@ -1005,8 +1006,9 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
         });
       }
     }
-    var cur = document.getElementById("cursor");
-    cur.setAttribute("d", cursor >= 0 ? PATHD[cursor] : "");
+    var curD = cursor >= 0 ? PATHD[cursor] : "";
+    document.getElementById("inc-cursor").setAttribute("d", curD);
+    document.getElementById("nd-cursor").setAttribute("d", curD);
 
     // ---- the scatter ------------------------------------------------------
     drawPlot(st);
@@ -1059,7 +1061,7 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
         : "");
 
     document.getElementById("paintnote").textContent = canPaint()
-      ? "Painting changes the eight zones on the income map."
+      ? "Painting on either map changes the same eight zones."
       : "Choose one of the four eight-zone starts to draw your own.";
     document.querySelectorAll("#paintbtns .opt").forEach(function (b) {
       b.disabled = !canPaint();
@@ -1226,35 +1228,40 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     var v = t.getAttribute("data-i");
     return v === null ? -1 : Number(v);
   }
-  incMap.addEventListener("pointerdown", function (e) {
-    if (!canPaint()) return;
-    painting = true;
-    pointer = e.pointerId;
-    if (incMap.setPointerCapture) {
-      try { incMap.setPointerCapture(e.pointerId); } catch (err) { /* no capture: moves still arrive */ }
-    }
-    var i = areaAt(e);
-    if (i >= 0) { cursor = i; if (assign(i, brush)) { render(); } else { render(); } }
-    if (e.preventDefault) e.preventDefault();
-  });
-  incMap.addEventListener("pointermove", function (e) {
-    if (!painting || (pointer >= 0 && e.pointerId !== undefined && e.pointerId !== pointer)) return;
-    var i = areaAt(e);
-    if (i >= 0) { cursor = i; if (assign(i, brush)) render(); }
-    if (e.preventDefault) e.preventDefault();
-  });
-  function stopPainting(e) {
-    if (!painting) return;
-    painting = false;
-    if (e && incMap.releasePointerCapture && incMap.hasPointerCapture &&
-        incMap.hasPointerCapture(e.pointerId)) {
-      try { incMap.releasePointerCapture(e.pointerId); } catch (err) { /* already gone */ }
-    }
-    pointer = -1;
-    announce(cursor);
-  }
-  ["pointerup", "pointercancel"].forEach(function (t) {
-    incMap.addEventListener(t, stopPainting);
+  // Both maps, one handler set. They are one zoning drawn twice, so a stroke on either
+  // moves the same areas and both redraw together.
+  var PAINTABLE = [incMap, ndMap];
+  PAINTABLE.forEach(function (map) {
+    map.addEventListener("pointerdown", function (e) {
+      if (!canPaint()) return;
+      painting = true;
+      pointer = e.pointerId;
+      if (map.setPointerCapture) {
+        try { map.setPointerCapture(e.pointerId); } catch (err) { /* moves still arrive */ }
+      }
+      var i = areaAt(e);
+      if (i >= 0) { cursor = i; assign(i, brush); }
+      render();
+      if (e.preventDefault) e.preventDefault();
+    });
+    map.addEventListener("pointermove", function (e) {
+      if (!painting || (pointer >= 0 && e.pointerId !== undefined && e.pointerId !== pointer)) return;
+      var i = areaAt(e);
+      if (i >= 0) { cursor = i; if (assign(i, brush)) render(); }
+      if (e.preventDefault) e.preventDefault();
+    });
+    ["pointerup", "pointercancel"].forEach(function (t) {
+      map.addEventListener(t, function (e) {
+        if (!painting) return;
+        painting = false;
+        if (e && map.releasePointerCapture && map.hasPointerCapture &&
+            map.hasPointerCapture(e.pointerId)) {
+          try { map.releasePointerCapture(e.pointerId); } catch (err) { /* already gone */ }
+        }
+        pointer = -1;
+        announce(cursor);
+      });
+    });
   });
 
   function announce(i) {
@@ -1291,7 +1298,8 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     }
     return best;
   }
-  incMap.addEventListener("keydown", function (e) {
+  PAINTABLE.forEach(function (map) {
+  map.addEventListener("keydown", function (e) {
     var dirs = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" };
     if (dirs[e.key]) {
       step(dirs[e.key]);
@@ -1307,7 +1315,8 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
       e.preventDefault();
     }
   });
-  incMap.addEventListener("focus", function () { if (cursor < 0) { cursor = nearestTo(W / 2, H / 2); render(); } });
+  map.addEventListener("focus", function () { if (cursor < 0) { cursor = nearestTo(W / 2, H / 2); render(); } });
+  });
 
   // ------------------------------------------------------------------ controls
   function buttons(host, items, key, onclick, chip) {
@@ -1462,7 +1471,7 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
   presentBtn.addEventListener("click", function () { setPresent(!present); });
   document.addEventListener("keydown", function (e) {
     if (e.key === "p" && !e.metaKey && !e.ctrlKey && !e.altKey &&
-        document.activeElement !== incMap &&
+        PAINTABLE.indexOf(document.activeElement) < 0 &&
         document.activeElement.tagName !== "INPUT") setPresent(!present);
   });
 
