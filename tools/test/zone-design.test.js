@@ -61,18 +61,37 @@ module.exports = function (t) {
     a.ok(same < inc.length, "the two maps are not the same picture (" + same + " of " + inc.length + " share a fill)");
   });
 
+  t("the page reports R squared, not r", function (a) {
+    // Changed on 22 September. r survives in the widget's own file, where the verification
+    // record lives, and nowhere a student reads.
+    var w = open();
+    var st = T(w).state();
+    a.equal(w.doc.getElementById("r").textContent, (st.fit.r * st.fit.r).toFixed(2),
+      "the headline number is R squared");
+    var head = w.doc.getElementById("t-sc").textContent.replace(/\s+/g, " ");
+    a.ok(head.indexOf("R\u00b2 =") > 0, "and so is the header line: " + head);
+    a.equal(/\br = /.test(head), false, "which does not also print r");
+    var bold = w.doc.getElementById("t-sc").querySelectorAll("b").map(function (e) { return e.textContent; });
+    a.equal(bold.length, 2, "two bold items on the header line");
+    a.equal(bold[1], (st.fit.r * st.fit.r).toFixed(2), "the slope and the R squared");
+    var label = w.doc.getElementById("c-r").querySelector(".label").textContent;
+    a.equal(/correlation/i.test(label), false, "and the card is not called a correlation: " + label);
+  });
+
   t("four rules, eight zones each, and they disagree", function (a) {
     // The whole argument. Four zonings anybody could defend, the same 1,001 areas under
     // each, the same number of zones, and no two of them say the same thing about the line.
     var w = open();
     var ids = RULED;
     var rs = ids.map(function (id) { return T(w).fitAt(id).r; });
+    var r2s = rs.map(function (r) { return r * r; });
     var bs = ids.map(function (id) { return T(w).fitAt(id).b; });
     ids.forEach(function (id) {
       a.equal(T(w).fitAt(id).n, 8, id + " has eight zones, so only the boundaries differ");
     });
-    a.ok(Math.max.apply(null, rs) - Math.min.apply(null, rs) > 0.2,
-      "the four disagree about r by more than 0.2 (" + rs.map(function (v) { return v.toFixed(2); }).join(", ") + ")");
+    a.ok(Math.max.apply(null, r2s) - Math.min.apply(null, r2s) > 0.2,
+      "the four disagree about R squared by more than 0.2 (" +
+      r2s.map(function (v) { return v.toFixed(2); }).join(", ") + ")");
     a.ok(Math.max.apply(null, bs) - Math.min.apply(null, bs) > 0.005,
       "and their slopes are not the same line (" +
       bs.map(function (v) { return (v * 10).toFixed(3); }).join(", ") + " per $10,000)");
@@ -83,12 +102,13 @@ module.exports = function (t) {
     // to: two of the four rules land below the areas themselves and one turns the line
     // over, on the same ground and with the same number of zones.
     var da = T(w).daFit.r;
-    a.ok(rs.filter(function (r) { return r < da; }).length >= 2,
-      "at least two of the four rules lower r below the area level " + da.toFixed(3) +
-      " (" + rs.map(function (v) { return v.toFixed(2); }).join(", ") + ")");
-    a.ok(Math.min.apply(null, rs) < 0, "and one of them turns the line over (" +
-      Math.min.apply(null, rs).toFixed(3) + ")");
-    a.ok(Math.max.apply(null, rs) > da, "while another beats the areas themselves");
+    var da2 = da * da;
+    a.ok(r2s.filter(function (v) { return v < da2; }).length >= 2,
+      "at least two of the four rules lower R squared below the area level " + da2.toFixed(3) +
+      " (" + r2s.map(function (v) { return v.toFixed(2); }).join(", ") + ")");
+    a.ok(Math.min.apply(null, bs) < 0, "and one of them turns the line over (slope " +
+      Math.min.apply(null, bs).toFixed(4) + ")");
+    a.ok(Math.max.apply(null, r2s) > da2, "while another beats the areas themselves");
   });
 
   t("each preset is in one piece, and none of them is an extreme", function (a) {
@@ -218,10 +238,11 @@ module.exports = function (t) {
     // stating a measurement goes stale in silence.
     var w = open();
     var panel = w.doc.getElementById("info-classroom").textContent.replace(/\s+/g, " ");
-    var quoted = panel.match(/correlation between income and greenness is (\d+\.\d+)/);
-    a.ok(quoted, "the activity states the area-level correlation");
-    a.close(Number(quoted[1]), T(w).daFit.r, 0.005,
-      "and it is the one the page computes (" + quoted[1] + " against " + T(w).daFit.r.toFixed(3) + ")");
+    var quoted = panel.match(/between income and greenness is (\d+\.\d+)/);
+    a.ok(quoted, "the activity states the area-level R squared");
+    var da2 = T(w).daFit.r * T(w).daFit.r;
+    a.close(Number(quoted[1]), da2, 0.005,
+      "and it is the one the page computes (" + quoted[1] + " against " + da2.toFixed(3) + ")");
     var n = panel.match(/Across the ([\d,]+) areas/);
     a.equal(n && n[1].replace(/,/g, ""), String(T(w).nok), "and the count is the one it fits over");
   });

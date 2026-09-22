@@ -12,7 +12,8 @@ boundaries, and there is no boundary in the data.
 1,241 dissemination areas in and just beyond the City of Vancouver, each with the median
 household income published for it and the mean summer greenness measured over it. Three
 panels: a map of income by the current zones, the same zones by greenness, and a scatter of
-one dot per zone with the fitted line, its slope and r printed live at the head of it. Eight
+one dot per zone with the fitted line, its slope and R<sup>2</sup> printed live at the head
+of it. Eight
 zones, painted by hand, against four zonings drawn by stated rules and against the published
 dissemination areas and census tracts.
 
@@ -27,11 +28,17 @@ The build queue warned that any prediction task here "must carry the counter-cas
 L03 deck states that law in words, on the slide beginning **"MAUP and regression"**: "As a
 generalization, as you aggregate units, the correlation gets stronger."
 
-On this ground it is false, and not by a trick. Across the 1,310 areas r is **+0.411**.
-Of the four zonings drawn by a stated rule, **two land below it** &mdash; +0.024 and
-&minus;0.312 &mdash; and the second turns the line over. Same ground, same records, eight
-zones in each case, and only the boundaries moved. (Grouping to the 189 published census
-tracts does raise it, to +0.430, which is the direction the slide expects.)
+On this ground it is false, and not by a trick. Across the 1,310 areas R<sup>2</sup> is
+**0.169**. Of the four zonings drawn by a stated rule, **two land below it** &mdash; 0.001
+and 0.097 &mdash; and the second has a line that leans the other way. Same ground, same
+records, eight zones in each case, and only the boundaries moved. (Grouping to the 189
+published census tracts does raise it, to 0.185, which is the direction the slide expects.)
+
+**The page reports R<sup>2</sup>, not r** (22 September). R<sup>2</sup> has no sign, so the
+direction of the relationship is carried by the slope printed beside it, which is where a
+reader should be looking anyway. r survives in this file, because the verification record
+below is easier to check against an independent implementation in the quantity that
+implementation computes.
 
 The queue cites O'Sullivan and Unwin's Figures 5.6 and 5.7 for the counter-case. **That
 citation is not on the page.** Nobody on this build had the book, so it could not go through
@@ -160,22 +167,24 @@ quantising origin is anchored to a round number below the minimum rather than to
 
 Every figure below comes out of `tools/zone-design-verify.py`. They are the regression suite.
 
-**Across the 1,310 areas themselves: r = +0.410961, slope = +0.001761 per $1,000.**
+**Across the 1,310 areas themselves: r = +0.410961 (R<sup>2</sup> = 0.168889), slope =
++0.001761 per $1,000.** r is recorded here and R<sup>2</sup> is what the page prints; they
+are the same number squared, and nothing but the display changed.
 
-| zoning | zones | rule | r | slope per $10,000 |
-|---|---|---|---|---|
-| dissemination areas | 1,310 | any | +0.410961 | +0.01761 |
-| census tracts | 189 | households | +0.430479 | +0.02513 |
-| census tracts | 189 | plain | +0.478950 | +0.02738 |
-| city local areas | 22 | households | +0.691025 | +0.04205 |
-| Wedges from north-west | 8 | households | &minus;0.311621 | &minus;0.00860 |
-| A grid of blocks | 8 | households | +0.787407 | +0.08162 |
-| Groups of census tracts | 8 | households | +0.547643 | +0.08631 |
-| Same number of households | 8 | households | +0.023919 | +0.00273 |
+| zoning | zones | rule | r | R<sup>2</sup> | slope per $10,000 |
+|---|---|---|---|---|---|
+| dissemination areas | 1,310 | any | +0.410961 | 0.1689 | +0.01761 |
+| census tracts | 189 | households | +0.430479 | 0.1853 | +0.02513 |
+| census tracts | 189 | plain | +0.478950 | 0.2294 | +0.02738 |
+| city local areas | 22 | households | +0.691025 | 0.4775 | +0.04205 |
+| Wedges from north-west | 8 | households | &minus;0.311621 | 0.0971 | &minus;0.00860 |
+| A grid of blocks | 8 | households | +0.787407 | 0.6200 | +0.08162 |
+| Groups of census tracts | 8 | households | +0.547643 | 0.2999 | +0.08631 |
+| Same number of households | 8 | households | +0.023919 | 0.0006 | +0.00273 |
 
-The rule matters as much as the lines. The same eight **Same number of households** give r = +0.024 weighted by
-households, +0.119 weighted by people and +0.348 on a plain average of the areas' medians:
-from nothing at all to a third of the way to a finding, with not one boundary moved.
+The rule matters as much as the lines. The same eight **Same number of households** give
+R<sup>2</sup> = 0.001 weighted by households, 0.014 weighted by people and 0.121 on a plain
+average of the areas' medians, with not one boundary moved.
 
 ### The two variables aggregate differently, which is why the rule is a control
 
@@ -347,26 +356,29 @@ whoever teaches it rather than drafted alone. **This one was drafted alone**, an
 says so where an instructor will see it. Re-read against section 16 on 22 September and
 rewritten once; what it now asks:
 
-- **Commit, one minute.** "Across the 1,310 areas, the correlation between income and
-  greenness is 0.41. You are about to group those areas into eight zones. Write down one
-  number: what will the correlation be then?" One number, no screen needed, written before
-  anything is pressed. **The figure is now asserted by the test suite against what the page
+- **Commit, one minute.** "Across the 1,310 areas, R<sup>2</sup> between income and greenness
+  is 0.17. You are about to group those areas into eight zones. Write down one number: what
+  will R<sup>2</sup> be then?" One number, no screen needed, written before anything is
+  pressed. **The figure is now asserted by the test suite against what the page
   computes**, because the first draft quoted 0.481 from an earlier extent and nothing caught
   it.
 - **Pair, two minutes.** Compare the two numbers and say why they differ. Press each of the
-  four rules and read r off each. Then paint: one for the strongest positive, one for the
-  strongest negative. Name it, copy the link, hand it on with both numbers.
-- **Room, two minutes.** Open the highest and the lowest at the front.
+  four rules and read R<sup>2</sup> off each. Then paint, for one of four prizes: the
+  steepest positive slope, the steepest negative slope, the highest R<sup>2</sup>, and the
+  R<sup>2</sup> nearest zero. Name it, copy the link, hand it on with the slope and the
+  R<sup>2</sup>.
+- **Room, two minutes.** Take the four prizes in turn and open the winning link at the front.
 
 **Will two reasonable people differ?** Yes, and the spread is written into the data rather
-than hoped for: the four rules give +0.79, +0.55, +0.02 and &minus;0.31 over the same eight
-zones, so any number between about 0 and 0.8 is a defensible guess.
+than hoped for: the four rules give R<sup>2</sup> of 0.62, 0.30, 0.10 and 0.00 over the same
+eight zones, so any number between 0 and 0.6 is a defensible guess.
 
-**The wrong answers, and what each is made of.** "Above 0.41, because grouping strengthens a
-correlation" is what the deck's own slide s39 says in those words, and two of the four rules
-are below it. "About 0.41, because a zone is a sample of the city" is the sampling intuition,
-and it is wrong because a zone is not a sample, it is a sum. "It cannot go negative" is
-reasonable if you have seen aggregation demonstrated once, and one of the four is negative.
+**The wrong answers, and what each is made of.** "Above 0.17, because grouping strengthens a
+relationship" is what the deck's own slide s39 says in those words, and two of the four rules
+are below it. "About 0.17, because a zone is a sample of the city" is the sampling intuition,
+and it is wrong because a zone is not a sample, it is a sum. "The line must still lean the
+same way" is reasonable if you have seen aggregation demonstrated once, and one of the four
+leans the other way.
 
 **What the share-back does with them.** The three positions are named on the panel, and the
 instructor settles between them by opening two of the room's own links rather than by

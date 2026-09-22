@@ -246,24 +246,26 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
 
     <div class="readout">
       <div class="stat" id="c-r">
-        <div class="label">Correlation across your zones
+        <div class="label">How much of the pattern your zones explain
           <button class="info" data-info="info-r" aria-expanded="false" aria-controls="info-r"
                   title="What does this number do?">i</button>
         </div>
         <div class="big" id="r">—</div>
         <div class="sub" id="rbase">—</div>
         <div class="help-panel" id="info-r" hidden>
-          <p>r runs from &minus;1 to +1. It says how closely the dots sit to a straight
-             line, and which way that line leans. Nothing in it says one thing causes the
-             other.</p>
-          <p>Grouping areas together usually pushes r towards 1, because averaging removes
-             the differences inside each group and leaves the differences between groups.
-             Here it is 0.411 across the 1,310 areas and 0.430 across the 189 published
-             census tracts, which is the expected direction.</p>
-          <p>Usually is not always. The four eight-zone rules on offer give 0.79, 0.55,
-             0.02 and &minus;0.31. Two of them are <em>below</em> the areas themselves and
-             one turns the line over. Same ground, same records, same number of zones, and
-             the only thing that changed is where the lines go. <b>You can do better than
+          <p>R<sup>2</sup> runs from 0 to 1. It is the share of the differences between
+             zones that the straight line accounts for. At 0 the line tells you nothing about
+             where a zone sits; at 1 it would put every zone exactly on it. Nothing in it
+             says one thing causes the other, and it has no sign: which way the line leans is
+             the slope beside it.</p>
+          <p>Grouping areas together usually pushes it up, because averaging removes the
+             differences inside each group and leaves the differences between groups. Here it
+             is 0.17 across the 1,310 areas and 0.19 across the 189 published census tracts,
+             which is the expected direction.</p>
+          <p>Usually is not always. The four eight-zone rules on offer give 0.62, 0.30, 0.00
+             and 0.10. Two of them are <em>below</em> the areas themselves, and the last has a
+             line that leans the other way. Same ground, same records, same number of zones,
+             and the only thing that changed is where the lines go. <b>You can do better than
              all four.</b></p>
           <p>Openshaw and Taylor took the 99 counties of Iowa and searched for groupings
              into 6 regions. They could drive the correlation between two variables
@@ -289,10 +291,11 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
         <div class="help-panel" id="info-slope" hidden>
           <p>How much greenness the line adds for every extra $10,000 of median household
              income. It is a property of the zones you drew, not of any household.</p>
-          <p>Watch it and r separately. They are not the same thing and they do not move
-             together. Across the 1,310 areas themselves the slope is 0.018 per $10,000.
-             Two of the four rules give about 0.08, four and a half times that; one gives
-             0.003, near nothing; one gives &minus;0.009, the other way.</p>
+          <p>Watch it and R<sup>2</sup> separately. They are not the same thing and they do
+             not move together: a zoning can tilt the line without tightening it, and it can
+             tighten without tilting. Across the 1,310 areas themselves the slope is 0.018 per
+             $10,000. Two of the four rules give about 0.08, four and a half times that; one
+             gives 0.003, near nothing; one gives &minus;0.009, the other way.</p>
           <p><strong>Nothing here is about a person.</strong> Reading a line between areas
              as a statement about the people in them is the ecological fallacy.</p>
         </div>
@@ -313,8 +316,8 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
           <p>The four eight-zone starts are each drawn by a rule somebody could state before
              knowing what it would do: same number of households in each, compact lumps,
              whole census tracts grouped together, the city&rsquo;s own neighbourhoods
-             grouped together. Each is named for its rule and for nothing else, and its r
-             and its slope print beside the maps once you choose it.</p>
+             grouped together. Each is named for its rule and for nothing else, and its
+             R<sup>2</sup> and its slope print beside the maps once you choose it.</p>
           <p>They are not the extremes. Forty zonings were drawn from stated rules, ten for
              each of four things a preset is here to show, and the one kept from each ten is
              the best of its own ten rather than the best of the forty. There is room to beat
@@ -387,9 +390,10 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
           <p>That is worth more than it looks. A number can move because you redrew the
              boundaries and it can move because you changed how you added it up, and on this
              page you can see both happen to the same map. On the <b>reversed</b> zoning it
-             is not a small move: weighted by households r is &minus;0.63, and on a plain
-             average of the same eight zones it is +0.80. The sign of the finding is decided
-             by a choice nobody usually writes down.</p>
+             is not a small move. On one of the four rules the line is flat when income is
+             weighted by households and clearly tilted on a plain average of the very same
+             eight zones, with not one boundary moved. The size of a finding, and sometimes
+             its direction, is decided by a choice nobody usually writes down.</p>
         </div>
       </fieldset>
 
@@ -399,23 +403,24 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
                   aria-controls="info-classroom" title="Five minutes, in pairs">i</button>
         </legend>
         <div class="help-panel classroom" id="info-classroom" hidden>
-          <p><b>On your own, one minute.</b> Across the 1,310 areas, the correlation
-             between income and greenness is <b>0.41</b>. You are about to group those areas
-             into eight zones. Write down one number: what will the correlation be then?
-             Write it before anybody presses anything.</p>
+          <p><b>On your own, one minute.</b> Across the 1,310 areas, R<sup>2</sup> between
+             income and greenness is <b>0.17</b>. You are about to group those areas into
+             eight zones. Write down one number: what will R<sup>2</sup> be then? Write it
+             before anybody presses anything.</p>
           <p><b>In pairs, two minutes.</b> Compare your two numbers and say why they
-             differ. Then press each of the four starting rules and read the correlation off
-             each. Now paint: one of you draws for the strongest positive, the other for the
-             strongest negative. Type a name, press <b>Copy link</b>, and hand the link on
-             with your two numbers.</p>
-          <p><b>Back to the room, two minutes.</b> Ask for the highest and the lowest the
-             room reached, and open those two links at the front. Most people write a number
-             above 0.41, because grouping is supposed to strengthen a correlation, and two of
-             the four rules are below it. Some write a number close to 0.41, on the view that
-             a zone is a sample of the city. Almost nobody writes a negative number, and one
-             of the four rules is negative. Then ask what the prizes cannot settle: which of
-             these zonings would anybody put in a report, and how would a reader of that
-             report ever tell?</p>
+             differ. Then press each of the four starting rules and read R<sup>2</sup> off
+             each. Now paint. There are four prizes: the steepest positive slope, the
+             steepest negative slope, the highest R<sup>2</sup>, and the R<sup>2</sup>
+             nearest zero. Type a name, press <b>Copy link</b>, and hand the link on with
+             your slope and your R<sup>2</sup>.</p>
+          <p><b>Back to the room, two minutes.</b> Take the four prizes in turn and open
+             the winning link at the front. Most people write a number above 0.17, because
+             grouping is supposed to strengthen a relationship, and two of the four rules are
+             below it. Some write a number close to 0.17, on the view that a zone is a sample
+             of the city; a zone is not a sample, it is a sum. Almost nobody expects a zoning
+             whose line leans the other way, and one of the four leans that way. Then ask what
+             the prizes cannot settle: which of these zonings would anybody put in a report,
+             and how would a reader of that report ever tell?</p>
         </div>
       </fieldset>
 
@@ -1000,9 +1005,12 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     drawPlot(st);
 
     // ---- the numbers ------------------------------------------------------
-    document.getElementById("r").textContent = st.fit.ok ? fmt(st.fit.r, 2) : "—";
+    // R squared rather than r. It has no sign, so the direction of the relationship is
+    // carried by the slope beside it, which is where a reader should be looking anyway.
+    document.getElementById("r").textContent = st.fit.ok ? fmt(st.fit.r * st.fit.r, 2) : "—";
     document.getElementById("rbase").textContent =
-      "Across the " + NOK.toLocaleString("en-CA") + " areas themselves, r = " + fmt(DA_FIT.r, 2) + ".";
+      "R\u00b2, from 0 to 1. Across the " + NOK.toLocaleString("en-CA") +
+      " areas themselves it is " + fmt(DA_FIT.r * DA_FIT.r, 2) + ".";
     // Printed per $10,000 rather than per $1,000, so the figures a class compares are
     // whole tenths rather than a string of zeros. The fit itself does not change.
     document.getElementById("slope").textContent = st.fit.ok ? fmt(st.fit.b * 10, 3) : "—";
@@ -1019,8 +1027,8 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
       }
       bit("greenness = " + fmt(st.fit.a, 3) + " " + (st.fit.b < 0 ? "− " : "+ "), false);
       bit(fmt(Math.abs(st.fit.b * 10), 3), true);
-      bit(" × income in $10,000s   ·   r = ", false);
-      bit(fmt(st.fit.r, 3), true);
+      bit(" × income in $10,000s   ·   R\u00b2 = ", false);
+      bit(fmt(st.fit.r * st.fit.r, 2), true);
     } else {
       eq.textContent = "Too few zones with figures in them to fit a line.";
     }
@@ -1230,7 +1238,8 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
   function announce(i) {
     if (!state || i < 0 || i >= N) return;
     var msg = "Zone " + (ZONE[i] + 1) + ". " +
-      (state.fit.ok ? "r is now " + fmt(state.fit.r, 2) + ", slope " + fmt(state.fit.b, 4) : "no line") + + ".";
+      (state.fit.ok ? "R squared is now " + fmt(state.fit.r * state.fit.r, 2) +
+                      ", slope " + fmt(state.fit.b * 10, 3) + " per $10,000" : "no line") + ".";
     liveEl.textContent = msg;
   }
 
@@ -1301,12 +1310,12 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
   }
   buttons(document.getElementById("zonebtns"), ZONINGS, "z", function (id) {
     setZoning(id); cursor = -1; render();
-    liveEl.textContent = labelOf(id) + ": " + (state.fit.ok ? "r is " + fmt(state.fit.r, 2) : "no line") + ".";
+    liveEl.textContent = labelOf(id) + ": " + (state.fit.ok ? "R squared is " + fmt(state.fit.r * state.fit.r, 2) : "no line") + ".";
   });
   buttons(document.getElementById("rulebtns"), RULES, "r", function (id) {
     ruleId = id; render();
     liveEl.textContent = "Income is now " + ruleOf(id).label + ". " +
-      (state.fit.ok ? "r is " + fmt(state.fit.r, 2) + "." : "");
+      (state.fit.ok ? "R squared is " + fmt(state.fit.r * state.fit.r, 2) + "." : "");
   });
   var PAINTS = [];
   for (i0 = 0; i0 < KPAINT; i0++) PAINTS.push({ id: String(i0), label: "Zone " + (i0 + 1), colour: ZHUE[i0] });
