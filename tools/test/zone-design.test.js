@@ -437,6 +437,49 @@ module.exports = function (t) {
     });
   });
 
+  t("there is a way down to the original data and back, in every layout", function (a) {
+    ["", "?present=1"].forEach(function (search) {
+      var w = open(search);
+      var where = search ? "presenting" : "ordinary";
+      var down = w.doc.getElementById("toorig");
+      a.ok(down, where + ": the Original data button is on the page");
+      a.equal(down.tagName, "BUTTON", where + ": it is a button, so it works from the keyboard");
+      a.equal(w.doc.getElementById("origpanel").hidden, true, where + ": the section starts closed");
+      down.click();
+      w.settle();
+      a.equal(w.doc.getElementById("origpanel").hidden, false, where + ": pressing it opens the section");
+      a.equal(w.doc.getElementById("origbtn").getAttribute("aria-expanded"), "true",
+        where + ": and the disclosure says so");
+      a.equal(w.doc.activeElement, w.doc.getElementById("orighead"),
+        where + ": focus lands on the heading");
+      a.ok(w.doc.getElementById("m-oinc").querySelectorAll("path[data-i]").length > 0,
+        where + ": and the section has been built");
+      var back = w.doc.getElementById("backup");
+      a.ok(back, where + ": there is a way back");
+      back.click();
+      w.settle();
+      a.equal(w.doc.activeElement, down, where + ": which returns focus to the button that sent you");
+    });
+  });
+
+  t("three passages Luke removed have stayed removed", function (a) {
+    // Deleted on 22 September. Asserted here because a sentence taken off a page comes
+    // back the next time somebody regenerates the readouts from a template.
+    var w = open();
+    var text = w.doc.body.textContent.replace(/\s+/g, " ");
+    [
+      "areas themselves it is",
+      "Across the areas themselves,",
+      "turns people into areas and areas into dots"
+    ].forEach(function (gone) {
+      a.equal(text.indexOf(gone), -1, "gone from the page: " + JSON.stringify(gone));
+    });
+    a.equal(w.doc.getElementById("selfnote"), null, "and the note that carried the third is gone");
+    // What is left in those two sub-lines still says what the number is.
+    a.ok(w.doc.getElementById("rbase").textContent.trim().length > 4, "the R squared card still names its scale");
+    a.ok(w.doc.getElementById("slopebase").textContent.indexOf("$10,000") > 0, "and the slope card its units");
+  });
+
   t("the classroom panel quotes the figure the page actually shows", function (a) {
     // It quoted a figure from an earlier extent for a while, which is the way a sentence
     // stating a measurement goes stale in silence.

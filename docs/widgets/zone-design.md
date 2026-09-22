@@ -383,6 +383,19 @@ than two halves of the page. The fill is paired with the zone number printed on 
 at 0.55 opacity so the area hairlines and the water stay visible through it, and it is the
 key the scatter is read against.
 
+**There is a way down to the original data and back.** On a wide screen, and on a projector,
+the section is far below the fold and nobody is scrolling. An **Original data** button sits
+with the other controls, opens the disclosure, scrolls to it and puts focus on its heading; a
+**Back to the maps** control at the foot of the section returns the view and the focus to the
+button that sent you. Both are buttons, so both work from the keyboard. The section is no
+longer hidden in presentation mode, because hiding it would have broken the button that
+reaches it.
+
+**Three sentences were deleted on Luke's instruction** and the suite asserts they stay gone:
+the area-level figure repeated under the R<sup>2</sup> card, the same under the slope card,
+and the closing note about turning people into areas. The area-level figures survive where
+they do work &mdash; in the two explanation panels and in the five-minute activity.
+
 **Painting is one code path for mouse, pen and finger.** `pointerdown` captures the pointer,
 `pointermove` finds the area by hit-testing the page rather than by reading the event target
 (capture has retargeted it to the map), and `pointerup` or `pointercancel` releases. A press
