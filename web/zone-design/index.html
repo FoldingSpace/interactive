@@ -99,9 +99,7 @@ svg.map:focus-visible, svg.plot:focus-visible { outline: calc(3px * var(--ui)) s
          stroke-linecap: round; }
 .rim { fill: none; stroke: var(--zone-line); stroke-width: calc(3px * var(--ui));
        vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-/* Size and halo are set on the element, in map units, because a font-size in CSS pixels
-   inside a viewBox thousands of units wide renders about one pixel tall. */
-.znum { font-weight: 700; paint-order: stroke; }
+
 .cursor { fill: none; stroke: var(--focus); stroke-width: calc(3px * var(--ui)); vector-effect: non-scaling-stroke; }
 
 .legend { display: flex; align-items: center; gap: calc(0.25rem * var(--ui)); flex-wrap: wrap;
@@ -607,7 +605,7 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
   }).join("");
 
   // Area centres, from the largest ring by the usual polygon centroid formula. Used for
-  // the zone number labels and for arrow-key movement between areas.
+  // arrow-key movement between areas.
   var CENT = (function () {
     var c = new Float64Array(N * 2), f, r, k, pts, area, cx, cy, x1, y1, x2, y2, cr, best;
     for (f = 0; f < N; f++) {
@@ -931,16 +929,13 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     lines.setAttribute("class", "zline");
     lines.setAttribute("id", cls + "-lines");
     frag.appendChild(lines);
-    var labels = document.createElementNS(SVGNS, "g");
-    labels.setAttribute("id", cls + "-labels");
-    frag.appendChild(labels);
     var cur = document.createElementNS(SVGNS, "path");
     cur.setAttribute("class", "cursor");
     cur.setAttribute("id", cls + "-cursor");
     cur.setAttribute("d", "");
     frag.appendChild(cur);
     svg.appendChild(frag);
-    return { paths: paths, lines: lines, labels: labels };
+    return { paths: paths, lines: lines };
   }
   var ZONEV = buildMap(zoneMap, "zone");
   var INCV = buildMap(incMap, "inc");
@@ -958,17 +953,6 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
       d += "M" + e.x1 + " " + (H - e.y1) + "L" + e.x2 + " " + (H - e.y2);
     }
     return d;
-  }
-
-  function zoneCentres(zone, k) {
-    var sx = new Float64Array(k), sy = new Float64Array(k), c = new Float64Array(k), i, z;
-    for (i = 0; i < N; i++) {
-      z = zone[i];
-      sx[z] += CENT[i * 2]; sy[z] += CENT[i * 2 + 1]; c[z]++;
-    }
-    var out = [];
-    for (z = 0; z < k; z++) out.push(c[z] ? [sx[z] / c[z], sy[z] / c[z]] : null);
-    return out;
   }
 
   function fmt(v, d) {
@@ -1010,27 +994,13 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     var d = zoneOutline(ZONE);
     VIEWS.forEach(function (v) { v.lines.setAttribute("d", d); });
 
-    // Zone numbers, only where there are few enough zones for a number to be readable.
-    VIEWS.forEach(function (v) { v.labels.textContent = ""; });
-    if (K <= 30) {
-      var cs = zoneCentres(ZONE, K);
-      for (z = 0; z < K; z++) {
-        if (!cs[z]) continue;
-        VIEWS.map(function (v) { return v.labels; }).forEach(function (host) {
-          var t = document.createElementNS(SVGNS, "text");
-          t.setAttribute("x", String(Math.round(cs[z][0])));
-          t.setAttribute("y", String(Math.round(H - cs[z][1])));
-          t.setAttribute("class", "znum");
-          t.setAttribute("text-anchor", "middle");
-          t.setAttribute("fill", canPaint() ? ZHUE[z % 8] : "var(--ink)");
-          t.setAttribute("stroke", "var(--page)");
-          t.setAttribute("font-size", String(Math.round(W / (K <= 8 ? 26 : 60))));
-          t.setAttribute("stroke-width", String(Math.round(W / (K <= 8 ? 190 : 420))));
-          t.textContent = String(z + 1);
-          host.appendChild(t);
-        });
-      }
-    }
+    // No numbers are drawn on the maps. A zone can be in several pieces, and a number at
+    // its centroid then sits in whichever piece the arithmetic happened to land in, or in
+    // the gap between them on ground belonging to somebody else. Identity is carried by
+    // colour on the zones map, by the boundaries on all three, and by the same colours on
+    // the scatter, so a dot can be matched to the ground by eye. The number survives where
+    // it cannot mislead: in what is announced after a keypress or a stroke.
+
     var curD = cursor >= 0 ? PATHD[cursor] : "";
     ["zone", "inc", "nd"].forEach(function (k) {
       document.getElementById(k + "-cursor").setAttribute("d", curD);
@@ -1196,8 +1166,12 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
     var few = st.ag.x.length <= 40;
     for (i = 0; i < st.ag.x.length; i++) {
       var rad = few ? 6 + 6 * Math.sqrt(st.ag.hh[i] / maxhh) : 3;
+      // Filled with the zone's own palette colour, so a dot can be matched to the painted
+      // ground by eye. Where there is no palette - a published zoning has far more zones
+      // than there are colours - it falls back to the income ramp.
       e = add("circle", { cx: px(st.ag.x[i]).toFixed(1), cy: py(st.ag.y[i]).toFixed(1), r: rad.toFixed(2),
-                          fill: INC_RAMP[Math.max(2, classOf(st.ag.x[i], INC_BR))],
+                          fill: canPaint() ? ZHUE[st.ag.id[i] % 8]
+                                           : INC_RAMP[Math.max(2, classOf(st.ag.x[i], INC_BR))],
                           stroke: "var(--page)", "stroke-width": few ? 2 : 1 });
       e.setAttribute("data-zone", String(st.ag.id[i]));
     }

@@ -202,22 +202,53 @@ module.exports = function (t) {
     a.equal(ids.join(","), "m-zone,m-inc,m-nd,plot", "in that order, left to right");
   });
 
-  t("the zone lines and numbers are the same on all three maps", function (a) {
+  t("the zone boundaries are the same on all three maps, and no number is drawn", function (a) {
     var w = open();
     var maps = ["m-zone", "m-inc", "m-nd"].map(function (id) { return w.doc.getElementById(id); });
-    function nums(svg) {
-      return svg.querySelectorAll("text").map(function (t) {
-        return t.textContent + "@" + t.getAttribute("x") + "," + t.getAttribute("y");
-      }).join(" ");
-    }
-    a.ok(nums(maps[0]).length > 0, "the zones are numbered");
     maps.slice(1).forEach(function (m) {
       a.equal(m.querySelector(".zline").getAttribute("d"), maps[0].querySelector(".zline").getAttribute("d"),
         m.getAttribute("id") + " draws the same zone boundaries");
       a.equal(m.querySelector(".rim").getAttribute("d"), maps[0].querySelector(".rim").getAttribute("d"),
         m.getAttribute("id") + " draws the same study-area edge");
-      a.equal(nums(m), nums(maps[0]), m.getAttribute("id") + " numbers them in the same places");
     });
+    // A zone can be in several pieces, so a number at its centroid can land in somebody
+    // else's zone. None is drawn on any map, at any zoning.
+    [RULED[0], "ct", "da"].forEach(function (z) {
+      T(w).setZoning(z);
+      maps.forEach(function (m) {
+        a.equal(m.querySelectorAll("text").length, 0,
+          "no number drawn on " + m.getAttribute("id") + " at " + z);
+      });
+    });
+  });
+
+  t("a zone can be matched from the scatter to the ground by its colour", function (a) {
+    var w = open();
+    var dots = w.doc.getElementById("plot").querySelectorAll("circle");
+    var areas = w.doc.getElementById("m-zone").querySelectorAll("path[data-i]");
+    var byZone = {}, i;
+    for (i = 0; i < T(w).n; i++) byZone[T(w).zone()[i]] = areas[i].getAttribute("fill");
+    a.ok(dots.length > 2, "there are dots to match");
+    dots.forEach(function (dot) {
+      var z = Number(dot.getAttribute("data-zone"));
+      a.equal(dot.getAttribute("fill"), byZone[z],
+        "the dot for zone " + (z + 1) + " is the colour its areas are painted");
+      a.equal(dot.getAttribute("stroke"), "var(--page)", "with the same white stroke");
+    });
+  });
+
+  t("the zone number survives where it cannot mislead", function (a) {
+    // Drawn on a map it can land in a zone it does not belong to. Spoken, it cannot.
+    var w = open();
+    var map = w.doc.getElementById("m-zone");
+    map.dispatchEvent(w.win.KeyboardEvent("keydown", { key: "ArrowRight", target: map, bubbles: true }));
+    w.settle();
+    var moved = w.doc.getElementById("live").textContent;
+    a.ok(/zone \d/i.test(moved), "moving the cursor says which zone it is in: " + moved);
+    map.dispatchEvent(w.win.KeyboardEvent("keydown", { key: "7", target: map, bubbles: true }));
+    w.settle();
+    var live = w.doc.getElementById("live").textContent;
+    a.ok(/Zone 7\b/.test(live), "and assigning one announces the zone it went into: " + live);
   });
 
   t("a map you paint on refuses the browser's own touch gestures, and leaves room to scroll", function (a) {

@@ -329,8 +329,7 @@ only the slope and r in bold.
 **Colours.** ColorBrewer PuBu for income and YlGn for greenness, both from the sets their
 authors mark safe for the commonest colour blindness, and two different ramps so the maps
 cannot be confused. Zone identity uses eight of Okabe and Ito's qualitative set on the outline
-and the paint chip, and the zone's number is printed on both maps, so nothing rests on hue
-alone.
+and the paint chip, and the zone's number is spoken rather than drawn, for the reasons above.
 
 **The dots are sized by households.** The fit is unweighted, one dot one zone; sizing the dots
 is the only place that disagreement is visible.
@@ -361,16 +360,28 @@ in so many words is open.
 about territory. Luke's call, not made.
 
 **Three maps, one zoning, all three painted on.** A stroke on any of them moves the same
-areas and all four panels redraw. The zone boundaries, the zone numbers, the study-area edge
-and the keyboard cursor are drawn identically on all three, so any one of them reads as the
-zoning on its own.
+areas and all four panels redraw. The zone boundaries, the study-area edge and the keyboard
+cursor are drawn identically on all three, so any one of them reads as the zoning on its own.
+
+**No zone number is drawn on any map.** A zone can be in several pieces &mdash; that is the
+point of letting somebody paint one &mdash; and a number at its centroid then sits in
+whichever piece the arithmetic landed in, or in the gap between them on ground belonging to
+another zone. Identity is carried by colour on the zones map and by the boundaries on all
+three, and **the scatter's dots take the same palette colours**, so a dot can be matched to
+the ground it came from by eye. The number survives where it cannot mislead: in what is
+announced after a keypress or a stroke, which is the route a screen-reader or keyboard user
+has. Colour is therefore doing more work here than `principles.md` section 9 normally allows,
+and what pays for it is that it is a label rather than a measurement &mdash; the quantities
+are in the two choropleths, each with its own legend, and the eight hues were measured at
+3.06 to 5.19:1 against the page.
 
 **The leftmost panel is the zoning and nothing else**: each area filled with its zone's
 palette colour, no variable in the way. The two choropleths answer "what is in these zones";
 this one answers "what are the zones", which is the question somebody painting is actually
 holding. The palette sits under it, so choosing a colour and using it are one movement rather
 than two halves of the page. The fill is paired with the zone number printed on it, and drawn
-at 0.55 opacity so the area hairlines and the water stay visible through it.
+at 0.55 opacity so the area hairlines and the water stay visible through it, and it is the
+key the scatter is read against.
 
 **Painting is one code path for mouse, pen and finger.** `pointerdown` captures the pointer,
 `pointermove` finds the area by hit-testing the page rather than by reading the event target
