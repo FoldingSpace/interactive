@@ -1108,14 +1108,18 @@ def candidates(nbr, attrs, ndvi, ndvipx, cent, k):
         "eight rings of equal area around the middle of the city, a core and its edges")
 
     # --- ten that follow published lines --------------------------------------
-    dirs = [("west to east", 0.0), ("south to north", math.pi / 2),
-            ("south-west to north-east", math.pi / 4),
-            ("north-west to south-east", -math.pi / 4),
-            ("along the long axis", math.radians(20))]
-    for what, parent, npar in (("census tracts", attrs["ct"], attrs["nct"]),
-                               ("the city's neighbourhoods", attrs["la"], attrs["nla"])):
-        for dname, ang in dirs:
-            add("follow", "Groups of %s" % what,
+    # Named for the bands the walk produces rather than for the walk: walking west to east
+    # and cutting the walk into runs leaves eight north-south bands, which is what somebody
+    # looking at the map sees.
+    dirs = [("west to east", 0.0, "North-south groups"),
+            ("south to north", math.pi / 2, "East-west groups"),
+            ("south-west to north-east", math.pi / 4, "Diagonal groups"),
+            ("north-west to south-east", -math.pi / 4, "Diagonal groups"),
+            ("along the long axis", math.radians(20), "Cross-city groups")]
+    for what, parent, npar, plain in (("census tracts", attrs["ct"], attrs["nct"], True),
+                                      ("the city's neighbourhoods", attrs["la"], attrs["nla"], False)):
+        for dname, ang, bands in dirs:
+            add("follow", bands if plain else "City neighbourhoods",
                 run_split(parent, npar, parent_order(parent, npar, cent, ang), hh, k),
                 "whole %s walked %s and cut into eight runs of equal households"
                 % (what, dname))

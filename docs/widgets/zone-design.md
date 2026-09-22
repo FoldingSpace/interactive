@@ -193,7 +193,7 @@ are the same number squared, and nothing but the display changed.
 | dissemination areas | 1,317 | any | +0.410136 | 0.1682 | +0.01760 |
 | Rings from the middle | 8 | households | &minus;0.3794 | 0.1439 | &minus;0.0295 |
 | A grid of blocks | 8 | households | +0.8162 | 0.6662 | +0.0874 |
-| Groups of census tracts | 8 | households | +0.1824 | 0.0333 | +0.0600 |
+| North-south groups | 8 | households | +0.1824 | 0.0333 | +0.0600 |
 | Same number of households | 8 | households | &minus;0.2987 | 0.0892 | &minus;0.0391 |
 
 Three of the four land below the area level and two of them lean the other way, which is
@@ -234,7 +234,11 @@ correlation, the strongest, the steepest line, the shallowest. The extremes of t
 
 **Budget: 40 candidate zonings.** That is the whole search.
 
-**The table below is from the build of 22 September, before Sea Island was let in.** The
+**The table below is from the build of 22 September, before Sea Island was let in, and it
+carries the old family names.** The census-tract rules are now named for the bands they
+produce rather than for their parent units &mdash; walking tracts west to east and cutting
+the walk into runs leaves eight north-south bands &mdash; so "Groups of census tracts" walked
+west to east is the preset the page now calls **North-south groups**. The
 forty rules are unchanged and so is the method; the figures moved when the ground did, and
 they are kept here as the record of what was tried rather than as current values. The four
 shipped are current, in the table above.
@@ -282,7 +286,7 @@ shipped are current, in the table above.
 | equal | Same number of households | grown from eight starting areas as far apart as possible, the first in the middle of the city, until the households even out | -0.130 | -0.0237 | 8 | 9 |
 | equal | Compact blocks | grown from the same eight starting areas at the same rate, so every zone covers about the same number of areas | -0.390 | -0.0648 | 8 | 9 |
 
-The four shipped are **Wedges from north-west** (weakest r), **A grid of blocks** (strongest r), **Groups of census tracts** (steepest line) and
+The four shipped are **Wedges from north-west** (weakest r), **A grid of blocks** (strongest r), **North-south groups** (steepest line) and
 **Same number of households** (shallowest). Each is named for its rule and for nothing else: a name that said
 "steeper" or "flatter" would give away the answer to the thing the class is asked to find.
 
