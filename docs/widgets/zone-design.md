@@ -28,7 +28,7 @@ The build queue warned that any prediction task here "must carry the counter-cas
 L03 deck states that law in words, on the slide beginning **"MAUP and regression"**: "As a
 generalization, as you aggregate units, the correlation gets stronger."
 
-On this ground it is false, and not by a trick. Across the 1,310 areas R<sup>2</sup> is
+On this ground it is false, and not by a trick. Across the 1,317 areas R<sup>2</sup> is
 **0.169**. Of the four zonings drawn by a stated rule, **two land below it** &mdash; 0.001
 and 0.097 &mdash; and the second has a line that leans the other way. Same ground, same
 records, eight zones in each case, and only the boundaries moved. (Grouping to the 189
@@ -69,18 +69,18 @@ R<sup>2</sup> values confirmed on the slide itself.
 
 | | |
 |---|---|
-| Dissemination areas | 1,335 |
-| ... with income, greenness and a household count | 1,310 |
-| Census tracts touched | 189 |
+| Dissemination areas | 1,342 |
+| ... with income, greenness and a household count | 1,317 |
+| Census tracts touched | 190 |
 | City of Vancouver local areas | 22 |
-| Vertices after quantising to 5 m | 32,856 |
-| Encoded geometry | 66,937 bytes |
-| `data.js` | 189760 bytes |
-| `ndvi.png` | 144134 bytes |
-| `index.html` | 69306 bytes |
-| Neighbours per area (sharing an edge) | min 1, mean 5.19, max 18, none isolated |
+| Vertices after quantising to 5 m | 34,133 |
+| Encoded geometry | 69,540 bytes |
+| `data.js` | 194095 bytes |
+| `ndvi.png` | 144131 bytes |
+| `index.html` | 72604 bytes |
+| Neighbours per area (sharing an edge) | min 1, mean 5.22, max 20, none isolated |
 | Median household income | $23,200 to $222,000, median $88,000 |
-| Greenness | 0.0922 to 0.8420, mean 0.4023 |
+| Greenness | 0.0911 to 0.8420, mean 0.4020 |
 
 ### Which ground, and by what rule
 
@@ -94,8 +94,25 @@ three rectangles in UTM zone 10N:
 | east | Burnaby west of 501,500 E, about two kilometres past Boundary Road | 496,000&ndash;501,500 E, 5,450,000&ndash;5,458,000 N |
 | south | Lulu Island north of 5,443,500 N, the northern half of Richmond | 483,000&ndash;501,500 E, 5,443,500&ndash;5,451,500 N |
 
-An area is in if its centre lies inside that polygon, and its geometry is then cut to the
-polygon and to land, so the data end on a line somebody chose rather than on a ragged fringe.
+An area is in if the centre of its **land** lies inside that polygon, or if a third of its
+land and at least a square kilometre of it does. Its geometry is then cut to the polygon and
+to land, so the data end on a line somebody chose rather than on a ragged fringe.
+
+**Sea Island is why the second clause exists.** One dissemination area covers the whole
+island &mdash; the airport, Burkeville and Iona &mdash; and it is 112.6 km<sup>2</sup> as
+published, because it runs west across Sturgeon Bank into the Strait of Georgia. Its centre
+falls at 482,017 E, out at sea and outside the study area, so the island was missing from the
+map while every one of its neighbours was drawn. Taking the centre of its *land* does not
+rescue it either: Sturgeon Bank is mudflat, the satellite reads it as ground rather than as
+water, and the land centre is still out west. What is true of it is that 19.1 of its
+47.6 km<sup>2</sup> of land, 40 per cent, is inside. Measured against every area that
+straddles the edge, those two thresholds admit exactly one area, this one; the next nearest
+candidate has 0.59 km<sup>2</sup> inside. Iona Island stays out, because it is west of the
+483,000 E edge and the clip cuts it &mdash; that is the boundary doing its job.
+
+**Nothing is dropped for a suppressed figure.** 25 of the 1,342 areas have no published
+median income; they are drawn, they belong to a zone, and they are shown as no data rather
+than removed.
 Every rectangle's top edge is south of Burrard Inlet, so **nothing on the North Shore is in**:
 no West Vancouver, no North Vancouver.
 
@@ -167,24 +184,20 @@ quantising origin is anchored to a round number below the minimum rather than to
 
 Every figure below comes out of `tools/zone-design-verify.py`. They are the regression suite.
 
-**Across the 1,310 areas themselves: r = +0.410961 (R<sup>2</sup> = 0.168889), slope =
-+0.001761 per $1,000.** r is recorded here and R<sup>2</sup> is what the page prints; they
+**Across the 1,317 areas themselves: r = +0.410136 (R<sup>2</sup> = 0.168212), slope =
++0.001760 per $1,000.** r is recorded here and R<sup>2</sup> is what the page prints; they
 are the same number squared, and nothing but the display changed.
 
 | zoning | zones | rule | r | R<sup>2</sup> | slope per $10,000 |
 |---|---|---|---|---|---|
-| dissemination areas | 1,310 | any | +0.410961 | 0.1689 | +0.01761 |
-| census tracts | 189 | households | +0.430479 | 0.1853 | +0.02513 |
-| census tracts | 189 | plain | +0.478950 | 0.2294 | +0.02738 |
-| city local areas | 22 | households | +0.691025 | 0.4775 | +0.04205 |
-| Wedges from north-west | 8 | households | &minus;0.311621 | 0.0971 | &minus;0.00860 |
-| A grid of blocks | 8 | households | +0.787407 | 0.6200 | +0.08162 |
-| Groups of census tracts | 8 | households | +0.547643 | 0.2999 | +0.08631 |
-| Same number of households | 8 | households | +0.023919 | 0.0006 | +0.00273 |
+| dissemination areas | 1,317 | any | +0.410136 | 0.1682 | +0.01760 |
+| Rings from the middle | 8 | households | &minus;0.3794 | 0.1439 | &minus;0.0295 |
+| A grid of blocks | 8 | households | +0.8162 | 0.6662 | +0.0874 |
+| Groups of census tracts | 8 | households | +0.1824 | 0.0333 | +0.0600 |
+| Same number of households | 8 | households | &minus;0.2987 | 0.0892 | &minus;0.0391 |
 
-The rule matters as much as the lines. The same eight **Same number of households** give
-R<sup>2</sup> = 0.001 weighted by households, 0.014 weighted by people and 0.121 on a plain
-average of the areas' medians, with not one boundary moved.
+Three of the four land below the area level and two of them lean the other way, which is
+the counter-case the deck's own slide s39 says cannot happen.
 
 ### The two variables aggregate differently, which is why the rule is a control
 
@@ -220,6 +233,11 @@ correlation, the strongest, the steepest line, the shallowest. The extremes of t
 **not** shipped, so a class has something to beat.
 
 **Budget: 40 candidate zonings.** That is the whole search.
+
+**The table below is from the build of 22 September, before Sea Island was let in.** The
+forty rules are unchanged and so is the method; the figures moved when the ground did, and
+they are kept here as the record of what was tried rather than as current values. The four
+shipped are current, in the table above.
 
 | group | name | rule | r | slope/$10k | zones | pieces |
 |---|---|---|---|---|---|---|
@@ -303,7 +321,7 @@ palette or in the frame.
 viewBox, which is about 6 px at the default layout and about 15 on a projector, filled from
 the income ramp with a white stroke so overlaps stay countable; the fitted line is 3.5 units;
 every piece of type on it is 13 units, above the 11 px floor the course uses for anything
-read from the back. The 1,310 areas behind are **not** dots: single points disappear on a
+read from the back. The 1,317 areas behind are **not** dots: single points disappear on a
 projector, so they are drawn as one flat light-grey field on a 46 by 42 grid, which reads as
 a region. The equation, its slope and its r sit at the head of the panel at title size, with
 only the slope and r in bold.
@@ -368,7 +386,7 @@ whoever teaches it rather than drafted alone. **This one was drafted alone**, an
 says so where an instructor will see it. Re-read against section 16 on 22 September and
 rewritten once; what it now asks:
 
-- **Commit, one minute.** "Across the 1,310 areas, R<sup>2</sup> between income and greenness
+- **Commit, one minute.** "Across the 1,317 areas, R<sup>2</sup> between income and greenness
   is 0.17. You are about to group those areas into eight zones. Write down one number: what
   will R<sup>2</sup> be then?" One number, no screen needed, written before anything is
   pressed. **The figure is now asserted by the test suite against what the page
@@ -426,10 +444,10 @@ node tools/test/run.js zone
 Preview with `python3 -m http.server 8791 --directory ~/teaching-interactive/github/web` and
 open `http://localhost:8791/zone-design/`.
 
-**Check first:** the area level is r = +0.410961 over 1,310 areas; census tracts give
-+0.430479; Wedges from north-west gives &minus;0.311621; and switching Same number of households to a plain average moves it from
-+0.023919 to +0.348156. If those four come back, the aggregation, the fit, the zonings and
-the rules are all intact.
+**Check first:** the area level is r = +0.410136 (R<sup>2</sup> = 0.168) over 1,317 areas;
+Rings from the middle gives r = &minus;0.3794; A grid of blocks gives +0.8162; and the point at 486,944 E, 5,449,115 N, which
+is the airport terminal on Sea Island, is inside a drawn area. If those four come back, the
+boundary rule, the aggregation, the fit and the zonings are all intact.
 
 `window.ZONE_TEST` exposes `state()`, `fitAt(zoning, rule)`, `daFit`, `zoning(id)`,
 `groundPieces()`, `setZoning`, `setRule`, `paint(area, zone)`, `zone()`, `pack()`,

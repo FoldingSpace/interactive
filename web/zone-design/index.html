@@ -269,13 +269,13 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
              the slope beside it.</p>
           <p>Grouping areas together usually pushes it up, because averaging removes the
              differences inside each group and leaves the differences between groups. Here it
-             is 0.17 across the 1,310 areas and 0.19 across the 189 published census tracts,
+             is 0.17 across the 1,317 areas and 0.19 across the 190 published census tracts,
              which is the expected direction.</p>
-          <p>Usually is not always. The four eight-zone rules on offer give 0.62, 0.30, 0.00
-             and 0.10. Two of them are <em>below</em> the areas themselves, and the last has a
-             line that leans the other way. Same ground, same records, same number of zones,
-             and the only thing that changed is where the lines go. <b>You can do better than
-             all four.</b></p>
+          <p>Usually is not always. The four eight-zone rules on offer give 0.67, 0.14, 0.09
+             and 0.03. Three of them are <em>below</em> the areas themselves, and two of them
+             draw a line that leans the other way. Same ground, same records, same number of
+             zones, and the only thing that changed is where the lines go. <b>You can do
+             better than all four.</b></p>
           <p>Openshaw and Taylor took the 99 counties of Iowa and searched for groupings
              into 6 regions. They could drive the correlation between two variables
              anywhere from &minus;0.99 to +0.99 by choosing where the lines went. They
@@ -302,9 +302,9 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
              income. It is a property of the zones you drew, not of any household.</p>
           <p>Watch it and R<sup>2</sup> separately. They are not the same thing and they do
              not move together: a zoning can tilt the line without tightening it, and it can
-             tighten without tilting. Across the 1,310 areas themselves the slope is 0.018 per
-             $10,000. Two of the four rules give about 0.08, four and a half times that; one
-             gives 0.003, near nothing; one gives &minus;0.009, the other way.</p>
+             tighten without tilting. Across the 1,317 areas themselves the slope is 0.018 per
+             $10,000. Two of the four rules give 0.06 to 0.09, three to five times that; two
+             lean the other way, at &minus;0.029 and &minus;0.039.</p>
           <p><strong>Nothing here is about a person.</strong> Reading a line between areas
              as a statement about the people in them is the ecological fallacy.</p>
         </div>
@@ -413,7 +413,7 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
                   aria-controls="info-classroom" title="Five minutes, in pairs">i</button>
         </legend>
         <div class="help-panel classroom" id="info-classroom" hidden>
-          <p><b>On your own, one minute.</b> Across the 1,310 areas, R<sup>2</sup> between
+          <p><b>On your own, one minute.</b> Across the 1,317 areas, R<sup>2</sup> between
              income and greenness is <b>0.17</b>. You are about to group those areas into
              eight zones. Write down one number: what will R<sup>2</sup> be then? Write it
              before anybody presses anything.</p>
@@ -428,7 +428,7 @@ input[type="text"]:focus-visible { outline: calc(3px * var(--ui)) solid var(--fo
              grouping is supposed to strengthen a relationship, and two of the four rules are
              below it. Some write a number close to 0.17, on the view that a zone is a sample
              of the city; a zone is not a sample, it is a sum. Almost nobody expects a zoning
-             whose line leans the other way, and one of the four leans that way. Then ask what
+             whose line leans the other way, and two of the four lean that way. Then ask what
              the prizes cannot settle: which of these zonings would anybody put in a report,
              and how would a reader of that report ever tell?</p>
         </div>

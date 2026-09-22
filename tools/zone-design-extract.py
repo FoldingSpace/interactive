@@ -73,6 +73,8 @@ EPSG_OUT = 32610              # UTM zone 10N, the scene's own projection
 #            adds nothing the widget asks about.
 #   SOUTH    Lulu Island north of 5,443,500 N, which is the northern half of Richmond.
 # Every rectangle's top edge is south of Burrard Inlet, so nothing on the North Shore is in.
+LAND_SHARE = 1.0 / 3.0        # of an area's land, how much must be inside to keep it
+LAND_FLOOR = 1.0e6            # ...and at least this much of it, in square metres
 STUDY_RECTS = [
     ("the university and the endowment lands", 479500.0, 5452500.0, 484500.0, 5459500.0),
     ("Burnaby west of 501,500 E", 496000.0, 5450000.0, 501500.0, 5458000.0),
@@ -277,23 +279,50 @@ def main():
     fx = _to_src(ext, dalyr.GetSpatialRef())
     dalyr.SetSpatialFilterRect(fx[0], fx[2], fx[1], fx[3])
 
+    # ---- which areas are in, and the land they are cut back to ---------------
+    # Census areas are published out over the water: English Bay, False Creek, Burrard
+    # Inlet and both arms of the Fraser are each inside a dissemination area as published.
+    # A map of them is not recognisable as Vancouver, so every area is cut back to land.
+    #
+    # An area is in if the centre of its land lies inside the study area, **or** if a
+    # third of its land and at least a square kilometre of it does.
+    #
+    # Sea Island is why the second clause exists. One dissemination area covers the whole
+    # island - the airport, Burkeville and Iona - and it is 112.6 km2 as published, because
+    # it runs west across Sturgeon Bank into the Strait of Georgia. Its centre falls at
+    # 482,017 E, out at sea and outside this study area, so the island was missing from the
+    # map while every one of its neighbours was drawn. Taking the centre of its land does
+    # not rescue it either: Sturgeon Bank is mudflat, the satellite reads it as ground
+    # rather than as water, and the land centre is still out west. What is true of it is
+    # that 19.1 km2 of its 47.6 km2 of land, 40 per cent, is inside.
+    #
+    # Measured against every area that straddles the edge, that pair of thresholds admits
+    # exactly one area, this one: the next nearest candidate has 0.59 km2 inside. So it is
+    # a rule for a real case rather than a licence for a fringe. Nothing is dropped for a
+    # suppressed figure - an area with no published income is drawn and shown as no data.
+    water = water_polygon(C)
     feats = []
+    rescued = 0
     for f in dalyr:
         g = f.GetGeometryRef().Clone()
         g.Transform(da_to_out)
-        c = g.Centroid()
-        if not city.Contains(c):
+        land = g.Difference(water)
+        if land.IsEmpty() or land.GetArea() < 1000.0:
             continue
+        inside = land.Intersection(region)
+        by_centre = region.Contains(land.Centroid())
+        by_share = (inside.GetArea() >= LAND_SHARE * land.GetArea()
+                    and inside.GetArea() >= LAND_FLOOR)
+        if not (by_centre or by_share):
+            continue
+        if not region.Contains(g.Centroid()):
+            rescued += 1
         feats.append((f.GetField("DAUID"), g.Clone()))
     feats.sort(key=lambda a: a[0])
-    sys.stderr.write("dissemination areas in the city: %d\n" % len(feats))
+    sys.stderr.write("dissemination areas in the study area: %d (%d kept by their land "
+                     "centre or by the share of it inside)\n"
+                     % (len(feats), rescued))
 
-    # ---- the water, and the land the areas are cut back to -------------------
-    # Census areas are drawn out over the water: English Bay, False Creek, Burrard Inlet
-    # and both arms of the Fraser are each inside a dissemination area as published. A map
-    # of them is not recognisable as Vancouver, so every area is cut back to land first,
-    # before anything else is worked out about it.
-    water = water_polygon(C)
     kept = []
     for d, g in feats:
         land = g.Intersection(city).Difference(water)
