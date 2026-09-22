@@ -26,16 +26,22 @@ install.
   A spatial error model is there to deal with the clustered errors, and the page is candid
   about what dealing with them does not fix.
 
-- **Zone design: you help draw the boundaries** (built, not yet deployed)
-  — 1,241 dissemination areas in and just beyond the City of Vancouver, what households in
-  them earn, and how green the ground was on one August morning. Paint eight zones over the
-  areas and the line between income and greenness moves. Four zonings are offered, each drawn
-  by a rule somebody could state in advance, and they disagree: r runs from &minus;0.39 to
-  +0.50 over the same 1,209 records with the same number of zones, and the published census
-  tracts sit *below* the areas themselves, which is the opposite of what the course's own
-  slide says aggregation does. Greenness aggregates exactly whatever you do to it; income
-  arrives as a median per area, medians do not add, and the three ways of averaging them
-  disagree, so the rule is a control rather than a footnote.
+- [**Zone design: you help draw the boundaries**](https://foldingspace.github.io/interactive/zone-design/)
+  — 1,342 dissemination areas across the City of Vancouver, UBC, western Burnaby and northern
+  Richmond, what households in them earn, and how green the ground was on one August morning.
+  Paint eight zones over the areas, on any of three maps, and the line between income and
+  greenness moves, with its slope and R² printed live. Four zonings are offered, each drawn by
+  a rule somebody could state in advance, and they disagree with each other and with the
+  areas themselves: the same 1,317 records with the same number of zones give lines that run
+  both ways. Greenness aggregates exactly whatever you do to it; income arrives as a median
+  per area, medians do not add, and the three ways of averaging them disagree, so the
+  averaging rule is a control rather than a footnote. A link carries any zoning you paint.
+
+- [**Three criteria, three weights**](https://foldingspace.github.io/interactive/pairwise/)
+  — say in words how much more one thing matters than another, three times over, and the page
+  turns the words into firm weights. Move the words and watch what survives: the order of the
+  weights holds up to disagreement about how strong the words are, and gives way to
+  disagreement about which way they point.
 
 - [**Vancouver, measured in minutes**](https://foldingspace.github.io/interactive/relative-distance/)
   — Lonsdale Quay is 3.47 km from Waterfront Station and Commercial Drive is 3.06 km. On foot
@@ -61,9 +67,10 @@ install.
 ## How they are built
 
 Static HTML, CSS and JavaScript, with **no libraries, no build step the browser can see,
-and no network calls after the page loads**. No server, no accounts. Two of the three are a
-single self-contained file; the third keeps its data in a sibling `data.js` in the same
-folder, which is the same thing as far as a reader or an `iframe` is concerned. Where data
+and no network calls after the page loads**. No server, no accounts. Three of the six are a
+single self-contained file; the other three keep their data in a sibling `data.js` (and, for
+two of them, one image) in the same folder, which is the same thing as far as a reader or an
+`iframe` is concerned. Where data
 has to be prepared, that happens once on our machine — see `tools/` — and what ships is the
 result. Every widget opens with defaults already set and something already drawn, works
 on a phone and on a projector, can be embedded in an `iframe`, and can be linked by a
