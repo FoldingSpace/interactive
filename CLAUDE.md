@@ -90,9 +90,11 @@ has a file in `docs/widgets/` carrying its verified
 numbers, review record, open threads and a "picking this up again" section. **Read that
 before changing one** — the recorded values are the regression suite.
 
-A sixth, `web/zone-design/`, is built and **not deployed**: the city's dissemination areas,
-median household income against satellite greenness, eight zones you paint by hand, and
-three zonings searched for their effect on the line. It is the first widget here whose data
+A sixth, [zone design](https://foldingspace.github.io/interactive/zone-design/)
+(`web/zone-design/`), has been live since 22 September 2026: 1,342 dissemination areas in
+and around Vancouver, median household income against satellite greenness, eight zones you
+paint by hand on any of three maps, four hand-reasoned starting zonings, and a regression
+that reports R<sup>2</sup> and never r. It is the first widget here whose data
 is assembled entirely from open downloads rather than from course material, and the first to
 read a raster out of a bucket rather than shipping one. Its file is
 `docs/widgets/zone-design.md` and its open items are at the foot of it — the classroom

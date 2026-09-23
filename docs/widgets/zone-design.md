@@ -1,6 +1,8 @@
 # Zone design: you help draw the boundaries
 
-`web/zone-design/` &middot; built 22 September 2026, **not deployed**
+`web/zone-design/` &middot; built 22 September 2026, live at
+https://foldingspace.github.io/interactive/zone-design/ since 01:50 that day (commit `6064387`;
+Luke's later notes pushed through `1bc8d06`)
 
 ## The one thing
 
