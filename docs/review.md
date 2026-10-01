@@ -328,8 +328,9 @@ argument. See `principles.md` section 13.
 Four things that are not a pass but are part of shipping, and all of them have been
 forgotten at least once.
 
-The widget is listed on `web/index.html` with a one-line description. A widget missing
-from the front page is reachable only by people who were handed the URL.
+The widget is listed on `web/index.html` with a card that opens with the issue at stake
+(`principles.md` section 14). A widget missing from the front page is reachable only by
+people who were handed the URL.
 
 Its file exists in `docs/widgets/` and has the six required parts listed in
 `docs/widgets/README.md`, the verified numbers among them.

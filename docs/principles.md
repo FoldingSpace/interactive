@@ -625,6 +625,17 @@ say what the method cannot do. What does not generalise is any particular answer
 **A widget that is not on the front page does not exist.** `web/index.html` is the only
 route in for anyone who was not handed a URL, and it is part of shipping, not a follow-up.
 
+**A card opens with the issue at stake, then the hook.** Luke, 23 September 2026: the earlier
+cards were too literal. Each card now opens by naming the geographical or theoretical issue
+the widget is about, such as the modifiable areal unit problem, relative space, or the
+values hidden in a cost surface. Only then comes the concrete case and what you can do. This
+is the one place where an abstract word may lead. Section 8's plainness still governs
+everything after that first sentence. The `README.md` entries follow the cards.
+
+The front page also carries a standing note, in italics and on its own line: the page and
+the widgets "should be assumed to have been made in close conversation with Claude Code,
+mostly for classroom purposes." It stays.
+
 ## 15. A widget built beside an assessment
 
 Two of these came out of a course lab, and both had to answer the same question before

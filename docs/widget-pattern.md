@@ -198,7 +198,8 @@ size through `calc()`.
    cannot confirm it.
 5. Record verified numbers in the widget's file, checked by a route that shares no code
    with the widget.
-6. Add the widget to `web/index.html` and to the list in `README.md`.
+6. Add the widget to `web/index.html` and to the list in `README.md`, opening with the
+   issue at stake (`principles.md` section 14).
 7. Log anything borrowed in `docs/attributions.md`, and anything tried, used, or ruled out
    in `docs/libraries.md`.
 8. Design the **For the classroom** activity with whoever will teach it, by interrogation

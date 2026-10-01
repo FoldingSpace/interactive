@@ -348,6 +348,12 @@ back. No course-specific service is named anywhere on the page.
 
 ## Known limits and open threads
 
+**The opening line is over budget.** Since 23 September 2026 it begins "An exploration of
+the Modifiable Areal Unit Problem (MAUP).", at Luke's instruction, and the front-page card
+opens the same way. The whole line is now 62 words, against section 13's fifty. The new
+sentence is Luke's and stays. If anything is cut to get back under fifty, it should come from
+the sentence after it, and only with Luke.
+
 **One day in August.** Greenness is one cloud-free scene: that summer's drought, that week's
 irrigation, that morning's shadows. It is not tree canopy and it is not parks.
 

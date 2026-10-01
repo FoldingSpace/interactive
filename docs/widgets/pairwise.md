@@ -1033,11 +1033,15 @@ instruction asked for the audit to be done again after the cut, with the counts.
 
 | | Proposal, revision 2 | Built |
 |---|---|---|
-| Framing sentence | 49 words | **24 words** |
+| Framing sentence | 49 words | **24 words**; 31 since 23 Sep (below) |
 | Line under the ratio | 18 words | 18 words |
 | Body prose on the face | 67 words | **42 words** |
 | Opening-state line, in place of the 18 | not counted | 10 words |
 | Circle line, only in a circle | not counted | 23 words |
+
+Since 23 September 2026 the framing sentence opens with "Explore the Analytical Hierarchy
+Process for decision-making.", at Luke's instruction. That makes it 31 words, still inside
+section 13's fifty. The front-page card opens the same way.
 | The "?" lesson panel | the short version of section 1, what the ratio is and is not, that two readers differ, that the order survives, the worked demonstration, the missing-criterion sentence, the arithmetic-not-a-cycle paragraph, and the near-zero pair | **81 words** and the working shown: the three by three matrix, the largest eigenvalue and the index |
 
 What is on the face at rest, everything closed: the framing sentence, the title, three
