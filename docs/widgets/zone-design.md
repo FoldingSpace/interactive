@@ -31,10 +31,12 @@ L03 deck states that law in words, on the slide beginning **"MAUP and regression
 generalization, as you aggregate units, the correlation gets stronger."
 
 On this ground it is false, and not by a trick. Across the 1,317 areas R<sup>2</sup> is
-**0.169**. Of the four zonings drawn by a stated rule, **two land below it** &mdash; 0.001
-and 0.097 &mdash; and the second has a line that leans the other way. Same ground, same
-records, eight zones in each case, and only the boundaries moved. (Grouping to the 189
-published census tracts does raise it, to 0.185, which is the direction the slide expects.)
+**0.168**. Of the four zonings drawn by a stated rule, **three land below it** &mdash; 0.144,
+0.089 and 0.033 &mdash; and two of those have a line that leans the other way. Same ground,
+same records, eight zones in each case, and only the boundaries moved. (Grouping to the 190
+published census tracts does raise it, to 0.179, which is the direction the slide expects.)
+Figures under the default rule, income weighted by households, as computed by the page
+(checked 12 October 2026 against the verified table below).
 
 **The page reports R<sup>2</sup>, not r** (22 September). R<sup>2</sup> has no sign, so the
 direction of the relationship is carried by the slope printed beside it, which is where a
@@ -442,22 +444,23 @@ rewritten once; what it now asks:
 - **Room, two minutes.** Take the four prizes in turn and open the winning link at the front.
 
 **Will two reasonable people differ?** Yes, and the spread is written into the data rather
-than hoped for: the four rules give R<sup>2</sup> of 0.62, 0.30, 0.10 and 0.00 over the same
-eight zones, so any number between 0 and 0.6 is a defensible guess.
+than hoped for: the four rules give R<sup>2</sup> of 0.67, 0.14, 0.09 and 0.03 over the same
+eight zones, so any number between 0 and 0.7 is a defensible guess.
 
 **The wrong answers, and what each is made of.** "Above 0.17, because grouping strengthens a
-relationship" is what the deck's own slide s39 says in those words, and two of the four rules
+relationship" is what the deck's own slide s39 says in those words, and three of the four rules
 are below it. "About 0.17, because a zone is a sample of the city" is the sampling intuition,
 and it is wrong because a zone is not a sample, it is a sum. "The line must still lean the
-same way" is reasonable if you have seen aggregation demonstrated once, and one of the four
-leans the other way.
+same way" is reasonable if you have seen aggregation demonstrated once, and two of the four
+lean the other way.
 
 **For whoever is running the room.** These sentences were on the page's panel until 12 October
 2026, when they moved here: the panel holds the task only, because students read it too
-(`principles.md` §16; Luke: "3A"). As they stood on the page:
+(`principles.md` §16; Luke: "3A"). As they stood on the page, except that "two of the four rules are
+below it" is corrected to three, as the verified table gives (12 October 2026, Luke: "Correct all."):
 
 > Most people write a number above 0.17, because grouping is supposed to strengthen a
-> relationship, and two of the four rules are below it. Some write a number close to 0.17, on
+> relationship, and three of the four rules are below it. Some write a number close to 0.17, on
 > the view that a zone is a sample of the city; a zone is not a sample, it is a sum. Almost
 > nobody expects a zoning whose line leans the other way, and two of the four lean that way.
 

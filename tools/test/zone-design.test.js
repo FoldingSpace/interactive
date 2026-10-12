@@ -300,18 +300,16 @@ module.exports = function (t) {
       "and their slopes are not the same line (" +
       bs.map(function (v) { return (v * 10).toFixed(3); }).join(", ") + " per $10,000)");
     // The deck's own slide says that aggregating raises the correlation. It does not have
-    // to, and on this ground it often does not: the published census tracts sit below the
-    // areas themselves, and one of the four rules turns the line over altogether.
-    // The deck's own slide says that aggregating raises the correlation. It does not have
-    // to: two of the four rules land below the areas themselves and one turns the line
-    // over, on the same ground and with the same number of zones.
+    // to: three of the four rules land below the areas themselves and two turn the line
+    // over, on the same ground and with the same number of zones. (The published census
+    // tracts do raise it, slightly; the page says so, and the next test checks the figure.)
     var da = T(w).daFit.r;
     var da2 = da * da;
-    a.ok(r2s.filter(function (v) { return v < da2; }).length >= 2,
-      "at least two of the four rules lower R squared below the area level " + da2.toFixed(3) +
+    a.equal(r2s.filter(function (v) { return v < da2; }).length, 3,
+      "three of the four rules lower R squared below the area level " + da2.toFixed(3) +
       " (" + r2s.map(function (v) { return v.toFixed(2); }).join(", ") + ")");
-    a.ok(Math.min.apply(null, bs) < 0, "and one of them turns the line over (slope " +
-      Math.min.apply(null, bs).toFixed(4) + ")");
+    a.equal(bs.filter(function (v) { return v < 0; }).length, 2, "and two of them turn the line over (slopes " +
+      bs.map(function (v) { return (v * 10).toFixed(4); }).join(", ") + " per $10,000)");
     a.ok(Math.max.apply(null, r2s) > da2, "while another beats the areas themselves");
   });
 
@@ -478,6 +476,18 @@ module.exports = function (t) {
     // What is left in those two sub-lines still says what the number is.
     a.ok(w.doc.getElementById("rbase").textContent.trim().length > 4, "the R squared card still names its scale");
     a.ok(w.doc.getElementById("slopebase").textContent.indexOf("$10,000") > 0, "and the slope card its units");
+  });
+
+  t("the census-tract figure in the R squared note is the one the page computes", function (a) {
+    // The note said 0.19 for a while, the population-weighted figure, while every other number
+    // on the page is under the default rule (households).
+    var w = open();
+    var note = w.doc.body.textContent.replace(/\s+/g, " ");
+    var m = note.match(/and (\d+\.\d+) across the (\d+) published census tracts/);
+    a.ok(m, "the note states the census-tract R squared and the tract count");
+    var f = T(w).fitAt("ct");
+    a.close(Number(m[1]), f.r * f.r, 0.005, "and it is the default rule's (" + m[1] + " against " + (f.r * f.r).toFixed(3) + ")");
+    a.equal(Number(m[2]), f.n, "and the count is the number of tracts fitted");
   });
 
   t("the classroom panel quotes the figure the page actually shows", function (a) {
