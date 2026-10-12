@@ -452,8 +452,17 @@ and it is wrong because a zone is not a sample, it is a sum. "The line must stil
 same way" is reasonable if you have seen aggregation demonstrated once, and one of the four
 leans the other way.
 
-**What the share-back does with them.** The three positions are named on the panel, and the
-instructor settles between them by opening two of the room's own links rather than by
+**For whoever is running the room.** These sentences were on the page's panel until 12 October
+2026, when they moved here: the panel holds the task only, because students read it too
+(`principles.md` §16; Luke: "3A"). As they stood on the page:
+
+> Most people write a number above 0.17, because grouping is supposed to strengthen a
+> relationship, and two of the four rules are below it. Some write a number close to 0.17, on
+> the view that a zone is a sample of the city; a zone is not a sample, it is a sum. Almost
+> nobody expects a zoning whose line leans the other way, and two of the four lean that way.
+
+**What the share-back does with them.** The three positions are named above, not on the panel,
+and the instructor settles between them by opening two of the room's own links rather than by
 asserting anything. The panel then ends on the question the prizes cannot settle: which of
 these zonings would anybody put in a report, and how would a reader tell?
 
