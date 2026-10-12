@@ -681,8 +681,9 @@ cheated.
 
 Every widget carries a panel labelled **For the classroom**, holding one activity: five
 minutes, in pairs, done on one of the pair's own phones or on the back of a page. It is the
-only part of a widget addressed to whoever is running the room rather than to a reader alone,
-and it is the part that decides whether the widget gets used at all.
+only part of a widget addressed to a room rather than to a reader alone, and it is the part
+that decides whether the widget gets used at all. Students read it too, so it holds the task
+and nothing that gives the task's answers away.
 
 Why it is a requirement and not a nice addition. A widget on a projector is a demonstration,
 and a demonstration is watched. What a student keeps is the thing they committed to and had
@@ -711,10 +712,13 @@ satisfies both is a split where the paper half is the *prediction* and the devic
 requires reading a value off the display has failed this, and has usually failed the rule
 above it too.
 
-**Say what happens to the answers.** The five minutes ends with the room, and an instructor
-who does not know what to do with what the pairs produced ends it in a shrug. Name the two or
-three positions pairs will land in, and say what to run at the front to settle between them.
-Write it so somebody teaching this for the first time can run it having read it once.
+**Say what happens to the answers, in the widget's file, not on the panel.** The five minutes
+ends with the room, and an instructor who does not know what to do with what the pairs produced
+ends it in a shrug. Name the two or three positions pairs will land in, and say what to run at
+the front to settle between them. Write it so somebody teaching this for the first time can run
+it having read it once. It goes in `docs/widgets/<name>.md` under a heading for whoever runs the
+room (`pairwise.md`, "For whoever is running the room"), never on the page, where it would hand
+the students the positions before they commit (GEOS 370 decision 51, 19 September 2026).
 
 **Five minutes is the whole budget, share-back included.** Put the split on the panel: about a
 minute alone, two in the pair, two back to the room. An activity that needs eight minutes does
@@ -729,8 +733,8 @@ question in a smaller box, and the check is the same: say what the widget would 
 for the task to hand over an answer that is being marked.
 
 **This panel stays in presentation mode.** Every other (i) hides on a projector, because
-nobody at the back reads a paragraph. This one's reader is the person at the front in the
-moment before the room is asked to do something, which is exactly when the projector is on. It
+nobody at the back reads a paragraph. This one is read at the front in the moment before
+the room is asked to do something, which is exactly when the projector is on. It
 costs one CSS rule, and it is the only exception section 3 makes.
 
 ### It is designed by interrogation, not written
