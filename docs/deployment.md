@@ -20,7 +20,6 @@ beside the repository without being pushed.
     ├── docs/                    documentation for us, not published
     └── web/                     the published site
         ├── index.html
-        ├── shared/              stylesheets and scripts used by several widgets
         └── <widget>/            one folder per widget
 ```
 

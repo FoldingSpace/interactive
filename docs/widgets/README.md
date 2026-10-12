@@ -11,7 +11,7 @@ choice is gone and only the choice is left.
 | [Least cost, whose cost?](https://foldingspace.github.io/interactive/least-cost/) | [least-cost.md](least-cost.md) | Live |
 | [Vancouver, measured in minutes](https://foldingspace.github.io/interactive/relative-distance/) | [relative-distance.md](relative-distance.md) | Live |
 | [Three criteria, three weights](https://foldingspace.github.io/interactive/pairwise/) | [pairwise.md](pairwise.md) | Live |
-| Zone design: drawing Vancouver two ways | [zone-design.md](zone-design.md) | Built, not deployed |
+| [Zone design: drawing Vancouver two ways](https://foldingspace.github.io/interactive/zone-design/) | [zone-design.md](zone-design.md) | Live |
 
 Anything that would be true of the next widget too goes in the shared documents, not here:
 how to draw a quantity in `../visual-forms.md`, how a widget is put together in

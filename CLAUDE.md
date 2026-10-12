@@ -76,7 +76,7 @@ short: they become the URL, and the URL goes on slides and into QR codes.
 
 ## Where things stand
 
-Five widgets, deployed and live:
+Six widgets, deployed and live:
 [spatial autocorrelation on a grid](https://foldingspace.github.io/interactive/spatial-autocorrelation/);
 [drawing the lines](https://foldingspace.github.io/interactive/maup/), on the modifiable
 areal unit problem, from GEOG 370's Lab 3;
@@ -85,7 +85,10 @@ turning comparisons in words into weights, from Lab 2;
 [least cost, whose cost?](https://foldingspace.github.io/interactive/least-cost/), on
 least-cost paths, from Lab 4; and
 [Vancouver, measured in minutes](https://foldingspace.github.io/interactive/relative-distance/),
-on relative space, which is the first one here not built beside an assessment at all. Each
+on relative space, which is the first one here not built beside an assessment at all. The sixth,
+[zone design: you help draw the boundaries](https://foldingspace.github.io/interactive/zone-design/),
+went live on 22 September 2026: eight zones painted by hand against four zonings drawn by rule,
+on the modifiable areal unit problem. Each
 has a file in `docs/widgets/` carrying its verified
 numbers, review record, open threads and a "picking this up again" section. **Read that
 before changing one** — the recorded values are the regression suite.

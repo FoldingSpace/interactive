@@ -4,7 +4,7 @@ What we use, what worked, what did not, and what is worth trying. Update this ev
 a library earns or loses a place. Licences below are recorded from prior knowledge and
 must be checked against the project's own repository before anything ships publicly.
 
-Started 2026-08-19. Five widgets built so far and none needed a library, so the
+Started 2026-08-19. Six widgets built so far and none needed a library, so the
 "in use" table is still empty and everything below it remains a candidate.
 
 Worth being exact about what that claim now covers, because the third widget uses more of
