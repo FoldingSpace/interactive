@@ -876,6 +876,8 @@ beat `.spacer { display: block }` in the wide-screen block until the latter was 
 **Not yet done:** a real projector in a lit room, and a compressed recording. Those need
 the lecture machine.
 
+**20 October 2026, a change on Luke's word** ("fix the widget sentence"). With `Uncorrected` chosen, the sentence under the second grid ended "Some of those are luck: test 225 squares and a few pass by chance. Try Random 2." A literal reader of the GEOS 370 Lecture 6 class activities found that it gives away the answer to a later activity, which asks pairs to predict how many squares on a random grid reach p of 0.05 before they look. The sentence now ends after the count: "148 of 225 squares reach p of 0.05, each judged on its own." The `i` panel beside `Test each square against chance` still explains, for a student who opens it, why some squares pass when every square is tested ("rare things stop being rare when you look often enough").
+
 ## Known limits and open threads
 
 Two are stale entries removed: there **is** a significance test, and the grid size **is** a

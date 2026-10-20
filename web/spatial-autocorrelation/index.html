@@ -1550,8 +1550,7 @@ self.onmessage = function (e) {
         ? "No square reaches p of " + alphaText() + ", judged on its own. With this few " +
           "neighbours the best result they can give happens by luck more often than that."
         : passing + " of " + N + " squares reach p of " + alphaText() + ", each judged on " +
-          "its own. Some of those are luck: test " + N + " squares and a few pass by " +
-          "chance. Try Random 2.";
+          "its own.";
     } else if (sigMode === "fdr" && sigCache) {
       // Two very different reasons for an empty map, and they must not be conflated.
       sigLineEl.textContent = passing > 0
